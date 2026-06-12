@@ -1,0 +1,22 @@
+# Build do Cargo
+/target
+**/*.rs.bk
+
+# Segredos — NUNCA versionar (CLAUDE.md §7.4)
+.env
+.env.*
+!.env.example
+
+# Artefatos do frontend (cargo-leptos/Trunk — §1)
+/dist
+/pkg
+
+# Configuração pessoal/local do Claude Code (a .claude/settings.json do projeto é versionada)
+.claude/settings.local.json
+
+# Editores / SO
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json

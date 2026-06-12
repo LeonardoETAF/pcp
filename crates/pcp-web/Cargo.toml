@@ -1,0 +1,11 @@
+[package]
+name = "pcp-web"
+description = "Frontend Leptos (SSR + WASM). Nunca importa regra de negócio — consome a API."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+# pcp-web NÃO depende de crates de regra de negócio (CLAUDE.md §2/§3). Consome a API por HTTP.
+[dependencies]

@@ -1,0 +1,12 @@
+[package]
+name = "pcp-etl"
+description = "Ingestão de dados (arquivo/CSV agora; conector ERP One depois) atrás de FonteDados."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+pcp-core = { path = "../pcp-core" }
+pcp-db = { path = "../pcp-db" }

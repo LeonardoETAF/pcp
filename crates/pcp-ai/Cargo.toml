@@ -1,0 +1,13 @@
+[package]
+name = "pcp-ai"
+description = "Chat IA, análise por produto e insights estatísticos (Anthropic Claude)."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+pcp-core = { path = "../pcp-core" }
+pcp-config = { path = "../pcp-config" }
+pcp-db = { path = "../pcp-db" }

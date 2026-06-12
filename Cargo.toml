@@ -1,0 +1,23 @@
+# Workspace do projeto PCP (CLAUDE.md §2).
+# Manifesto virtual: a lógica vive nos crates membros, não aqui.
+[workspace]
+resolver = "2"
+members = [
+    "crates/pcp-core",
+    "crates/pcp-config",
+    "crates/pcp-db",
+    "crates/pcp-etl",
+    "crates/pcp-engine",
+    "crates/pcp-ai",
+    "crates/pcp-api",
+    "crates/pcp-web",
+    "tests",
+]
+
+# Metadados compartilhados por todos os crates (herdados via `*.workspace = true`).
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "UNLICENSED"
+authors = ["SuperCopo PCP"]
+publish = false

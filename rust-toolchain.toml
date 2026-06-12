@@ -1,0 +1,4 @@
+# Toolchain fixada (CLAUDE.md §1): estável, com os componentes exigidos no §5.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
