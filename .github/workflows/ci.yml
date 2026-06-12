@@ -1,0 +1,37 @@
+# CI do PCP (CLAUDE.md §11): fmt + clippy (-D warnings) + testes em todo push/PR.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  check:
+    name: fmt + clippy + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar toolchain (rust-toolchain.toml)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache do Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Formatação
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (-D warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Testes do núcleo de regra (pcp-core)
+        run: cargo test -p pcp-core
+
+      - name: Testes do workspace
+        run: cargo test --workspace
