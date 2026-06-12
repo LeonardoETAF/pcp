@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, dt_ref, codigo_estoque, sku, produto, configuracao, qtd_vendida, is_personalizado, ingerido_em FROM pcp.vendas_dia WHERE dt_ref = $1 ORDER BY codigo_estoque, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "dt_ref",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "dt_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "sku",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "sku"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "produto",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "configuracao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "qtd_vendida",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "qtd_vendida"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "is_personalizado",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "is_personalizado"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "ingerido_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "ingerido_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "46767cbe9c642d720459966f7ec80c0392f2889335036beb93d003f3994a9d36"
+}

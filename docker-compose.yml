@@ -1,0 +1,24 @@
+# Postgres DEDICADO do PCP (CLAUDE.md §6: banco só do PCP, não compartilhado).
+# Sobe um Postgres com volume persistente. Porta do host 5433 por padrão (5432 costuma
+# estar ocupada). Segredos vêm do ambiente/.env — nunca hardcoded (CLAUDE.md §7.4).
+services:
+  postgres:
+    image: postgres:16
+    container_name: pcp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pcp_local_dev}
+      POSTGRES_DB: pcp
+    ports:
+      - "${PCP_DB_PORT:-5433}:5432"
+    volumes:
+      - pcp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pcp -d pcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pcp_pgdata:

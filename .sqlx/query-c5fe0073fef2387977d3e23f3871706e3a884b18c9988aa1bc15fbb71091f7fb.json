@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.estoque_snapshot (dt_ref, codigo_estoque, sku, produto, configuracao, qtd_estoque, qtd_reserva, qtd_disponivel, estoque_min_erp, fora_de_linha) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c5fe0073fef2387977d3e23f3871706e3a884b18c9988aa1bc15fbb71091f7fb"
+}

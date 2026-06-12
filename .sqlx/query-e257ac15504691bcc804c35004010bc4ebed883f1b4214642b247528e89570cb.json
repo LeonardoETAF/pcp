@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM pcp.estoque_snapshot WHERE dt_ref = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e257ac15504691bcc804c35004010bc4ebed883f1b4214642b247528e89570cb"
+}

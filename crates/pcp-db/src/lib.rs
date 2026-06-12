@@ -1,6 +1,18 @@
-//! Acesso a dados: repositórios `SQLx`, modelos de persistência e helper de migrations.
-//! Escrita nas tabelas só pelo pipeline (CLAUDE.md §6/§7).
+//! Acesso a dados do PCP: pool de conexões, helper de migrations, modelos de persistência
+//! e repositórios das tabelas de entrada (`pcp.vendas_dia`, `pcp.estoque_snapshot`).
+//! Escrita só pelo pipeline; sem regra de negócio aqui (CLAUDE.md §6/§7).
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
-// Esqueleto: conexão/migrations e repositórios entram no prompt 0.3.
+mod erro;
+mod migracoes;
+mod modelos;
+mod pool;
+
+pub mod snapshot;
+pub mod vendas;
+
+pub use erro::ErroDb;
+pub use migracoes::aplicar_migrations;
+pub use modelos::{EstoqueSnapshot, NovaVendaDia, NovoEstoqueSnapshot, VendaDia};
+pub use pool::criar_pool;

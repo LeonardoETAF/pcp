@@ -8,5 +8,18 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
-# Mapeia tipos de domínio do núcleo para persistência (CLAUDE.md §2).
+# Mapeará tipos de domínio do núcleo para persistência (CLAUDE.md §2).
 pcp-core = { path = "../pcp-core" }
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "macros",
+    "migrate",
+    "chrono",
+] }
+chrono = { version = "0.4", default-features = false }
+thiserror = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

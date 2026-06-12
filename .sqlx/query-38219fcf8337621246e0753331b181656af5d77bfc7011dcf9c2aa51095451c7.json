@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT dt_ref, codigo_estoque, sku, produto, configuracao, qtd_estoque, qtd_reserva, qtd_disponivel, estoque_min_erp, fora_de_linha, ingerido_em FROM pcp.estoque_snapshot WHERE dt_ref = $1 ORDER BY codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dt_ref",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "dt_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "sku",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "sku"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "produto",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "configuracao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "qtd_estoque",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "qtd_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "qtd_reserva",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "qtd_reserva"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "qtd_disponivel",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "qtd_disponivel"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "estoque_min_erp",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "estoque_min_erp"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "fora_de_linha",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "fora_de_linha"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "ingerido_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "ingerido_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "38219fcf8337621246e0753331b181656af5d77bfc7011dcf9c2aa51095451c7"
+}

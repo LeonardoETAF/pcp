@@ -37,3 +37,24 @@ cargo test                       # testes
 
 Toolchain estável fixada em [rust-toolchain.toml](rust-toolchain.toml). **Sem `unsafe`**
 em todo o projeto (`#![forbid(unsafe_code)]`).
+
+## Banco de dados (local)
+
+Postgres **dedicado** via Docker, na porta do host **5433** por padrão (evita colidir com
+um Postgres local em 5432). Definição em [docker-compose.yml](docker-compose.yml).
+
+```bash
+cp .env.example .env          # ajuste POSTGRES_PASSWORD / DATABASE_URL
+docker compose up -d --wait   # sobe o Postgres dedicado e espera ficar saudável
+sqlx migrate run              # aplica as migrations de migrations/ (requer sqlx-cli)
+```
+
+- **Schema:** todas as tabelas vivem em `pcp.*` (CLAUDE.md §0); migrations versionadas em
+  [migrations/](migrations/). Política de retenção semeada em `pcp.retencao_politica` (§9).
+- **SQLx em compile-time:** as queries são verificadas contra o banco. Para builds/CI **sem
+  banco**, há um cache offline em `.sqlx/` (versionado; regere com
+  `cargo sqlx prepare --workspace` após mudar qualquer query).
+- **Testes de banco:** os testes de integração de `pcp-db` precisam do Postgres e estão
+  marcados `#[ignore]`. Rode com `cargo test -p pcp-db -- --ignored`.
+
+> Secrets só em `.env` (fora do git) — nunca versione credenciais (CLAUDE.md §7.4).
