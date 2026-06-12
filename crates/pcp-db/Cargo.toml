@@ -17,8 +17,10 @@ sqlx = { version = "0.9", default-features = false, features = [
     "macros",
     "migrate",
     "chrono",
+    "uuid",
 ] }
 chrono = { version = "0.4", default-features = false }
+uuid = { version = "1", features = ["serde"] }
 thiserror = "1"
 
 [dev-dependencies]

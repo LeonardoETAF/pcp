@@ -1,6 +1,6 @@
 [package]
 name = "pcp-api"
-description = "Servidor Axum: auth, autorização e endpoints de leitura/escrita (raiz de composição)."
+description = "Servidor Axum: auth, autorização e endpoints (raiz de composição do backend)."
 edition.workspace = true
 version.workspace = true
 license.workspace = true
@@ -8,8 +8,24 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
-pcp-core = { path = "../pcp-core" }
-pcp-config = { path = "../pcp-config" }
 pcp-db = { path = "../pcp-db" }
-pcp-engine = { path = "../pcp-engine" }
-pcp-ai = { path = "../pcp-ai" }
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+chrono = "0.4"
+jsonwebtoken = "9"
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+sha2 = "0.10"
+hex = "0.4"
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+uuid = { version = "1", features = ["v4"] }

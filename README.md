@@ -58,3 +58,21 @@ sqlx migrate run              # aplica as migrations de migrations/ (requer sqlx
   marcados `#[ignore]`. Rode com `cargo test -p pcp-db -- --ignored`.
 
 > Secrets só em `.env` (fora do git) — nunca versione credenciais (CLAUDE.md §7.4).
+
+## API e autenticação (`pcp-api`)
+
+Servidor Axum com autenticação própria (CLAUDE.md §7): senha em **argon2id**, **JWT** de
+acesso (curto) + **refresh token revogável**, e papéis **analista / gestor / admin**.
+
+```bash
+docker compose up -d --wait                  # banco
+cp .env.example .env                          # defina PCP_JWT_SECRET (32+ chars) e o admin
+cargo run -p pcp-api                           # sobe a API (aplica migrations no start)
+```
+
+- **Deny-by-default:** tudo sob `/pcp/...` exige `Authorization: Bearer <token>`; sem token → 401.
+- **Autorização por papel:** `/pcp/aprovacoes` exige gestor+; `POST /pcp/usuarios` exige admin.
+- **Públicas:** `GET /saude`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`.
+- **Admin inicial:** criado no primeiro start a partir de `PCP_ADMIN_EMAIL`/`PCP_ADMIN_SENHA`,
+  se ainda não houver usuários.
+- **Testes de autorização** (precisam do banco): `cargo test -p pcp-api -- --ignored`.

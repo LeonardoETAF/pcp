@@ -9,10 +9,15 @@ mod migracoes;
 mod modelos;
 mod pool;
 
+pub mod refresh_tokens;
 pub mod snapshot;
+pub mod usuarios;
 pub mod vendas;
 
 pub use erro::ErroDb;
 pub use migracoes::aplicar_migrations;
 pub use modelos::{EstoqueSnapshot, NovaVendaDia, NovoEstoqueSnapshot, VendaDia};
 pub use pool::criar_pool;
+pub use refresh_tokens::RefreshToken;
+pub use sqlx::PgPool;
+pub use usuarios::Usuario;

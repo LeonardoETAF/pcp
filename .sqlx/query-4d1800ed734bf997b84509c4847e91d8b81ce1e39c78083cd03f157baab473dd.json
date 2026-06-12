@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, usuario_id, token_hash, expira_em, revogado, criado_em FROM pcp.refresh_token WHERE token_hash = $1 AND revogado = false AND expira_em > now()",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "usuario_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "usuario_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "token_hash",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "token_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "expira_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "expira_em"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "revogado",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "revogado"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "refresh_token",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4d1800ed734bf997b84509c4847e91d8b81ce1e39c78083cd03f157baab473dd"
+}

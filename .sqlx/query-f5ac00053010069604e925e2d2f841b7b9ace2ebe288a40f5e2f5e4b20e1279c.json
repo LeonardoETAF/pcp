@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pcp.refresh_token SET revogado = true WHERE token_hash = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f5ac00053010069604e925e2d2f841b7b9ace2ebe288a40f5e2f5e4b20e1279c"
+}
