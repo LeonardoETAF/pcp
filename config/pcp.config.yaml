@@ -1,0 +1,38 @@
+# Configuração de negócio do PCP — fonte ÚNICA e EDITÁVEL das constantes (CLAUDE.md §7/§13).
+# Espelha doc 02 §11 / CLAUDE.md §12. NENHUMA destas constantes pode ser hardcoded em código.
+# Carregado e validado pelo crate `pcp-config`. Toda mudança deve ser auditada (quem/quando/valor anterior).
+
+classificacao:
+  janela_abc_dias: 540          # 18 meses (doc 02 §2.4)
+  janela_classe_d_dias: 180     # 6 meses sem vendas -> D (§2.2)
+  janela_produto_novo_dias: 60  # 1a venda < 60 dias -> N (§2.3)
+  pareto_a: 80                  # % acumulado: limite da classe A (§2.4)
+  pareto_b: 95                  # % acumulado: limite da classe B (§2.4)
+  fator_estoque: { A: 1.20, B: 1.00, C: 0.80, D: 0.30, F: 0.10, N: 0.80 }  # §2.5
+
+metas_cobertura_dias: { A: 45, B: 30, C: 15, D: 10, F: 5, N: 20, default: 15 }  # §3.6
+
+limiar_critico_dias: { A: 15, B: 10, C: 5 }   # criticidade por classe (§5.2)
+
+parametros_estoque:
+  janela_vendas_meses: 12       # §3.1
+  min_dias_com_vendas: 10       # abaixo disso -> SEM_HISTORICO_CONFIAVEL (§3.4)
+  outlier_iqr_mult: 1.5         # IQR, so limite superior (§3.2)
+  z_score_seguranca: 1.28       # 90% nivel de servico (§3.5)
+  dias_base_minimo: 15          # base de 15 dias (§3.5)
+  teto_cobertura_dias: 60       # teto do recomendado (§3.5)
+  defaults_sem_historico: { media: 50.0, min: 750, seguranca: 250, recomendado_max: 1000 }  # §3.4
+
+sazonalidade: { clamp_min: 0.5, clamp_max: 2.0, atualizar_apos_dias: 30 }   # §4
+
+alertas: { critico_pct: 0.20, alto_pct: 0.50, medio_pct: 0.80, elevar_classe_a: true }   # §6.2/§6.3
+
+reposicao:
+  fator_urgencia: { cobertura_lt_7: 1.5, cobertura_lt_15: 1.2, default: 1.0 }   # §7.2
+  protecao_ruptura_dias: 3      # cobertura < 3 -> qtd >= media x 15 (§7.2)
+  aprovacao_automatica: { qtd_max: 1000, exceto_prioridade: alta }   # §7.2
+  lead_time_dias: { alta: 7, media: 10, baixa: 15 }   # §7.2
+
+fora_de_linha: { limiar_sugerir_saida: 8, limiar_sugerir_volta: 4, alta_certeza: 15, media_certeza: 10 }   # §8
+
+metas_estoque_fisico_pct: { A: 50, B: 30, C: 20, D: 0 }   # §9.1

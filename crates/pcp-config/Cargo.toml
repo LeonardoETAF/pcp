@@ -9,3 +9,7 @@ publish.workspace = true
 
 # Crate-folha: não depende de outros crates do projeto (CLAUDE.md §2).
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_norway = "0.9"          # fork mantido do serde_yaml (arquivado) — API drop-in
+thiserror = "1"
+chrono = { version = "0.4", features = ["serde"] }
