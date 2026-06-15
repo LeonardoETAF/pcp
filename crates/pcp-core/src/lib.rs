@@ -7,6 +7,7 @@
 
 pub mod classificacao;
 mod consolidacao;
+pub mod parametros;
 mod tipos;
 
 pub use classificacao::{
@@ -14,4 +15,8 @@ pub use classificacao::{
     ResultadoClassificacao,
 };
 pub use consolidacao::{consolidar, VendaBruta, VendaConsolidada};
+pub use parametros::{
+    calcular_parametros, DefaultsSemHistorico, ParametrosEstoque, ParametrosEstoqueConfig,
+    StatusParametros,
+};
 pub use tipos::{ClasseAbc, CodigoEstoque};
