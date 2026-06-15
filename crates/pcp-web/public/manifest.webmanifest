@@ -1,0 +1,14 @@
+{
+  "name": "SuperCopo PCP",
+  "short_name": "PCP",
+  "description": "Planejamento e Controle de Produção — SuperCopo",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF6600",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
