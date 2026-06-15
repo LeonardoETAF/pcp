@@ -6,6 +6,7 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 mod alertas;
+pub mod ciclo_vida;
 pub mod classificacao;
 mod consolidacao;
 pub mod parametros;
@@ -15,6 +16,10 @@ mod status;
 mod tipos;
 
 pub use alertas::{gerar_alertas, Alerta, EntradaAlerta, ParametrosAlerta, Prioridade};
+pub use ciclo_vida::{
+    analisar, transicionar, AcaoSugerida, CriterioCicloVida, EntradaCicloVida, ErroTransicao,
+    EstadoCicloVida, NivelCerteza, ParametrosCicloVida, SugestaoCicloVida,
+};
 pub use classificacao::{
     classificar, FatoresAbc, ParametrosClassificacao, ProdutoParaClassificar,
     ResultadoClassificacao,

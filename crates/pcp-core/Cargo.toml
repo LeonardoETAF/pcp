@@ -8,6 +8,7 @@ authors.workspace = true
 publish.workspace = true
 
 # pcp-core NÃO depende de nada do projeto (CLAUDE.md §2 — núcleo no centro).
-# Apenas crates externas do ecossistema Rust são permitidas (datas de negócio: chrono — §1).
+# Apenas crates externas do ecossistema Rust são permitidas (datas: chrono; erros: thiserror — §1/§5).
 [dependencies]
 chrono = { version = "0.4", default-features = false }
+thiserror = "1"
