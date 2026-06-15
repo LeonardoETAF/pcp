@@ -8,6 +8,7 @@
 pub mod classificacao;
 mod consolidacao;
 pub mod parametros;
+pub mod sazonalidade;
 mod tipos;
 
 pub use classificacao::{
@@ -19,4 +20,5 @@ pub use parametros::{
     calcular_parametros, DefaultsSemHistorico, ParametrosEstoque, ParametrosEstoqueConfig,
     StatusParametros,
 };
+pub use sazonalidade::{calcular_fator, deve_recalcular, FatoresSazonais, ParametrosSazonalidade};
 pub use tipos::{ClasseAbc, CodigoEstoque};

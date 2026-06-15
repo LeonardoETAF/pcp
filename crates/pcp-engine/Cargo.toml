@@ -11,3 +11,15 @@ publish.workspace = true
 pcp-core = { path = "../pcp-core" }
 pcp-config = { path = "../pcp-config" }
 pcp-db = { path = "../pcp-db" }
+chrono = { version = "0.4", default-features = false }
+thiserror = "1"
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+# Apenas para setup/teardown dos testes de integração (TRUNCATE), nunca no código de produção.
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+] }

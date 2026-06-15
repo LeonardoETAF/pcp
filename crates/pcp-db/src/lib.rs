@@ -10,6 +10,7 @@ mod modelos;
 mod pool;
 
 pub mod refresh_tokens;
+pub mod sazonalidade;
 pub mod snapshot;
 pub mod usuarios;
 pub mod vendas;

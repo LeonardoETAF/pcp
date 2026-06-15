@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT MAX(atualizado_em)::date AS \"data?\" FROM pcp.fatores_sazonais",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data?",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e05699139f18cd3e63a221dd5c34c0d0612305882f1d27ce6a3ed07bf406b0cf"
+}

@@ -1122,6 +1122,9 @@ dependencies = [
 [[package]]
 name = "pcp-core"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+]
 
 [[package]]
 name = "pcp-db"
@@ -1139,9 +1142,14 @@ dependencies = [
 name = "pcp-engine"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "pcp-config",
  "pcp-core",
  "pcp-db",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
