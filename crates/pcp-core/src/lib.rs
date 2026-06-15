@@ -34,5 +34,8 @@ pub use recomendacao::{
     PrioridadeProducao, RecomendacaoProducao, Timing,
 };
 pub use sazonalidade::{calcular_fator, deve_recalcular, FatoresSazonais, ParametrosSazonalidade};
-pub use status::{status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque};
+pub use status::{
+    cobertura_dias, status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque,
+    COBERTURA_SEM_HISTORICO,
+};
 pub use tipos::{ClasseAbc, CodigoEstoque};

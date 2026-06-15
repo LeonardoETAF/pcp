@@ -10,11 +10,14 @@ mod estado;
 mod handlers_auth;
 mod handlers_pcp;
 mod jwt;
+mod leitura;
 mod papel;
 mod rotas;
 pub mod senha;
+pub mod tempo_real;
 
 pub use erro::ApiError;
 pub use estado::{AppState, ConfigApi, ErroBootstrap};
 pub use papel::Papel;
 pub use rotas::rotas;
+pub use tempo_real::escutar_pipeline;

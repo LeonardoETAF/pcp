@@ -11,13 +11,15 @@ use pcp_config::Config;
 use pcp_core::ciclo_vida::analisar;
 use pcp_core::sazonalidade::FatoresSazonais;
 use pcp_core::{
-    calcular_parametros, classificar, gerar_alertas, AcaoSugerida, ClasseAbc, CodigoEstoque,
-    EntradaAlerta, EntradaCicloVida, NivelCerteza, ParametrosEstoque, Prioridade,
-    ProdutoParaClassificar, ResultadoClassificacao, StatusParametros,
+    calcular_parametros, classificar, cobertura_dias, gerar_alertas, qtd_sugerida, status_estoque,
+    AcaoSugerida, ClasseAbc, CodigoEstoque, EntradaAlerta, EntradaCicloVida, EntradaStatus,
+    NivelCerteza, ParametrosEstoque, Prioridade, ProdutoParaClassificar, ResultadoClassificacao,
+    StatusParametros,
 };
 use pcp_db::agregacoes::{self, BaseProduto};
 use pcp_db::derivadas::{
-    self, ExecucaoModulo, LinhaAlerta, LinhaClassificacao, LinhaParametro, LinhaSugestao,
+    self, ExecucaoModulo, LinhaAlerta, LinhaClassificacao, LinhaParametro, LinhaProdutoAtivo,
+    LinhaSugestao,
 };
 use pcp_db::{sazonalidade as db_sazon, PgPool};
 
@@ -79,9 +81,9 @@ pub async fn processar_dia(
     )
     .await?;
 
-    let mut execucoes = Vec::with_capacity(4);
+    let mut execucoes = Vec::with_capacity(5);
 
-    // 1. Classificação → fonte das classes para os demais módulos.
+    // 1. Classificação → fonte das classes (e fator/volume) para os demais módulos.
     let (exec, classes_res) = executar(
         pool,
         data_ref,
@@ -90,10 +92,10 @@ pub async fn processar_dia(
     )
     .await;
     execucoes.push(exec);
-    let classes: HashMap<String, ClasseAbc> = classes_res
+    let classes: HashMap<String, ResultadoClassificacao> = classes_res
         .map(|rs| {
             rs.into_iter()
-                .map(|r| (r.codigo_estoque.como_str().to_owned(), r.classe))
+                .map(|r| (r.codigo_estoque.como_str().to_owned(), r))
                 .collect()
         })
         .unwrap_or_default();
@@ -129,16 +131,44 @@ pub async fn processar_dia(
     .await;
     execucoes.push(exec);
 
+    // 5. Consolidação: status + cobertura + sugestão por produto na "view" materializada
+    //    `produto_ativo` (doc 04 §5). É daqui que a API lê, sem recalcular regra (§3.2).
+    let (exec, _) = executar(
+        pool,
+        data_ref,
+        "consolidacao",
+        modulo_consolidacao(pool, &base, &classes, &params, config, data_ref),
+    )
+    .await;
+    execucoes.push(exec);
+
     let status = if execucoes.iter().all(|e| e.status == "sucesso") {
         StatusPipeline::Completo
     } else {
         StatusPipeline::Parcial
     };
+
+    // Sinaliza o fim do processamento para a UI em tempo real (SSE — CLAUDE.md §16). Best-effort:
+    // a falha em notificar não invalida o pipeline já concluído.
+    if let Err(e) = pcp_db::eventos::notificar_pipeline(pool, data_ref, status_codigo(status)).await
+    {
+        tracing::warn!(erro = %e, "falha ao notificar o fim do pipeline (SSE)");
+    }
+
     Ok(ResultadoPipeline {
         data_ref,
         status,
         execucoes,
     })
+}
+
+/// Código estável do status para o payload de notificação (SSE — §16).
+const fn status_codigo(status: StatusPipeline) -> &'static str {
+    match status {
+        StatusPipeline::Bloqueado => "bloqueado",
+        StatusPipeline::Completo => "completo",
+        StatusPipeline::Parcial => "parcial",
+    }
 }
 
 /// Reprocessa um intervalo `[inicio, fim]` (inclusive), dia a dia (idempotente).
@@ -236,7 +266,7 @@ async fn modulo_classificacao(
 async fn modulo_parametros(
     pool: &PgPool,
     base: &[BaseProduto],
-    classes: &HashMap<String, ClasseAbc>,
+    classes: &HashMap<String, ResultadoClassificacao>,
     config: &Config,
     fator_mes: f64,
     data_ref: NaiveDate,
@@ -254,8 +284,7 @@ async fn modulo_parametros(
     for b in base {
         let classe = classes
             .get(&b.codigo_estoque)
-            .copied()
-            .unwrap_or(ClasseAbc::C);
+            .map_or(ClasseAbc::C, |r| r.classe);
         let meta = mapeamento::meta_dias(config, classe);
         let vendas = por_codigo
             .get(&b.codigo_estoque)
@@ -283,7 +312,7 @@ async fn modulo_parametros(
 async fn modulo_alertas(
     pool: &PgPool,
     base: &[BaseProduto],
-    classes: &HashMap<String, ClasseAbc>,
+    classes: &HashMap<String, ResultadoClassificacao>,
     params: &HashMap<String, ParametrosEstoque>,
     config: &Config,
     data_ref: NaiveDate,
@@ -292,13 +321,9 @@ async fn modulo_alertas(
     let entradas: Vec<EntradaAlerta> = base
         .iter()
         .filter_map(|b| {
-            let classe = *classes.get(&b.codigo_estoque)?;
+            let classe = classes.get(&b.codigo_estoque)?.classe;
             let p = params.get(&b.codigo_estoque)?;
-            let cobertura = if p.media_diaria > 0.0 {
-                f64::from(b.qtd_disponivel) / p.media_diaria
-            } else {
-                999.0
-            };
+            let cobertura = cobertura_dias(i64::from(b.qtd_disponivel), p.media_diaria);
             Some(EntradaAlerta {
                 codigo_estoque: CodigoEstoque::novo(&b.codigo_estoque),
                 classe,
@@ -328,7 +353,7 @@ async fn modulo_alertas(
 async fn modulo_fora_de_linha(
     pool: &PgPool,
     base: &[BaseProduto],
-    classes: &HashMap<String, ClasseAbc>,
+    classes: &HashMap<String, ResultadoClassificacao>,
     config: &Config,
     data_ref: NaiveDate,
 ) -> Result<((), u64), ErroEngine> {
@@ -336,7 +361,7 @@ async fn modulo_fora_de_linha(
     let sugestoes: Vec<LinhaSugestao> = base
         .iter()
         .filter_map(|b| {
-            let classe = *classes.get(&b.codigo_estoque)?;
+            let classe = classes.get(&b.codigo_estoque)?.classe;
             let dias_sem_venda = b.ultima_venda.map(|u| (data_ref - u).num_days());
             let entrada = EntradaCicloVida {
                 codigo_estoque: CodigoEstoque::novo(&b.codigo_estoque),
@@ -361,6 +386,69 @@ async fn modulo_fora_de_linha(
         })
         .collect();
     let n = derivadas::salvar_sugestoes(pool, data_ref, &sugestoes).await?;
+    Ok(((), n))
+}
+
+async fn modulo_consolidacao(
+    pool: &PgPool,
+    base: &[BaseProduto],
+    classes: &HashMap<String, ResultadoClassificacao>,
+    params: &HashMap<String, ParametrosEstoque>,
+    config: &Config,
+    data_ref: NaiveDate,
+) -> Result<((), u64), ErroEngine> {
+    let limiar = mapeamento::limiar_critico(config);
+    let linhas: Vec<LinhaProdutoAtivo> = base
+        .iter()
+        .filter_map(|b| {
+            let r = classes.get(&b.codigo_estoque)?;
+            let p = params.get(&b.codigo_estoque)?;
+            let qtd_disponivel = i64::from(b.qtd_disponivel);
+            let cobertura = cobertura_dias(qtd_disponivel, p.media_diaria);
+            let status = status_estoque(
+                &EntradaStatus {
+                    classe: r.classe,
+                    fora_de_linha: b.fora_de_linha,
+                    media_diaria: p.media_diaria,
+                    cobertura_dias: cobertura,
+                    qtd_disponivel,
+                    estoque_minimo: p.estoque_minimo,
+                    estoque_seguranca: p.estoque_seguranca,
+                    estoque_total_recomendado: p.estoque_total_recomendado,
+                },
+                &limiar,
+            );
+            let sugerida = qtd_sugerida(
+                p.estoque_total_recomendado,
+                qtd_disponivel,
+                b.fora_de_linha,
+                p.media_diaria,
+            );
+            Some(LinhaProdutoAtivo {
+                codigo: b.codigo_estoque.clone(),
+                sku: b.sku.clone(),
+                produto: b.produto.clone(),
+                configuracao: b.configuracao.clone(),
+                classe: r.classe.como_char().to_string(),
+                fator_estoque: r.fator_estoque,
+                qtd_estoque: i64::from(b.qtd_estoque),
+                qtd_reserva: i64::from(b.qtd_reserva),
+                qtd_disponivel,
+                media_diaria: p.media_diaria,
+                coef_variacao: p.coef_variacao,
+                dias_com_vendas: p.dias_com_vendas,
+                estoque_minimo: p.estoque_minimo,
+                estoque_seguranca: p.estoque_seguranca,
+                estoque_total_recomendado: p.estoque_total_recomendado,
+                cobertura_dias: cobertura,
+                status: status.codigo().to_owned(),
+                qtd_sugerida: sugerida,
+                fora_de_linha: b.fora_de_linha,
+                volume_janela: r.volume_janela,
+            })
+        })
+        .collect();
+    let n = derivadas::salvar_produtos_ativos(pool, data_ref, &linhas).await?;
     Ok(((), n))
 }
 

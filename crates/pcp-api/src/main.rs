@@ -23,6 +23,13 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let estado = AppState::novo(pool, cfg.jwt_secret, cfg.access_ttl, cfg.refresh_ttl);
+
+    // Ponte de tempo real (SSE — §16): escuta o pipeline (LISTEN/NOTIFY) numa task dedicada.
+    tokio::spawn(pcp_api::escutar_pipeline(
+        cfg.database_url.clone(),
+        estado.emissor(),
+    ));
+
     let app = rotas(estado);
 
     let listener = tokio::net::TcpListener::bind(cfg.bind_addr).await?;

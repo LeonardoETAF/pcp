@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.codigo_estoque AS \"codigo_estoque!\",\n                  a.prioridade     AS \"prioridade!\",\n                  a.classe         AS \"classe!\",\n                  a.qtd_sugerida   AS \"qtd_sugerida!\",\n                  a.cobertura_dias AS \"cobertura_dias!\",\n                  p.produto        AS \"produto?\",\n                  p.configuracao   AS \"configuracao?\",\n                  p.status         AS \"status?\"\n           FROM pcp.alerta a\n           LEFT JOIN pcp.produto_ativo p ON p.codigo_estoque = a.codigo_estoque\n           WHERE a.dt_alerta = (SELECT MAX(dt_alerta) FROM pcp.alerta)\n           ORDER BY CASE a.prioridade\n                        WHEN 'critico' THEN 0 WHEN 'alto' THEN 1 ELSE 2 END,\n                    a.qtd_sugerida DESC, a.codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "alerta",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "prioridade!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "alerta",
+            "name": "prioridade"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "classe!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "alerta",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "qtd_sugerida!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "alerta",
+            "name": "qtd_sugerida"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "cobertura_dias!",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "alerta",
+            "name": "cobertura_dias"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "produto?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "configuracao?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "6b84c25e72c9922113895136e9849120fb2a1a6486f64410b08ffc6f68a07485"
+}

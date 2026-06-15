@@ -52,6 +52,31 @@ pub struct LinhaSugestao {
     pub criterios: Vec<String>,
 }
 
+/// Linha a persistir em `pcp.produto_ativo` (doc 04 §5) — tudo já calculado pelo motor.
+#[derive(Debug, Clone)]
+pub struct LinhaProdutoAtivo {
+    pub codigo: String,
+    pub sku: Option<String>,
+    pub produto: Option<String>,
+    pub configuracao: Option<String>,
+    pub classe: String,
+    pub fator_estoque: f64,
+    pub qtd_estoque: i64,
+    pub qtd_reserva: i64,
+    pub qtd_disponivel: i64,
+    pub media_diaria: f64,
+    pub coef_variacao: f64,
+    pub dias_com_vendas: i64,
+    pub estoque_minimo: i64,
+    pub estoque_seguranca: i64,
+    pub estoque_total_recomendado: i64,
+    pub cobertura_dias: f64,
+    pub status: String,
+    pub qtd_sugerida: i64,
+    pub fora_de_linha: bool,
+    pub volume_janela: i64,
+}
+
 /// Telemetria de um módulo do pipeline (doc 05 §3).
 #[derive(Debug, Clone)]
 pub struct ExecucaoModulo {
@@ -216,6 +241,60 @@ pub async fn salvar_sugestoes(
         .execute(&mut *tx)
         .await?;
         inseridas += resultado.rows_affected();
+    }
+    tx.commit().await?;
+    Ok(inseridas)
+}
+
+/// Reescreve por completo a "view" materializada `pcp.produto_ativo` (doc 04 §5):
+/// `TRUNCATE` + insert na mesma transação. A API lê só daqui (CLAUDE.md §3.2).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco; a transação é revertida.
+pub async fn salvar_produtos_ativos(
+    pool: &PgPool,
+    dt_ref: NaiveDate,
+    linhas: &[LinhaProdutoAtivo],
+) -> Result<u64, ErroDb> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!("TRUNCATE pcp.produto_ativo")
+        .execute(&mut *tx)
+        .await?;
+    let mut inseridas = 0;
+    for l in linhas {
+        sqlx::query!(
+            "INSERT INTO pcp.produto_ativo \
+             (codigo_estoque, sku, produto, configuracao, classe, fator_estoque, \
+              qtd_estoque, qtd_reserva, qtd_disponivel, media_diaria, coef_variacao, \
+              dias_com_vendas, estoque_minimo, estoque_seguranca, estoque_total_recomendado, \
+              cobertura_dias, status, qtd_sugerida, fora_de_linha, volume_janela, dt_ref) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, \
+                     $16, $17, $18, $19, $20, $21)",
+            l.codigo,
+            l.sku,
+            l.produto,
+            l.configuracao,
+            l.classe,
+            l.fator_estoque,
+            l.qtd_estoque,
+            l.qtd_reserva,
+            l.qtd_disponivel,
+            l.media_diaria,
+            l.coef_variacao,
+            l.dias_com_vendas,
+            l.estoque_minimo,
+            l.estoque_seguranca,
+            l.estoque_total_recomendado,
+            l.cobertura_dias,
+            l.status,
+            l.qtd_sugerida,
+            l.fora_de_linha,
+            l.volume_janela,
+            dt_ref,
+        )
+        .execute(&mut *tx)
+        .await?;
+        inseridas += 1;
     }
     tx.commit().await?;
     Ok(inseridas)

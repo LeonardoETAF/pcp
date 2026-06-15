@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classe AS \"rotulo!\", COUNT(*) AS \"quantidade!\"\n           FROM pcp.produto_ativo GROUP BY classe ORDER BY classe",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rotulo!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "quantidade!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "73ec0467c6c6b0e64f1cb698c2eba5b5a203351383fc22fcb120b9f07ad991e3"
+}

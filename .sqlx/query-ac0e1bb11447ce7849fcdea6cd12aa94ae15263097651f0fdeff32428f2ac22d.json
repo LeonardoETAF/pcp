@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status AS \"rotulo!\", COUNT(*) AS \"quantidade!\"\n           FROM pcp.produto_ativo GROUP BY status ORDER BY status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rotulo!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "quantidade!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "ac0e1bb11447ce7849fcdea6cd12aa94ae15263097651f0fdeff32428f2ac22d"
+}

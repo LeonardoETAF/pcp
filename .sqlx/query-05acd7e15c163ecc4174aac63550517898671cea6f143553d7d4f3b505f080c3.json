@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classe                                       AS \"classe!\",\n                  COUNT(*)                                     AS \"quantidade!\",\n                  COALESCE(SUM(volume_janela), 0)::bigint      AS \"volume!\",\n                  COALESCE(SUM(estoque_total_recomendado), 0)::bigint AS \"recomendado!\"\n           FROM pcp.produto_ativo GROUP BY classe ORDER BY classe",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classe!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "quantidade!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "volume!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "recomendado!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "05acd7e15c163ecc4174aac63550517898671cea6f143553d7d4f3b505f080c3"
+}

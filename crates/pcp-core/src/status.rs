@@ -1,6 +1,21 @@
-//! Status canônico hierárquico de estoque (doc 02 §5.2). Função pura.
+//! Cobertura e status canônico hierárquico de estoque (doc 02 §5). Funções puras.
 
 use crate::tipos::ClasseAbc;
+
+/// Cobertura sentinela de produto sem histórico (doc 02 §5.1). Exibida como "Sem histórico"
+/// (§12) e NUNCA entra em médias (§11).
+pub const COBERTURA_SEM_HISTORICO: f64 = 999.0;
+
+/// Cobertura em dias (doc 02 §5.1): `qtd_disponivel / media_diaria` (1 casa decimal);
+/// [`COBERTURA_SEM_HISTORICO`] se a média for 0.
+#[must_use]
+#[allow(clippy::cast_precision_loss)] // quantidades pequenas: conversão exata para f64
+pub fn cobertura_dias(qtd_disponivel: i64, media_diaria: f64) -> f64 {
+    if media_diaria <= 0.0 {
+        return COBERTURA_SEM_HISTORICO;
+    }
+    ((qtd_disponivel as f64 / media_diaria) * 10.0).round() / 10.0
+}
 
 /// Status de estoque (doc 02 §5.2), na ordem de avaliação.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +29,24 @@ pub enum StatusEstoque {
     Adequado,
     Alto,
     Excessivo,
+}
+
+impl StatusEstoque {
+    /// Código canônico (estável) para persistir/expor. O frontend mapeia cor/rótulo (§12).
+    #[must_use]
+    pub const fn codigo(self) -> &'static str {
+        match self {
+            Self::SemEstoque => "sem_estoque",
+            Self::ForaDeLinha => "fora_de_linha",
+            Self::SemHistorico => "sem_historico",
+            Self::Critico => "critico",
+            Self::EstoqueBaixo => "estoque_baixo",
+            Self::Baixo => "baixo",
+            Self::Adequado => "adequado",
+            Self::Alto => "alto",
+            Self::Excessivo => "excessivo",
+        }
+    }
 }
 
 /// Limiar de criticidade (cobertura em dias) por classe (doc 02 §5.2 / §11).
@@ -78,11 +111,22 @@ pub fn status_estoque(entrada: &EntradaStatus, limiar: &LimiarCriticoDias) -> St
 
 #[cfg(test)]
 mod testes {
-    use super::{status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque};
+    use super::{
+        cobertura_dias, status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque,
+        COBERTURA_SEM_HISTORICO,
+    };
     use crate::tipos::ClasseAbc;
 
     fn limiar() -> LimiarCriticoDias {
         LimiarCriticoDias { a: 15, b: 10, c: 5 }
+    }
+
+    #[test]
+    fn cobertura_normal_e_sentinela() {
+        assert!((cobertura_dias(100, 10.0) - 10.0).abs() < f64::EPSILON);
+        assert!((cobertura_dias(45, 10.0) - 4.5).abs() < f64::EPSILON); // 1 casa decimal
+                                                                        // Média 0 -> sentinela 999 (nunca entra em médias — §11).
+        assert!((cobertura_dias(50, 0.0) - COBERTURA_SEM_HISTORICO).abs() < f64::EPSILON);
     }
 
     fn base() -> EntradaStatus {

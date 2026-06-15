@@ -5,14 +5,19 @@ use std::sync::Arc;
 
 use chrono::Duration;
 use pcp_db::PgPool;
+use tokio::sync::broadcast;
 
-/// Estado compartilhado entre handlers (clonável — `PgPool`/`Arc` são baratos).
+/// Capacidade do canal de eventos em tempo real (SSE — §16); receptores lentos só perdem eventos.
+const CAPACIDADE_EVENTOS: usize = 64;
+
+/// Estado compartilhado entre handlers (clonável — `PgPool`/`Arc`/`Sender` são baratos).
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
     pub jwt_secret: Arc<Vec<u8>>,
     pub access_ttl: Duration,
     pub refresh_ttl: Duration,
+    eventos: broadcast::Sender<String>,
 }
 
 impl AppState {
@@ -24,12 +29,26 @@ impl AppState {
         access_ttl: Duration,
         refresh_ttl: Duration,
     ) -> Self {
+        let (eventos, _) = broadcast::channel(CAPACIDADE_EVENTOS);
         Self {
             pool,
             jwt_secret: Arc::new(jwt_secret),
             access_ttl,
             refresh_ttl,
+            eventos,
         }
+    }
+
+    /// Emissor para publicar eventos de tempo real (usado pela ponte LISTEN/NOTIFY → SSE).
+    #[must_use]
+    pub fn emissor(&self) -> broadcast::Sender<String> {
+        self.eventos.clone()
+    }
+
+    /// Inscreve um novo assinante no fluxo de eventos (usado pelo endpoint SSE).
+    #[must_use]
+    pub fn assinar(&self) -> broadcast::Receiver<String> {
+        self.eventos.subscribe()
     }
 }
 

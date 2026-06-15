@@ -36,6 +36,7 @@ async fn limpar(pool: &PgPool) {
         "DELETE FROM pcp.sugestao_ciclo_vida WHERE codigo_estoque LIKE 'PIPE-%'",
         "DELETE FROM pcp.vendas_dia WHERE codigo_estoque LIKE 'PIPE-%'",
         "DELETE FROM pcp.estoque_snapshot WHERE codigo_estoque LIKE 'PIPE-%'",
+        "DELETE FROM pcp.produto_ativo WHERE codigo_estoque LIKE 'PIPE-%'",
         "DELETE FROM pcp.execucao_pipeline WHERE data_ref = DATE '2099-06-15'",
     ] {
         sqlx::query(sql).execute(pool).await.expect("limpeza");
@@ -110,7 +111,7 @@ async fn pipeline_completo_idempotente_e_bloqueio() {
     // 1ª execução.
     let res = processar_dia(&pool, &config, dia).await.unwrap();
     assert_eq!(res.status, StatusPipeline::Completo);
-    assert_eq!(res.execucoes.len(), 4);
+    assert_eq!(res.execucoes.len(), 5);
     assert!(res.execucoes.iter().all(|e| e.status == "sucesso"));
 
     // 3 produtos classificados (PIPE-A, PIPE-D, PIPE-F).
@@ -141,14 +142,32 @@ async fn pipeline_completo_idempotente_e_bloqueio() {
     );
     // PIPE-D ativo sem vendas -> sugestão SAIR (gerada).
     assert_eq!(conta(&pool, "SELECT COUNT(*) FROM pcp.sugestao_ciclo_vida WHERE codigo_estoque = 'PIPE-D' AND estado = 'gerada'").await, 1);
-    // 4 módulos registrados na telemetria.
+    // 5 módulos registrados na telemetria (incl. consolidação).
     assert_eq!(
         conta(
             &pool,
             "SELECT COUNT(*) FROM pcp.execucao_pipeline WHERE data_ref = DATE '2099-06-15'"
         )
         .await,
-        4
+        5
+    );
+    // Consolidação: os 3 produtos na "view" materializada produto_ativo (doc 04 §5).
+    assert_eq!(
+        conta(
+            &pool,
+            "SELECT COUNT(*) FROM pcp.produto_ativo WHERE codigo_estoque LIKE 'PIPE-%'"
+        )
+        .await,
+        3
+    );
+    // PIPE-F é fora de linha -> status canônico 'fora_de_linha' (doc 02 §5.2).
+    assert_eq!(
+        conta(
+            &pool,
+            "SELECT COUNT(*) FROM pcp.produto_ativo WHERE codigo_estoque = 'PIPE-F' AND status = 'fora_de_linha'"
+        )
+        .await,
+        1
     );
 
     // 2ª execução (idempotência): contagens das derivadas estáveis.

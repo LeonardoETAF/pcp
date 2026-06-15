@@ -11,8 +11,12 @@ use crate::erro::ErroDb;
 #[derive(Debug, Clone)]
 pub struct BaseProduto {
     pub codigo_estoque: String,
+    pub sku: Option<String>,
+    pub produto: Option<String>,
+    pub configuracao: Option<String>,
     pub fora_de_linha: bool,
     pub qtd_estoque: i32,
+    pub qtd_reserva: i32,
     pub qtd_disponivel: i32,
     pub primeira_venda: Option<NaiveDate>,
     pub ultima_venda: Option<NaiveDate>,
@@ -63,8 +67,12 @@ pub async fn base_produtos(
 ) -> Result<Vec<BaseProduto>, ErroDb> {
     let linhas = sqlx::query!(
         r#"SELECT s.codigo_estoque       AS "codigo_estoque!",
+                  s.sku                  AS "sku?",
+                  s.produto              AS "produto?",
+                  s.configuracao         AS "configuracao?",
                   s.fora_de_linha        AS "fora_de_linha!",
                   s.qtd_estoque          AS "qtd_estoque!",
+                  s.qtd_reserva          AS "qtd_reserva!",
                   s.qtd_disponivel       AS "qtd_disponivel!",
                   v.primeira_venda       AS "primeira_venda?",
                   v.ultima_venda         AS "ultima_venda?",
@@ -93,8 +101,12 @@ pub async fn base_produtos(
         .into_iter()
         .map(|l| BaseProduto {
             codigo_estoque: l.codigo_estoque,
+            sku: l.sku,
+            produto: l.produto,
+            configuracao: l.configuracao,
             fora_de_linha: l.fora_de_linha,
             qtd_estoque: l.qtd_estoque,
+            qtd_reserva: l.qtd_reserva,
             qtd_disponivel: l.qtd_disponivel,
             primeira_venda: l.primeira_venda,
             ultima_venda: l.ultima_venda,

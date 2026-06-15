@@ -11,6 +11,8 @@ mod pool;
 
 pub mod agregacoes;
 pub mod derivadas;
+pub mod eventos;
+pub mod leituras;
 pub mod refresh_tokens;
 pub mod sazonalidade;
 pub mod snapshot;

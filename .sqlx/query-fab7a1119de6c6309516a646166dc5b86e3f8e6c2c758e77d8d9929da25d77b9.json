@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "TRUNCATE pcp.produto_ativo",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "fab7a1119de6c6309516a646166dc5b86e3f8e6c2c758e77d8d9929da25d77b9"
+}

@@ -6,7 +6,7 @@ use pcp_core::ciclo_vida::ParametrosCicloVida;
 use pcp_core::classificacao::{FatoresAbc, ParametrosClassificacao};
 use pcp_core::parametros::{DefaultsSemHistorico, ParametrosEstoqueConfig};
 use pcp_core::sazonalidade::ParametrosSazonalidade;
-use pcp_core::{ClasseAbc, ParametrosAlerta};
+use pcp_core::{ClasseAbc, LimiarCriticoDias, ParametrosAlerta};
 
 /// Limiares da classificação (doc 02 §2).
 #[must_use]
@@ -61,6 +61,17 @@ pub fn meta_dias(c: &Config, classe: ClasseAbc) -> i64 {
         ClasseAbc::N => m.n,
     };
     i64::from(dias)
+}
+
+/// Limiares de criticidade por classe (doc 02 §5.2). Dias pequenos; `try_from` defensivo.
+#[must_use]
+pub fn limiar_critico(c: &Config) -> LimiarCriticoDias {
+    let l = c.limiar_critico_dias;
+    LimiarCriticoDias {
+        a: i32::try_from(l.a).unwrap_or(i32::MAX),
+        b: i32::try_from(l.b).unwrap_or(i32::MAX),
+        c: i32::try_from(l.c).unwrap_or(i32::MAX),
+    }
 }
 
 /// Limiares dos alertas (doc 02 §6).

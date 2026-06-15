@@ -1,0 +1,151 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT codigo_estoque, sku, produto, configuracao, classe,\n                  qtd_disponivel, cobertura_dias, estoque_total_recomendado,\n                  status, qtd_sugerida, fora_de_linha\n           FROM pcp.produto_ativo\n           WHERE ($1::text IS NULL OR classe = $1)\n             AND ($2::text IS NULL OR status = $2)\n           ORDER BY qtd_sugerida DESC, codigo_estoque\n           LIMIT $3 OFFSET $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "sku",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "sku"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "produto",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "configuracao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "classe",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "qtd_disponivel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_disponivel"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "cobertura_dias",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "cobertura_dias"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "estoque_total_recomendado",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_total_recomendado"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "qtd_sugerida",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_sugerida"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "fora_de_linha",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "fora_de_linha"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "22ea0f4ca88e54aedefb3d91eb4f2412fc9aa042c11193ab2b41021eaafaf788"
+}
