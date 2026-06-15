@@ -7,6 +7,12 @@
 .env.*
 !.env.example
 
+# Dados reais do ERP One — NUNCA versionar (dados de negócio; CLAUDE.md §6/§7).
+persistence.rar
+/persistence/
+/dados_one/
+*.rar
+
 # Artefatos do frontend (cargo-leptos/Trunk — §1)
 /dist
 /pkg
@@ -20,3 +26,6 @@
 .idea/
 .vscode/*
 !.vscode/extensions.json
+/persistence_extract/
+*.zip
+*.7z

@@ -158,6 +158,33 @@ testes de paridade do doc 08 §3–4: produtos 6797/10001/10473 e a distribuiç�
 A=165/B=346/C=671/D=1012/F=177/N=9 (tolerância de arredondamento).
 ```
 
+### Prompt 1.8 — Conector de tempo real ao One (replicação lógica) — ETL
+> **Pré-requisitos (externos) — NÃO iniciar sem todos:** (1) replicação lógica do One ATIVA
+> (ver `docs/integracao/replicacao-tempo-real.md`, Parte A); (2) banco de STAGING provisionado;
+> (3) versão do PostgreSQL do One + PKs confirmadas; (4) conectividade (IP/VPN). **Mapeamento
+> funcional 100% fechado** (P1 resolvido: venda = pedidos não cancelados — ver
+> `docs/integracao/mapeamento-one-para-pcp.md`). Faltam só os pré-requisitos de infraestrutura.
+```
+No pcp-etl, implemente uma fonte de dados ASSÍNCRONA atrás do trait FonteDados (CLAUDE.md
+§1/§8) — sem remover o ImportadorArquivo, que segue para backfill. Crie FonteReplicaOne, que
+lê do banco de STAGING (separado do banco do PCP — §6; SQLx read-only, TLS, credenciais em
+env — §7), onde a replicação lógica do One aterrissa as tabelas, e aplica a CAMADA
+ANTICORRUPÇÃO transformando para o contrato (NovaVendaDia/NovoEstoqueSnapshot, doc 05 §2) com
+nomes honestos e tipos corretos. Mapeamento já definido em docs/integracao/mapeamento-one-para-pcp.md:
+- ESTOQUE (F03005, saldo GLOBAL): codigo_estoque←EST_ITM (join F03001: sku←ITM_SKU,
+  produto←ITM_DESC), configuracao←EST_DCONF (já vem "CHAVE: valor"), qtd_disponivel←EST_QTDD
+  (usar SEMPRE), qtd_estoque←EST_QTDE, qtd_reserva←EST_QTDR, fora_de_linha←EST_FLIN; filtrar
+  ITM_GPPRD='PRODUTO_ACABADO'; consolidar produto×configuração → 1 linha/produto.
+- is_personalizado←F03001.ITM_PRODA (produto customizável com estampa/borda).
+- VENDAS (pedidos não cancelados — P1): codigo_estoque←F05001.ITMP_PRD, qtd_vendida←ITMP_QNT
+  EXCLUINDO cancelados (ITMP_DCAN nulo / ITMP_STPD ≠ cancelado; pedido PEDV_DCAN nulo),
+  dt_ref←F05002.PEDV_DATC, configuracao←ITMP_CONF; somar qtd por dia×produto.
+Crie as migrations do schema STAGING (tabelas espelho do subset publicado). Ligue um gatilho de
+TEMPO REAL ao canal LISTEN/NOTIFY+SSE já existente (dispara atualização/reprocesso ao chegar
+dado novo). Preserve a idempotência por data. Testes da ACL com staging sintético, validando
+6797/10001/10473 e a distribuição do doc 08 §3.
+```
+
 ---
 
 ## Fase 2 — Fundação do frontend + telas operacionais (pcp-api + pcp-web/Leptos)
