@@ -7,5 +7,18 @@ license.workspace = true
 authors.workspace = true
 publish.workspace = true
 
-# Os testes de paridade (prompt 1.7) passarão a depender de pcp-core/pcp-engine aqui.
 [dependencies]
+
+# Os testes de integração (ETL → motor) e de paridade exercem o sistema inteiro.
+[dev-dependencies]
+pcp-config = { path = "../crates/pcp-config" }
+pcp-db = { path = "../crates/pcp-db" }
+pcp-etl = { path = "../crates/pcp-etl" }
+pcp-engine = { path = "../crates/pcp-engine" }
+chrono = { version = "0.4", default-features = false }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+] }

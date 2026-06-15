@@ -1,6 +1,14 @@
-//! ETL: ingestão pela fonte de dados atrás do trait `FonteDados` (hoje arquivo/CSV;
-//! conector ao ERP "One" depois). Valida o contrato do doc 05 §2. (CLAUDE.md §1/§8)
+//! ETL do PCP: ingestão dos dados de entrada atrás do trait `FonteDados` (CLAUDE.md §1/§8).
+//! Hoje: importação de arquivo (CSV/dump); amanhã: conector ao ERP "One", sem mudar o motor.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
-// Esqueleto: o ImportadorArquivo e o trait FonteDados entram no prompt 1.7.
+mod arquivo;
+mod erro;
+mod fonte;
+mod importacao;
+
+pub use arquivo::ImportadorArquivo;
+pub use erro::ErroEtl;
+pub use fonte::FonteDados;
+pub use importacao::{importar, ResumoImportacao};
