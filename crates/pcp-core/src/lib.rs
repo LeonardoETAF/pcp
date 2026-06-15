@@ -5,12 +5,16 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
+mod alertas;
 pub mod classificacao;
 mod consolidacao;
 pub mod parametros;
+mod recomendacao;
 pub mod sazonalidade;
+mod status;
 mod tipos;
 
+pub use alertas::{gerar_alertas, Alerta, EntradaAlerta, ParametrosAlerta, Prioridade};
 pub use classificacao::{
     classificar, FatoresAbc, ParametrosClassificacao, ProdutoParaClassificar,
     ResultadoClassificacao,
@@ -20,5 +24,10 @@ pub use parametros::{
     calcular_parametros, DefaultsSemHistorico, ParametrosEstoque, ParametrosEstoqueConfig,
     StatusParametros,
 };
+pub use recomendacao::{
+    qtd_sugerida, recomendar_producao, EntradaRecomendacao, ParametrosRecomendacao,
+    PrioridadeProducao, RecomendacaoProducao, Timing,
+};
 pub use sazonalidade::{calcular_fator, deve_recalcular, FatoresSazonais, ParametrosSazonalidade};
+pub use status::{status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque};
 pub use tipos::{ClasseAbc, CodigoEstoque};

@@ -1,7 +1,8 @@
 //! Tipos de domínio do PCP (newtypes/enums — CLAUDE.md §5).
 
 /// Classe de um produto na classificação ABC+F+D+N (doc 02 §2).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// A ordem das variantes (A < B < C < D < F < N) ordena a fila de produção (doc 02 §6.5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ClasseAbc {
     A,
     B,
