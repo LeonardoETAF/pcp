@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM pcp.classificacao WHERE dt_calculo = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b5d2a5cbe9c2bcbe1c08fb222c561a02161a2df9c8aeb8636a44ac6fdcf90235"
+}

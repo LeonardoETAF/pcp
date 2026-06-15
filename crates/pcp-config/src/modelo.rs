@@ -75,6 +75,8 @@ pub struct ParametrosEstoque {
     pub z_score_seguranca: f64,
     pub dias_base_minimo: u32,
     pub teto_cobertura_dias: u32,
+    /// Estoque mínimo = `fracao_minimo` × alvo-meta (doc 02 §3.6: 0.70).
+    pub fracao_minimo: f64,
     pub defaults_sem_historico: DefaultsSemHistorico,
 }
 

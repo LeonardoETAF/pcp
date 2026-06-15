@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.alerta (dt_alerta, codigo_estoque, prioridade, classe, qtd_sugerida, cobertura_dias) VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8835de8bb171d499bcce002d3ee166d85dfac30299933c7f8bbb73cad9e49cb0"
+}

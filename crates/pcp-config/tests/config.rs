@@ -30,6 +30,7 @@ fn carrega_config_de_referencia_com_valores_esperados() {
     assert_eq!(c.parametros_estoque.min_dias_com_vendas, 10);
     assert!((c.parametros_estoque.z_score_seguranca - 1.28).abs() < f64::EPSILON);
     assert_eq!(c.parametros_estoque.teto_cobertura_dias, 60);
+    assert!((c.parametros_estoque.fracao_minimo - 0.70).abs() < f64::EPSILON);
     assert!((c.sazonalidade.clamp_max - 2.0).abs() < f64::EPSILON);
     assert!(c.alertas.elevar_classe_a);
     assert_eq!(

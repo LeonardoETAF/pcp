@@ -9,6 +9,8 @@ mod migracoes;
 mod modelos;
 mod pool;
 
+pub mod agregacoes;
+pub mod derivadas;
 pub mod refresh_tokens;
 pub mod sazonalidade;
 pub mod snapshot;

@@ -5,6 +5,9 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 mod erro;
+mod mapeamento;
+mod pipeline;
 pub mod sazonalidade;
 
 pub use erro::ErroEngine;
+pub use pipeline::{processar_dia, reprocessar_intervalo, ResultadoPipeline, StatusPipeline};

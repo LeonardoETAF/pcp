@@ -1124,6 +1124,7 @@ name = "pcp-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

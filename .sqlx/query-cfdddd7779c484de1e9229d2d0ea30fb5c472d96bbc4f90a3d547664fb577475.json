@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM pcp.sugestao_ciclo_vida WHERE data_analise = $1 AND estado = 'gerada'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cfdddd7779c484de1e9229d2d0ea30fb5c472d96bbc4f90a3d547664fb577475"
+}

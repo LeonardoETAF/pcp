@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.sugestao_ciclo_vida (codigo_estoque, acao_sugerida, pontuacao, nivel_certeza, criterios, estado, data_analise) VALUES ($1, $2, $3, $4, $5, 'gerada', $6) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int2",
+        "Text",
+        "TextArray",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ec72e14ec7237b466a88774b69094a90ce66519095ec238e3adeb853f06fbb54"
+}

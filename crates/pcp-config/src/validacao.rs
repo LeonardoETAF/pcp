@@ -87,6 +87,12 @@ fn validar_parametros(p: &ParametrosEstoque, erros: &mut Vec<String>) {
             p.teto_cobertura_dias, p.dias_base_minimo
         ));
     }
+    if !(p.fracao_minimo > 0.0 && p.fracao_minimo <= 1.0) {
+        erros.push(format!(
+            "parametros_estoque: fracao_minimo ({}) deve estar em (0, 1]",
+            p.fracao_minimo
+        ));
+    }
     let d = &p.defaults_sem_historico;
     if d.media <= 0.0 || d.min == 0 || d.seguranca == 0 || d.recomendado_max == 0 {
         erros.push("parametros_estoque.defaults_sem_historico: valores devem ser > 0".into());

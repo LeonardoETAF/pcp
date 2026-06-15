@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT codigo_estoque AS \"codigo!\", SUM(qtd_vendida)::bigint AS \"qtd!\"\n           FROM pcp.vendas_dia\n           WHERE dt_ref > $2 AND dt_ref <= $1 AND qtd_vendida > 0\n           GROUP BY codigo_estoque, dt_ref\n           ORDER BY codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "qtd!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "05eda8dde3f13753509c97a2b961d771efd9ecf085bbf45208b8c3a16a33ab1d"
+}

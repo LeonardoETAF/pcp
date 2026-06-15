@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM pcp.alerta WHERE dt_alerta = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "26db7ad47809de7604f043d3ec1835b162f8ff94022c379f0be1dd0c19f26ffd"
+}
