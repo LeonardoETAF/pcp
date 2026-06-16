@@ -1,23 +1,25 @@
-//! `GET /pcp/estoque` — tabela de produtos ativos paginada no servidor (doc 04 §6.2 / §15).
-//! Filtros opcionais `classe`/`status`; só lê `produto_ativo`.
+//! `GET /pcp/estoque` — tabela de produtos ativos paginada no servidor (doc 03 §3 / doc 04 §6.2).
+//! Filtros: classe, status, busca textual e ordenação (allowlist). Só lê `produto_ativo` (§3/§15).
 
 use axum::extract::{Query, State};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use pcp_db::leituras::{self, LinhaEstoque};
+use pcp_db::leituras::{self, FiltroEstoque, LinhaEstoque};
 
 use crate::erro::ApiError;
 use crate::estado::AppState;
 
-/// Tamanho de página padrão e teto (paginação no servidor — §15).
+/// Tamanho de página padrão e teto (doc 03 §3.4: até 1000 por página; paginação no servidor).
 const LIMITE_PADRAO: i64 = 50;
-const LIMITE_MAX: i64 = 200;
+const LIMITE_MAX: i64 = 1000;
 
 #[derive(Deserialize)]
 pub struct ParamsEstoque {
     pub classe: Option<String>,
     pub status: Option<String>,
+    pub busca: Option<String>,
+    pub ordem: Option<String>,
     pub limite: Option<i64>,
     pub deslocamento: Option<i64>,
 }
@@ -29,9 +31,14 @@ pub struct LinhaEstoqueDto {
     pub produto: Option<String>,
     pub configuracao: Option<String>,
     pub classe: String,
+    pub qtd_estoque: i64,
+    pub qtd_reserva: i64,
     pub qtd_disponivel: i64,
+    pub media_diaria: f64,
     pub cobertura_dias: f64,
+    pub estoque_minimo: i64,
     pub estoque_total_recomendado: i64,
+    pub volume_janela: i64,
     pub status: String,
     pub qtd_sugerida: i64,
     pub fora_de_linha: bool,
@@ -45,9 +52,14 @@ impl From<LinhaEstoque> for LinhaEstoqueDto {
             produto: l.produto,
             configuracao: l.configuracao,
             classe: l.classe,
+            qtd_estoque: l.qtd_estoque,
+            qtd_reserva: l.qtd_reserva,
             qtd_disponivel: l.qtd_disponivel,
+            media_diaria: l.media_diaria,
             cobertura_dias: l.cobertura_dias,
+            estoque_minimo: l.estoque_minimo,
             estoque_total_recomendado: l.estoque_total_recomendado,
+            volume_janela: l.volume_janela,
             status: l.status,
             qtd_sugerida: l.qtd_sugerida,
             fora_de_linha: l.fora_de_linha,
@@ -73,14 +85,13 @@ pub async fn estoque(
 ) -> Result<Json<PaginaEstoqueDto>, ApiError> {
     let limite = params.limite.unwrap_or(LIMITE_PADRAO).clamp(1, LIMITE_MAX);
     let deslocamento = params.deslocamento.unwrap_or(0).max(0);
-    let pagina = leituras::produtos_paginado(
-        &estado.pool,
-        params.classe.as_deref(),
-        params.status.as_deref(),
-        limite,
-        deslocamento,
-    )
-    .await?;
+    let filtro = FiltroEstoque {
+        classe: params.classe.as_deref(),
+        status: params.status.as_deref(),
+        busca: params.busca.as_deref().filter(|s| !s.is_empty()),
+        ordem: params.ordem.as_deref().unwrap_or("sugerida_desc"),
+    };
+    let pagina = leituras::produtos_paginado(&estado.pool, filtro, limite, deslocamento).await?;
     Ok(Json(PaginaEstoqueDto {
         itens: pagina.itens.into_iter().map(Into::into).collect(),
         total: pagina.total,

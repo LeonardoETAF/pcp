@@ -1,0 +1,213 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT codigo_estoque, sku, produto, configuracao, classe,\n                  qtd_estoque, qtd_reserva, qtd_disponivel, media_diaria,\n                  cobertura_dias, estoque_minimo, estoque_total_recomendado,\n                  volume_janela, status, qtd_sugerida, fora_de_linha\n           FROM pcp.produto_ativo\n           WHERE ($1::text IS NULL OR classe = $1)\n             AND ($2::text IS NULL OR status = $2)\n             AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'\n                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')\n           ORDER BY\n             (CASE WHEN $4 = 'produto_asc' THEN produto END) ASC NULLS LAST,\n             (CASE WHEN $4 = 'produto_desc' THEN produto END) DESC NULLS LAST,\n             (CASE WHEN $4 = 'classe_asc' THEN classe END) ASC NULLS LAST,\n             (CASE WHEN $4 = 'disponivel_asc' THEN qtd_disponivel END) ASC NULLS LAST,\n             (CASE WHEN $4 = 'disponivel_desc' THEN qtd_disponivel END) DESC NULLS LAST,\n             (CASE WHEN $4 = 'cobertura_asc' THEN cobertura_dias END) ASC NULLS LAST,\n             (CASE WHEN $4 = 'cobertura_desc' THEN cobertura_dias END) DESC NULLS LAST,\n             (CASE WHEN $4 = 'recomendada_desc' THEN estoque_total_recomendado END) DESC NULLS LAST,\n             (CASE WHEN $4 = 'sugerida_asc' THEN qtd_sugerida END) ASC NULLS LAST,\n             (CASE WHEN $4 NOT IN ('produto_asc','produto_desc','classe_asc','disponivel_asc',\n                  'disponivel_desc','cobertura_asc','cobertura_desc','recomendada_desc','sugerida_asc')\n                THEN qtd_sugerida END) DESC NULLS LAST,\n             codigo_estoque\n           LIMIT $5 OFFSET $6",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "sku",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "sku"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "produto",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "configuracao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "classe",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "qtd_estoque",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "qtd_reserva",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_reserva"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "qtd_disponivel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_disponivel"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "media_diaria",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "media_diaria"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "cobertura_dias",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "cobertura_dias"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "estoque_minimo",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_minimo"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "estoque_total_recomendado",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_total_recomendado"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "volume_janela",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "volume_janela"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "qtd_sugerida",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_sugerida"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "fora_de_linha",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "fora_de_linha"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d1e27b66f8dc5afe55c2989d36948986ce55533e49cb9bdd6fa4ff49a57a5182"
+}

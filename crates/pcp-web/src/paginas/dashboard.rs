@@ -5,7 +5,7 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
-use crate::api::{estoque, painel, Contagem, LinhaEstoque, PainelResumo};
+use crate::api::{estoque, painel, ConsultaEstoque, Contagem, LinhaEstoque, PainelResumo};
 use crate::contexto::Sessao;
 
 fn cor_classe(classe: &str) -> &'static str {
@@ -43,9 +43,16 @@ pub fn PaginaDashboard() -> impl IntoView {
         move || sessao.0.get(),
         |t| async move {
             match t {
-                Some(t) => estoque(t, Some("critico".to_owned()), 6)
-                    .await
-                    .map(|p| p.itens),
+                Some(t) => estoque(
+                    t,
+                    ConsultaEstoque {
+                        status: Some("critico".to_owned()),
+                        limite: 6,
+                        ..Default::default()
+                    },
+                )
+                .await
+                .map(|p| p.itens),
                 None => Ok(Vec::new()),
             }
         },
@@ -54,7 +61,16 @@ pub fn PaginaDashboard() -> impl IntoView {
         move || sessao.0.get(),
         |t| async move {
             match t {
-                Some(t) => estoque(t, None, 6).await.map(|p| p.itens),
+                Some(t) => estoque(
+                    t,
+                    ConsultaEstoque {
+                        ordem: Some("sugerida_desc".to_owned()),
+                        limite: 6,
+                        ..Default::default()
+                    },
+                )
+                .await
+                .map(|p| p.itens),
                 None => Ok(Vec::new()),
             }
         },

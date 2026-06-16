@@ -29,7 +29,7 @@ pub struct ResumoDashboard {
     pub por_status: Vec<Contagem>,
 }
 
-/// Linha da tabela de estoque paginada (doc 04 §6.2 — `get_produtos_ativos_paginado`).
+/// Linha da tabela de estoque paginada (doc 04 §6.2 / doc 03 §3.3).
 #[derive(Debug, Clone)]
 pub struct LinhaEstoque {
     pub codigo_estoque: String,
@@ -37,9 +37,14 @@ pub struct LinhaEstoque {
     pub produto: Option<String>,
     pub configuracao: Option<String>,
     pub classe: String,
+    pub qtd_estoque: i64,
+    pub qtd_reserva: i64,
     pub qtd_disponivel: i64,
+    pub media_diaria: f64,
     pub cobertura_dias: f64,
+    pub estoque_minimo: i64,
     pub estoque_total_recomendado: i64,
+    pub volume_janela: i64,
     pub status: String,
     pub qtd_sugerida: i64,
     pub fora_de_linha: bool,
@@ -166,39 +171,75 @@ pub async fn dashboard(pool: &PgPool) -> Result<ResumoDashboard, ErroDb> {
     })
 }
 
-/// Produtos ativos paginados (doc 04 §6.2). Filtros opcionais por `classe`/`status`; ordenação
-/// por sugestão decrescente (mais urgentes primeiro). Total calculado no mesmo filtro.
+/// Filtros e ordenação da tabela de estoque (doc 03 §3.2). `busca` casa código/produto/SKU
+/// (parcial, case-insensitive). `ordem` é uma chave coluna+direção da allowlist (ver SQL).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct FiltroEstoque<'a> {
+    pub classe: Option<&'a str>,
+    pub status: Option<&'a str>,
+    pub busca: Option<&'a str>,
+    pub ordem: &'a str,
+}
+
+/// Produtos ativos paginados (doc 03 §3 / doc 04 §6.2). Filtra por classe/status/busca e ordena
+/// por uma chave da allowlist (compile-time safe via CASE). Total calculado no mesmo filtro.
 ///
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco.
 pub async fn produtos_paginado(
     pool: &PgPool,
-    classe: Option<&str>,
-    status: Option<&str>,
+    filtro: FiltroEstoque<'_>,
     limite: i64,
     deslocamento: i64,
 ) -> Result<PaginaEstoque, ErroDb> {
+    let FiltroEstoque {
+        classe,
+        status,
+        busca,
+        ordem,
+    } = filtro;
     let total = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "total!" FROM pcp.produto_ativo
            WHERE ($1::text IS NULL OR classe = $1)
-             AND ($2::text IS NULL OR status = $2)"#,
+             AND ($2::text IS NULL OR status = $2)
+             AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
+                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')"#,
         classe,
         status,
+        busca,
     )
     .fetch_one(pool)
     .await?;
 
     let itens = sqlx::query!(
         r#"SELECT codigo_estoque, sku, produto, configuracao, classe,
-                  qtd_disponivel, cobertura_dias, estoque_total_recomendado,
-                  status, qtd_sugerida, fora_de_linha
+                  qtd_estoque, qtd_reserva, qtd_disponivel, media_diaria,
+                  cobertura_dias, estoque_minimo, estoque_total_recomendado,
+                  volume_janela, status, qtd_sugerida, fora_de_linha
            FROM pcp.produto_ativo
            WHERE ($1::text IS NULL OR classe = $1)
              AND ($2::text IS NULL OR status = $2)
-           ORDER BY qtd_sugerida DESC, codigo_estoque
-           LIMIT $3 OFFSET $4"#,
+             AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
+                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')
+           ORDER BY
+             (CASE WHEN $4 = 'produto_asc' THEN produto END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'produto_desc' THEN produto END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'classe_asc' THEN classe END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'disponivel_asc' THEN qtd_disponivel END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'disponivel_desc' THEN qtd_disponivel END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'cobertura_asc' THEN cobertura_dias END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'cobertura_desc' THEN cobertura_dias END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'recomendada_desc' THEN estoque_total_recomendado END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'sugerida_asc' THEN qtd_sugerida END) ASC NULLS LAST,
+             (CASE WHEN $4 NOT IN ('produto_asc','produto_desc','classe_asc','disponivel_asc',
+                  'disponivel_desc','cobertura_asc','cobertura_desc','recomendada_desc','sugerida_asc')
+                THEN qtd_sugerida END) DESC NULLS LAST,
+             codigo_estoque
+           LIMIT $5 OFFSET $6"#,
         classe,
         status,
+        busca,
+        ordem,
         limite,
         deslocamento,
     )
@@ -211,9 +252,14 @@ pub async fn produtos_paginado(
         produto: r.produto,
         configuracao: r.configuracao,
         classe: r.classe,
+        qtd_estoque: r.qtd_estoque,
+        qtd_reserva: r.qtd_reserva,
         qtd_disponivel: r.qtd_disponivel,
+        media_diaria: r.media_diaria,
         cobertura_dias: r.cobertura_dias,
+        estoque_minimo: r.estoque_minimo,
         estoque_total_recomendado: r.estoque_total_recomendado,
+        volume_janela: r.volume_janela,
         status: r.status,
         qtd_sugerida: r.qtd_sugerida,
         fora_de_linha: r.fora_de_linha,

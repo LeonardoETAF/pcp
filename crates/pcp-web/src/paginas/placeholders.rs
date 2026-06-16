@@ -1,5 +1,5 @@
-//! Páginas operacionais (placeholders). Cada uma vira um arquivo/feature própria nos prompts
-//! seguintes (2.3 Alertas, 2.4 Estoque, 2.5 Produto, 3.x Dashboard/ABC/Config). Frontend burro.
+//! Páginas operacionais ainda em construção (placeholders). Cada uma vira um arquivo/feature
+//! própria nos prompts seguintes (2.5 Detalhe do Produto, 3.x ABC/Config/Chat). Frontend burro.
 
 use leptos::prelude::*;
 
@@ -11,11 +11,6 @@ fn EmConstrucao(titulo: &'static str) -> impl IntoView {
             <p class="texto-suave">"Em construção — entra nos próximos prompts."</p>
         </section>
     }
-}
-
-#[component]
-pub fn Estoque() -> impl IntoView {
-    view! { <EmConstrucao titulo="Gestão de Estoque" /> }
 }
 
 #[component]

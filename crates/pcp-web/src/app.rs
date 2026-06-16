@@ -10,10 +10,9 @@ use crate::contexto::{Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::alertas::PaginaAlertas;
 use crate::paginas::dashboard::PaginaDashboard;
+use crate::paginas::estoque::PaginaEstoque;
 use crate::paginas::login::PaginaLogin;
-use crate::paginas::placeholders::{
-    ChatIa, ClassificacaoAbc, Configuracoes, DetalheProduto, Estoque,
-};
+use crate::paginas::placeholders::{ChatIa, ClassificacaoAbc, Configuracoes, DetalheProduto};
 
 /// Documento HTML servido no SSR (inclui scripts de hidratação e auto-reload em dev).
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -58,7 +57,7 @@ pub fn App() -> impl IntoView {
                     <ParentRoute path=StaticSegment("") view=LayoutAutenticado>
                         <Route path=StaticSegment("") view=PaginaDashboard />
                         <Route path=StaticSegment("dashboard") view=PaginaDashboard />
-                        <Route path=StaticSegment("estoque") view=Estoque />
+                        <Route path=StaticSegment("estoque") view=PaginaEstoque />
                         <Route
                             path=(StaticSegment("estoque"), ParamSegment("codigo"))
                             view=DetalheProduto

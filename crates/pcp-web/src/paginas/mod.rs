@@ -2,5 +2,6 @@
 
 pub mod alertas;
 pub mod dashboard;
+pub mod estoque;
 pub mod login;
 pub mod placeholders;

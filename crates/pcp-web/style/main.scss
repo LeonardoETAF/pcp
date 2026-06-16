@@ -1142,7 +1142,141 @@ input {
   border: 1px solid rgba(217, 45, 32, 0.35);
 }
 
+/* ── Gestão de Estoque (doc 03 §3): cards clicáveis, filtros, tabela, paginação ── */
+
+.carta-resumo--clicavel {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color var(--transicao), background var(--transicao), transform var(--transicao);
+}
+.carta-resumo--clicavel:hover { background: var(--superficie-2); }
+.carta-resumo--ativa {
+  border-color: var(--cor-primaria);
+  border-left-color: var(--cor-primaria);
+  box-shadow: inset 0 0 0 1px var(--cor-primaria);
+}
+
+.filtros-estoque {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  flex-wrap: wrap;
+}
+.filtros-estoque__busca {
+  display: flex;
+  gap: var(--e-2);
+  flex: 1 1 280px;
+  max-width: 440px;
+}
+.filtros-estoque__busca .input { flex: 1; }
+.filtros-estoque__selects {
+  display: flex;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.campo-select {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.campo-select__rotulo {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+}
+.select {
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.select:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 1px;
+}
+
+.btn--sm {
+  padding: var(--e-1) var(--e-3);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+}
+
+.tabela-rolavel {
+  overflow-x: auto;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+}
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.tabela thead th {
+  text-align: left;
+  padding: var(--e-3) var(--e-4);
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-medio);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-suave);
+  border-bottom: 1px solid var(--borda);
+  white-space: nowrap;
+}
+.tabela tbody td {
+  padding: var(--e-3) var(--e-4);
+  border-bottom: 1px solid var(--borda);
+  vertical-align: middle;
+}
+.tabela tbody tr:last-child td { border-bottom: none; }
+.tabela tbody tr:hover { background: var(--superficie-2); }
+.tabela__num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabela__cod { font-variant-numeric: tabular-nums; color: var(--texto-suave); }
+.tabela__produzir { font-weight: var(--peso-forte); }
+.tabela__produto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tabela__nome { font-weight: var(--peso-medio); }
+.tabela__sku {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+}
+
+/* Badges de status (semáforo — §12) */
+.badge--status-sem_estoque,
+.badge--status-critico { background: var(--semaforo-critico); }
+.badge--status-estoque_baixo { background: var(--semaforo-alto); color: #1b1f24; }
+.badge--status-baixo { background: var(--semaforo-medio); color: #1b1f24; }
+.badge--status-adequado { background: var(--semaforo-ok); }
+.badge--status-alto,
+.badge--status-excessivo { background: var(--semaforo-info); }
+.badge--status-fora_de_linha,
+.badge--status-sem_historico { background: var(--abc-d); }
+
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-4);
+  flex-wrap: wrap;
+}
+.paginacao__info {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+.paginacao__botoes {
+  display: flex;
+  gap: var(--e-2);
+}
+
 @media (max-width: 720px) {
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
+  .filtros-estoque__selects { margin-left: 0; }
 }
