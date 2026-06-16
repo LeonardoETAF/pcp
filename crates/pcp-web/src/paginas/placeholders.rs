@@ -29,11 +29,6 @@ pub fn DetalheProduto() -> impl IntoView {
 }
 
 #[component]
-pub fn Alertas() -> impl IntoView {
-    view! { <EmConstrucao titulo="Central de Alertas" /> }
-}
-
-#[component]
 pub fn ClassificacaoAbc() -> impl IntoView {
     view! { <EmConstrucao titulo="Classificação ABC" /> }
 }
