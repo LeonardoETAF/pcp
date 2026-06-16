@@ -200,54 +200,375 @@ input {
   color: var(--texto-suave);
 }
 
-/* ---------- Tela de login ---------- */
-.login {
-  min-height: 100dvh;
+/* ---------- Tela de login (split-screen: marca escura + painel claro) ---------- */
+.auth {
+  /* Paleta própria da tela de entrada (independe do tema do app). */
+  --auth-escuro: #141210;
+  --auth-escuro-2: #26241f;
+  --auth-claro: #f3f1ec;
+  --auth-borda: #e4e0d8;
+  --auth-texto: #1d1b18;
+  --auth-muted: #8b857c;
+  --auth-muted-escuro: rgba(255, 255, 255, 0.55);
+
   display: grid;
-  place-items: center;
-  padding: var(--e-5);
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(255, 102, 0, 0.12), transparent 60%),
-    var(--fundo);
+  grid-template-columns: 46% 54%;
+  min-height: 100dvh;
 }
-.login__cartao {
-  width: 100%;
-  max-width: 380px;
+
+/* Painel esquerdo (marca) */
+.auth__marca {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--e-3);
-  padding: var(--e-6);
-  box-shadow: var(--sombra-3);
+  justify-content: space-between;
+  gap: var(--e-6);
+  padding: clamp(2rem, 4vw, 4rem);
+  background: var(--auth-escuro);
+  color: #fff;
 }
-.login__logo {
-  width: 160px;
+.marca__watermark {
+  position: absolute;
+  left: 4%;
+  top: 38%;
+  width: 70%;
+  opacity: 0.045;
+  pointer-events: none;
+  user-select: none;
+}
+.marca__topo,
+.marca__centro,
+.marca__rodape {
+  position: relative;
+  z-index: 1;
+}
+.marca__logo {
+  width: 190px;
   height: auto;
-  margin-bottom: var(--e-2);
 }
-.login__titulo {
-  font-size: var(--fs-xl);
+.marca__sub {
+  margin-top: var(--e-3);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--auth-muted-escuro);
+}
+.marca__centro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-5);
+}
+.marca__titulo {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: var(--peso-forte);
+  line-height: 1.12;
+  max-width: 12ch;
+}
+.marca__texto {
+  color: var(--auth-muted-escuro);
+  max-width: 46ch;
+}
+.marca__features {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+  margin-top: var(--e-2);
+}
+.feature {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  font-weight: var(--peso-medio);
+}
+.feature__icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background: var(--auth-escuro-2);
+}
+.feature__icone svg {
+  width: 22px;
+  height: 22px;
+}
+.marca__rodape {
+  font-size: var(--fs-xs);
+  color: var(--auth-muted-escuro);
+}
+
+/* Painel direito (formulário) */
+.auth__painel {
+  display: grid;
+  place-items: center;
+  padding: var(--e-6) clamp(1.5rem, 4vw, 4rem);
+  background: var(--auth-claro);
+  color: var(--auth-texto);
+}
+.painel__caixa {
+  width: 100%;
+  max-width: 420px;
+}
+.vista {
+  display: flex;
+  flex-direction: column;
+}
+.vista__titulo {
+  font-size: 1.9rem;
   font-weight: var(--peso-forte);
 }
-.login__sub {
-  color: var(--texto-suave);
-  font-size: var(--fs-sm);
-  margin-bottom: var(--e-3);
+.vista__titulo--centro,
+.vista__sub--centro {
+  text-align: center;
 }
-.login__form {
-  width: 100%;
+.vista__sub {
+  margin-top: var(--e-2);
+  margin-bottom: var(--e-5);
+  color: var(--auth-muted);
+}
+
+/* Campos */
+.form-auth {
   display: flex;
   flex-direction: column;
   gap: var(--e-4);
 }
-.login__form .btn {
-  margin-top: var(--e-2);
-  width: 100%;
+.campo-auth {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
 }
-.login__erro {
+.campo-auth__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.campo-auth__rotulo {
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-forte);
+  color: var(--auth-texto);
+}
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-wrap__icone {
+  position: absolute;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--auth-muted);
+  pointer-events: none;
+}
+.input-wrap__icone svg {
+  width: 18px;
+  height: 18px;
+}
+.input-auth {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  background: #fff;
+  border: 1px solid var(--auth-borda);
+  border-radius: var(--raio-md);
+  color: var(--auth-texto);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+.input-auth--solo {
+  padding-left: 1rem;
+}
+.input-auth--olho {
+  padding-right: 2.75rem;
+}
+.input-auth::placeholder {
+  color: #b7b1a8;
+}
+.input-auth:focus-visible {
+  outline: none;
+  border-color: var(--auth-texto);
+  box-shadow: 0 0 0 3px rgba(20, 18, 16, 0.1);
+}
+.input-wrap__olho {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--auth-muted);
+  cursor: pointer;
+}
+.input-wrap__olho svg {
+  width: 20px;
+  height: 20px;
+}
+.textarea-auth {
+  width: 100%;
+  min-height: 110px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  border: 1px solid var(--auth-borda);
+  border-radius: var(--raio-md);
+  color: var(--auth-texto);
+  resize: vertical;
+}
+.textarea-auth:focus-visible {
+  outline: none;
+  border-color: var(--auth-texto);
+}
+
+/* Lembrar / links / botão */
+.lembrar {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.lembrar input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--auth-escuro);
+}
+.link-suave,
+.link-forte {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  padding: 0;
+}
+.link-suave {
+  color: var(--auth-muted);
+}
+.link-forte {
+  color: var(--auth-texto);
+  font-weight: var(--peso-forte);
+}
+.link-suave:hover,
+.link-forte:hover {
+  text-decoration: underline;
+}
+.btn-auth {
+  width: 100%;
+  margin-top: var(--e-2);
+  padding: 0.95rem 1rem;
+  border: 0;
+  border-radius: var(--raio-md);
+  background: var(--auth-escuro);
+  color: #fff;
+  font-weight: var(--peso-forte);
+  cursor: pointer;
+  transition: opacity var(--transicao), transform var(--transicao);
+}
+.btn-auth:hover {
+  opacity: 0.92;
+}
+.btn-auth:active {
+  transform: translateY(1px);
+}
+.btn-auth:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.form-auth__erro {
   color: var(--semaforo-critico);
   font-size: var(--fs-sm);
   text-align: center;
+}
+.vista__rodape {
+  margin-top: var(--e-5);
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--auth-muted);
+}
+
+/* Voltar / cards de contato / divisor */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  align-self: flex-start;
+  margin-bottom: var(--e-5);
+  border: 0;
+  background: transparent;
+  color: var(--auth-muted);
+  cursor: pointer;
+}
+.voltar svg {
+  width: 18px;
+  height: 18px;
+}
+.voltar:hover {
+  color: var(--auth-texto);
+}
+.cards-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  margin-bottom: var(--e-5);
+}
+.card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  background: #fff;
+  border: 1px solid var(--auth-borda);
+  border-radius: var(--raio-md);
+}
+.card-info__icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--raio-sm);
+  background: var(--auth-claro);
+  color: var(--auth-texto);
+}
+.card-info__icone svg {
+  width: 20px;
+  height: 20px;
+}
+.card-info__rotulo {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--auth-muted);
+}
+.card-info__valor {
+  font-weight: var(--peso-forte);
+}
+.divisor {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  margin-bottom: var(--e-4);
+  color: var(--auth-muted);
+  font-size: var(--fs-sm);
+}
+.divisor::before,
+.divisor::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--auth-borda);
+}
+
+/* Responsivo: em telas estreitas mostra só o painel do formulário. */
+@media (max-width: 880px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+  .auth__marca {
+    display: none;
+  }
 }
 
 /* ---------- Layout autenticado (sidebar + header + conteúdo) ---------- */
