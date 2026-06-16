@@ -96,7 +96,7 @@ pub fn PaginaDashboard() -> impl IntoView {
 fn topo(p: &PainelResumo) -> impl IntoView {
     let cobertura = p
         .cobertura_media
-        .map_or_else(|| "0 d".to_owned(), |c| format!("{c:.1} d"));
+        .map_or_else(|| "0".to_owned(), |c| format!("{c:.1}"));
     let cards = view! {
         <div class="kpis">
             <Kpi valor=p.total_produtos.to_string() rotulo="Produtos" sub="ativos no catálogo" />
@@ -311,9 +311,9 @@ fn linha_produto(i: &LinhaEstoque, mostrar_sugestao: bool) -> impl IntoView {
         .unwrap_or_else(|| i.codigo_estoque.clone());
     let href = format!("/estoque/{}", i.codigo_estoque);
     let metrica = if mostrar_sugestao {
-        format!("{} un", i.qtd_sugerida)
+        i.qtd_sugerida.to_string()
     } else {
-        format!("{:.1} d", i.cobertura_dias)
+        format!("{:.1}", i.cobertura_dias)
     };
     view! {
         <li class="lista-prod__item">

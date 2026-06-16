@@ -208,7 +208,7 @@ fn LinhaAlerta(a: AlertaResumo) -> impl IntoView {
             </div>
             <div class="linha-alerta__metricas">
                 <span class=classe_abc>{a.classe.clone()}</span>
-                <Metrica rotulo="Cobertura" valor=format!("{:.1} d", a.cobertura_dias) />
+                <Metrica rotulo="Cobertura" valor=format!("{:.1}", a.cobertura_dias) />
                 <Metrica rotulo="Sugerido" valor=a.qtd_sugerida.to_string() />
                 <A href=href attr:class="btn btn--secundario linha-alerta__link">
                     "Detalhes"
