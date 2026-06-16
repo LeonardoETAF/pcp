@@ -53,24 +53,27 @@ por produto mesmo com saldo zero** → satisfaz o "snapshot completo" (P5). `F03
 
 ✅ **Resposta do suporte:** "**venda = pedidos `F05001` que não estejam cancelados**". O One
 distingue três estágios do pedido (úteis se quisermos refinar a paridade):
-- **Pedido (venda)** — itens `F05001` **não cancelados** ← **definição adotada**.
-- **Autorizado/pago** — `F05002` com a **data de autorização preenchida** (`PEDV_DATA`; pagamento `PEDV_DTAP`).
-- **Faturado** — tabela de **Faturas** (`F10990`? — o suporte não tinha certeza do código; confirmar só se formos por aqui).
+- **Pedido (venda)** — itens `F05001` **não cancelados** ← **definição adotada (demanda)**.
+- **Faturado** — itens de **Fatura** (`F10911` + cabeçalho `F10901`) ← **também adotado** (venda realizada).
+- **Autorizado/pago** — `F05002` com data de autorização preenchida (`PEDV_DATA`; pagamento `PEDV_DTAP`).
 
-Adotamos **pedidos não cancelados (Opção B)**. As opções A (NF) e C (Cardex) ficam como
-referência cruzada.
+**Decisão:** adotamos **as duas** — **pedidos não cancelados (Opção B)** como sinal de **demanda**
+(o que move ABC/parâmetros/recomendação) e **fatura (Opção A)** como **venda realizada** (histórico/
+validação). A escolha de qual alimenta cada cálculo se refina pela paridade. A opção C (Cardex) fica
+só como verificação cruzada de estoque.
 
-### Opção A — Faturamento / Nota Fiscal — `F10011` + cabeçalho NF
-Venda **faturada** (saiu nota). Verificação cruzada.
+### ✅ Opção A (ADOTADA p/ venda faturada) — tabela de **Faturas** (⚠️ NÃO a Nota Fiscal)
+⚠️ **Correção do suporte:** **não usar a NF** (`F10011`) — **há vendas sem nota fiscal**. A venda
+faturada sai das tabelas de **Fatura**: `F10911` (item) + `F10901` (cabeçalho).
 
 | Campo PCP | Origem |
 |---|---|
-| `dt_ref` | data de emissão da NF (cabeçalho `NotaFiscal`/`NotaFiscalVenda`) |
-| `codigo_estoque` | `F10011.NFI_PROD` (→ `ITM_ID`) ou `NFI_CPRD` (código impresso) |
-| `produto` | `F10011.NFI_DPRD` |
-| `qtd_vendida` | `F10011.NFI_QTDE` (descontar `NFI_QTDD` = devolvida) |
-| `configuracao` | (vem do item de pedido vinculado / `descricaoConfiguraveis`) |
-| valor (futuro) | `F10011.NFI_UNIT` (custo/preço — dimensão financeira) |
+| `dt_ref` | `F10901.FAT_DTEMI` (emissão) — ou `FAT_DTSAI` (saída) |
+| `codigo_estoque` | `F10911.FTI_PROD` (→ `ITM_ID`) |
+| `produto` | `F10911.FTI_DPRD` |
+| `qtd_vendida` | `F10911.FTI_QTDE` |
+| `configuracao` | `F10911.FTI_CONF` (`descricaoConfiguraveis`) |
+| filtro | excluir faturas canceladas via `F10901.FAT_STFAT` (`StatusFatura`) |
 
 ### ✅ Opção B (ADOTADA) — Pedidos de venda — `F05001` (item) + `F05002` (cabeçalho)
 
@@ -158,9 +161,44 @@ bloqueiam a implementação pela definição adotada (pedidos não cancelados):
 
 - **Paridade:** validar os números contra `6797`/`10001`/`10473` + a distribuição (doc 08 §3)
   quando houver dados; se "pedidos não cancelados" não bater, alternar para autorizados/faturados.
+- **Fatura:** tabelas confirmadas `F10901` (cabeçalho) + `F10911` (item) — ver §2 Opção A.
 - **Só se formos por "autorizado":** confirmar se a data é `PEDV_DATA` (aprovação) ou `PEDV_DTAP` (pagamento).
-- **Só se formos por "faturado":** confirmar o código real da tabela de Faturas (`F10990`?).
 
 Faltam ainda os pré-requisitos de **infraestrutura** da replicação (não do mapeamento): versão do
 PostgreSQL do One, PKs, provisionar o staging e a conectividade — ver
 [replicacao-tempo-real.md](replicacao-tempo-real.md) Parte C.
+
+## 9. Nota de escopo (IMPORTANTE) — papel do One e dois sentidos de "PCP"
+
+- **Fonte ÚNICA = One.** O PCP atual roda num sistema de gestão de estoque separado, mas **não o
+  usaremos** — o novo PCP o **substitui**, alimentado **somente pelo One** (migração gradual até o
+  One também sair). O **suporte do One fornece as tabelas**, mas **não é a autoridade** sobre o que
+  conta como demanda — essa regra é do PRD (doc 02). A **paridade** é só uma **conferência de
+  sanidade** contra os números conhecidos do legado (produtos `6797`/`10001`/`10473` + distribuição
+  doc 08 §3); derivamos tudo do One.
+- **Dois sentidos de "PCP" — não confundir:**
+  - **Planejamento (o nosso):** movido por **demanda (vendas) + estoque** → classifica ABC,
+    calcula cobertura/parâmetros e **recomenda quanto produzir** (doc 02). É o escopo do projeto.
+  - **Execução (o que o suporte chamou de PCP):** controle de produção no **WMS** — solicitações
+    de coleta/produção, cancelamentos, "o que foi enviado para produzir" e "o que já foi produzido".
+  - As **tabelas de produção do WMS NÃO são a fonte de demanda.** Continuam vindo de vendas; as de
+    produção entram como **dado complementar** (ver §10), nunca substituindo as vendas.
+- **Fatura, não NF:** a "venda faturada" usa as tabelas de **Fatura** (`F10901`/`F10911`), não a NF
+  (`F10011`), pois há vendas sem nota fiscal (correção do suporte — §2 Opção A).
+
+## 10. Produção do WMS (complementar — visibilidade do que está/foi produzido)
+
+Decisão: **vamos adquirir também** as tabelas de produção do One/WMS, **como dado complementar**
+(não como demanda). Servem para: (a) **descontar a produção já em andamento** da `qtd_sugerida`
+(hoje só `recomendado − disponível`), evitando sugerir produzir o que já está na fila; e
+(b) acompanhar "o que foi enviado para produzir" e "o que já foi produzido".
+
+| Tabela | Entidade | Papel |
+|---|---|---|
+| `F06001`? (confirmar) | `Producao` | cabeçalho do lote de produção (não extraiu do dump) |
+| `F06002` | `ItemProducao` | item em produção: `IPRD_PRD` (produto), `IPRD_QNT` (qtd), `IPRD_STAT` (status), `IPRD_LOTE` (→ Producao) |
+| `F060015` | `ProducaoPedido` | liga produção ao pedido: `PPD_LOTE` (→ItemProducao), `PPD_PEDV` (→ItemPedido), `PPD_QTDPRD` |
+| `F06018` | `ProgramacaoProducao` | programação: `PRP_IPRD`, `PRP_STPRD` (setor), `PRP_DATP` (data) |
+
+> Uso no motor é **opcional/posterior** (backlog doc 08 §5): a recomendação base segue do doc 02 §7;
+> quando ligarmos a produção em andamento, ela **abate** a sugestão. Não muda a regra de demanda.
