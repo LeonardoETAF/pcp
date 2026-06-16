@@ -586,11 +586,19 @@ input {
   background: #141210; /* sidebar escura, independente do tema do conteúdo */
   color: #fff;
 }
-.barra__logo {
-  width: 150px;
-  height: auto;
-  padding: 0 var(--e-2);
+.barra__marca {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--e-2);
   margin-bottom: var(--e-5);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.barra__logo {
+  width: 160px;
+  height: auto;
 }
 .barra__secao {
   font-size: var(--fs-xs);
@@ -624,13 +632,40 @@ input {
   background: #f3f1ec;
   color: #141210;
 }
-.menu__icone {
-  display: grid;
-  place-items: center;
-}
-.menu__icone svg {
+/* Ícones do diretório public/icons recoloridos com a cor do texto (herdam branco no escuro). */
+.icone-mask {
+  display: inline-block;
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Menu recolhido: só ícones (maiores), logo vira símbolo, textos ocultos. */
+.shell--recolhido {
+  grid-template-columns: 76px 1fr;
+}
+.shell--recolhido .barra__logo {
+  width: 40px;
+}
+.shell--recolhido .barra__secao,
+.shell--recolhido .menu__rotulo,
+.shell--recolhido .usuario__dados {
+  display: none;
+}
+.shell--recolhido .menu__item,
+.shell--recolhido .usuario {
+  justify-content: center;
+}
+.shell--recolhido .icone-mask {
+  width: 24px;
+  height: 24px;
 }
 .usuario {
   margin-top: auto;
