@@ -609,6 +609,7 @@ input {
   margin-bottom: var(--e-2);
 }
 .barra__divisor {
+  display: none; /* só aparece com o menu recolhido (no lugar do rótulo "PCP") */
   height: 1px;
   background: rgba(255, 255, 255, 0.12);
   margin: 0 var(--e-2) var(--e-3);
@@ -673,14 +674,16 @@ input {
   width: 28px;
   height: 28px;
 }
+.shell--recolhido .barra__divisor {
+  display: block;
+}
 .usuario {
   margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--e-3);
-  min-height: 88px;
-  padding: var(--e-4) var(--e-3) var(--e-6);
+  padding: var(--e-3);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .usuario__avatar {
