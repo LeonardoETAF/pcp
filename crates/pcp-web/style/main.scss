@@ -57,6 +57,13 @@
   --e-6: 2rem;
   --e-8: 3rem;
 
+  /* Espaçamento padrão das bordas da área de conteúdo (topbar + páginas).
+     Único ponto de ajuste do respiro lateral/vertical do sistema. */
+  --gutter-x: var(--e-6);
+  --gutter-y: var(--e-6);
+  /* Largura máxima do conteúdo (centralizado em telas largas). */
+  --largura-conteudo: 1920px;
+
   /* Raios e elevação */
   --raio-sm: 6px;
   --raio-md: 10px;
@@ -698,7 +705,7 @@ input {
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--e-3);
   padding: var(--e-5) var(--e-3);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -733,6 +740,7 @@ input {
 .usuario__sair {
   display: grid;
   place-items: center;
+  margin-left: auto;
   padding: 6px;
   border: 0;
   background: transparent;
@@ -758,7 +766,7 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: var(--e-4);
-  padding: var(--e-4) var(--e-6);
+  padding: var(--e-4) var(--gutter-x);
   background: var(--superficie);
   border-bottom: 1px solid var(--borda);
 }
@@ -792,9 +800,9 @@ input {
   height: 20px;
 }
 .conteudo {
-  padding: var(--e-6);
-  max-width: 1280px;
+  padding: var(--gutter-y) var(--gutter-x);
   width: 100%;
+  max-width: var(--largura-conteudo);
   margin: 0 auto;
 }
 .placeholder__titulo {
