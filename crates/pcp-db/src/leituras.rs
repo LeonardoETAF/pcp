@@ -173,12 +173,17 @@ pub async fn dashboard(pool: &PgPool) -> Result<ResumoDashboard, ErroDb> {
 
 /// Filtros e ordenação da tabela de estoque (doc 03 §3.2). `busca` casa código/produto/SKU
 /// (parcial, case-insensitive). `ordem` é uma chave coluna+direção da allowlist (ver SQL).
+/// Faixa de cobertura (dias) e switches `apenas_sugestao`/`apenas_fora_linha` afinam a fila.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct FiltroEstoque<'a> {
     pub classe: Option<&'a str>,
     pub status: Option<&'a str>,
     pub busca: Option<&'a str>,
     pub ordem: &'a str,
+    pub cobertura_min: Option<f64>,
+    pub cobertura_max: Option<f64>,
+    pub apenas_sugestao: bool,
+    pub apenas_fora_linha: bool,
 }
 
 /// Produtos ativos paginados (doc 03 §3 / doc 04 §6.2). Filtra por classe/status/busca e ordena
@@ -197,16 +202,28 @@ pub async fn produtos_paginado(
         status,
         busca,
         ordem,
+        cobertura_min,
+        cobertura_max,
+        apenas_sugestao,
+        apenas_fora_linha,
     } = filtro;
     let total = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "total!" FROM pcp.produto_ativo
            WHERE ($1::text IS NULL OR classe = $1)
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
-                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')"#,
+                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')
+             AND ($4::float8 IS NULL OR cobertura_dias >= $4)
+             AND ($5::float8 IS NULL OR cobertura_dias <= $5)
+             AND (NOT $6 OR qtd_sugerida > 0)
+             AND (NOT $7 OR fora_de_linha)"#,
         classe,
         status,
         busca,
+        cobertura_min,
+        cobertura_max,
+        apenas_sugestao,
+        apenas_fora_linha,
     )
     .fetch_one(pool)
     .await?;
@@ -221,6 +238,10 @@ pub async fn produtos_paginado(
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
                   OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')
+             AND ($5::float8 IS NULL OR cobertura_dias >= $5)
+             AND ($6::float8 IS NULL OR cobertura_dias <= $6)
+             AND (NOT $7 OR qtd_sugerida > 0)
+             AND (NOT $8 OR fora_de_linha)
            ORDER BY
              (CASE WHEN $4 = 'produto_asc' THEN produto END) ASC NULLS LAST,
              (CASE WHEN $4 = 'produto_desc' THEN produto END) DESC NULLS LAST,
@@ -235,11 +256,15 @@ pub async fn produtos_paginado(
                   'disponivel_desc','cobertura_asc','cobertura_desc','recomendada_desc','sugerida_asc')
                 THEN qtd_sugerida END) DESC NULLS LAST,
              codigo_estoque
-           LIMIT $5 OFFSET $6"#,
+           LIMIT $9 OFFSET $10"#,
         classe,
         status,
         busca,
         ordem,
+        cobertura_min,
+        cobertura_max,
+        apenas_sugestao,
+        apenas_fora_linha,
         limite,
         deslocamento,
     )

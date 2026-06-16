@@ -77,6 +77,10 @@ pub fn PaginaEstoque() -> impl IntoView {
     let busca = RwSignal::new(String::new()); // termo aplicado
     let busca_input = RwSignal::new(String::new()); // o que está sendo digitado
     let ordem = RwSignal::new("sugerida_desc".to_owned());
+    let cobertura_min = RwSignal::new(None::<f64>);
+    let cobertura_max = RwSignal::new(None::<f64>);
+    let apenas_sugestao = RwSignal::new(false);
+    let apenas_fora_linha = RwSignal::new(false);
     let limite = RwSignal::new(50_i64);
     let deslocamento = RwSignal::new(0_i64);
     let tick = RwSignal::new(0_u32);
@@ -84,19 +88,26 @@ pub fn PaginaEstoque() -> impl IntoView {
     // Qualquer mudança de filtro volta para a primeira página.
     let resetar = move || deslocamento.set(0);
 
+    // Consulta atual a partir dos sinais. Para o servidor inteira (filtros + faixas + switches).
+    let consulta_atual = move || ConsultaEstoque {
+        classe: classe.get(),
+        status: status.get(),
+        busca: Some(busca.get()),
+        ordem: Some(ordem.get()),
+        cobertura_min: cobertura_min.get(),
+        cobertura_max: cobertura_max.get(),
+        apenas_sugestao: apenas_sugestao.get(),
+        apenas_fora_linha: apenas_fora_linha.get(),
+        limite: limite.get(),
+        deslocamento: deslocamento.get(),
+    };
+
     // Exporta o filtro atual inteiro (CSV/JSON) e dispara o download no cliente (§12).
     let exportar = move |formato: &'static str| {
         let Some(token) = sessao.0.get_untracked() else {
             return;
         };
-        let consulta = ConsultaEstoque {
-            classe: classe.get_untracked(),
-            status: status.get_untracked(),
-            busca: Some(busca.get_untracked()),
-            ordem: Some(ordem.get_untracked()),
-            limite: 0,
-            deslocamento: 0,
-        };
+        let consulta = untrack(consulta_atual);
         let nome = if formato == "json" {
             "estoque.json"
         } else {
@@ -121,34 +132,10 @@ pub fn PaginaEstoque() -> impl IntoView {
     );
 
     let dados = Resource::new(
-        move || {
-            (
-                sessao.0.get(),
-                classe.get(),
-                status.get(),
-                busca.get(),
-                ordem.get(),
-                limite.get(),
-                deslocamento.get(),
-                tick.get(),
-            )
-        },
-        |(token, classe, status, busca, ordem, limite, deslocamento, _)| async move {
+        move || (sessao.0.get(), consulta_atual(), tick.get()),
+        |(token, consulta, _)| async move {
             match token {
-                Some(t) => {
-                    estoque(
-                        t,
-                        ConsultaEstoque {
-                            classe,
-                            status,
-                            busca: Some(busca),
-                            ordem: Some(ordem),
-                            limite,
-                            deslocamento,
-                        },
-                    )
-                    .await
-                }
+                Some(t) => estoque(t, consulta).await,
                 None => Ok(crate::api::PaginaEstoque::default()),
             }
         },
@@ -176,7 +163,19 @@ pub fn PaginaEstoque() -> impl IntoView {
                 }}
             </Suspense>
 
-            <Filtros classe status busca busca_input ordem limite resetar />
+            <Filtros
+                classe
+                status
+                busca
+                busca_input
+                ordem
+                limite
+                cobertura_min
+                cobertura_max
+                apenas_sugestao
+                apenas_fora_linha
+                resetar
+            />
 
             <div class="barra-exportar">
                 <span class="texto-suave">"Exportar filtro completo:"</span>
@@ -300,6 +299,7 @@ fn CartaResumo(
 }
 
 #[component]
+#[allow(clippy::too_many_lines)] // markup declarativo dos filtros (uma responsabilidade)
 fn Filtros(
     classe: RwSignal<Option<String>>,
     status: RwSignal<Option<String>>,
@@ -307,12 +307,18 @@ fn Filtros(
     busca_input: RwSignal<String>,
     ordem: RwSignal<String>,
     limite: RwSignal<i64>,
+    cobertura_min: RwSignal<Option<f64>>,
+    cobertura_max: RwSignal<Option<f64>>,
+    apenas_sugestao: RwSignal<bool>,
+    apenas_fora_linha: RwSignal<bool>,
     resetar: impl Fn() + Copy + 'static,
 ) -> impl IntoView {
     let aplicar_busca = move || {
         busca.set(busca_input.get());
         resetar();
     };
+    // Lê um campo numérico não-negativo (vazio → sem limite).
+    let parse_cobertura = |valor: String| valor.parse::<f64>().ok().filter(|n| *n >= 0.0);
     view! {
         <div class="filtros-estoque">
             <form
@@ -405,6 +411,61 @@ fn Filtros(
                         <option value="500">"500"</option>
                         <option value="1000">"1000"</option>
                     </select>
+                </label>
+            </div>
+
+            <div class="filtros-estoque__avancado">
+                <div class="faixa">
+                    <span class="campo-select__rotulo">"Cobertura (dias)"</span>
+                    <input
+                        class="input input--num"
+                        type="number"
+                        min="0"
+                        placeholder="mín"
+                        prop:value=move || {
+                            cobertura_min.get().map(|n| n.to_string()).unwrap_or_default()
+                        }
+                        on:input=move |ev| {
+                            cobertura_min.set(parse_cobertura(event_target_value(&ev)));
+                            resetar();
+                        }
+                    />
+                    <span class="faixa__ate">"até"</span>
+                    <input
+                        class="input input--num"
+                        type="number"
+                        min="0"
+                        placeholder="máx"
+                        prop:value=move || {
+                            cobertura_max.get().map(|n| n.to_string()).unwrap_or_default()
+                        }
+                        on:input=move |ev| {
+                            cobertura_max.set(parse_cobertura(event_target_value(&ev)));
+                            resetar();
+                        }
+                    />
+                </div>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || apenas_sugestao.get()
+                        on:change=move |ev| {
+                            apenas_sugestao.set(event_target_checked(&ev));
+                            resetar();
+                        }
+                    />
+                    <span>"Apenas com sugestão"</span>
+                </label>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || apenas_fora_linha.get()
+                        on:change=move |ev| {
+                            apenas_fora_linha.set(event_target_checked(&ev));
+                            resetar();
+                        }
+                    />
+                    <span>"Apenas fora de linha"</span>
                 </label>
             </div>
         </div>

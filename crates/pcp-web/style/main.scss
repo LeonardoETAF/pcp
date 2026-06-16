@@ -1267,6 +1267,39 @@ input {
 .badge--status-fora_de_linha,
 .badge--status-sem_historico { background: var(--abc-d); }
 
+.filtros-estoque__avancado {
+  display: flex;
+  align-items: center;
+  gap: var(--e-5);
+  flex-wrap: wrap;
+}
+.faixa {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+}
+.faixa__ate {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+.input--num {
+  width: 90px;
+}
+.switch {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--cor-primaria);
+  cursor: pointer;
+}
+
 .barra-exportar {
   display: flex;
   align-items: center;

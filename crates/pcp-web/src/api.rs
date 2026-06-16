@@ -54,12 +54,16 @@ pub struct PaginaEstoque {
 
 /// Parâmetros da consulta de estoque (filtros + ordenação + paginação no servidor — doc 03 §3.2).
 /// Um único conceito de consulta, reutilizado pela tabela e pelo dashboard (CLAUDE.md §13).
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct ConsultaEstoque {
     pub classe: Option<String>,
     pub status: Option<String>,
     pub busca: Option<String>,
     pub ordem: Option<String>,
+    pub cobertura_min: Option<f64>,
+    pub cobertura_max: Option<f64>,
+    pub apenas_sugestao: bool,
+    pub apenas_fora_linha: bool,
     pub limite: i64,
     pub deslocamento: i64,
 }
@@ -84,20 +88,9 @@ pub async fn estoque(
     consulta: ConsultaEstoque,
 ) -> Result<PaginaEstoque, ServerFnError> {
     let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
-    let mut params: Vec<(&str, String)> = vec![
-        ("limite", consulta.limite.to_string()),
-        ("deslocamento", consulta.deslocamento.to_string()),
-    ];
-    for (chave, valor) in [
-        ("classe", consulta.classe),
-        ("status", consulta.status),
-        ("busca", consulta.busca),
-        ("ordem", consulta.ordem),
-    ] {
-        if let Some(v) = valor.filter(|s| !s.is_empty()) {
-            params.push((chave, v));
-        }
-    }
+    let mut params = parametros_consulta(&consulta);
+    params.push(("limite", consulta.limite.to_string()));
+    params.push(("deslocamento", consulta.deslocamento.to_string()));
     let resposta = reqwest::Client::new()
         .get(format!("{base}/pcp/estoque"))
         .query(&params)
@@ -129,17 +122,8 @@ pub async fn exportar_estoque(
     formato: String,
 ) -> Result<String, ServerFnError> {
     let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
-    let mut params: Vec<(&str, String)> = vec![("formato", formato)];
-    for (chave, valor) in [
-        ("classe", consulta.classe),
-        ("status", consulta.status),
-        ("busca", consulta.busca),
-        ("ordem", consulta.ordem),
-    ] {
-        if let Some(v) = valor.filter(|s| !s.is_empty()) {
-            params.push((chave, v));
-        }
-    }
+    let mut params = parametros_consulta(&consulta);
+    params.push(("formato", formato));
     let resposta = reqwest::Client::new()
         .get(format!("{base}/pcp/estoque/exportar"))
         .query(&params)
@@ -171,6 +155,36 @@ pub async fn perfil(token: String) -> Result<String, ServerFnError> {
     }
     let me: Me = obter_json("/pcp/me", &token).await?;
     Ok(me.papel)
+}
+
+/// Monta os parâmetros comuns de consulta de estoque (filtros + faixas + switches) para a query
+/// string. Compartilhado entre listagem e exportação — um só lugar (CLAUDE.md §13).
+#[cfg(feature = "ssr")]
+fn parametros_consulta(c: &ConsultaEstoque) -> Vec<(&'static str, String)> {
+    let mut params: Vec<(&'static str, String)> = Vec::new();
+    for (chave, valor) in [
+        ("classe", c.classe.clone()),
+        ("status", c.status.clone()),
+        ("busca", c.busca.clone()),
+        ("ordem", c.ordem.clone()),
+    ] {
+        if let Some(v) = valor.filter(|s| !s.is_empty()) {
+            params.push((chave, v));
+        }
+    }
+    if let Some(v) = c.cobertura_min {
+        params.push(("cobertura_min", v.to_string()));
+    }
+    if let Some(v) = c.cobertura_max {
+        params.push(("cobertura_max", v.to_string()));
+    }
+    if c.apenas_sugestao {
+        params.push(("apenas_sugestao", "true".to_owned()));
+    }
+    if c.apenas_fora_linha {
+        params.push(("apenas_fora_linha", "true".to_owned()));
+    }
+    params
 }
 
 /// Helper (só servidor): GET autenticado na `pcp-api` e desserialização do JSON.

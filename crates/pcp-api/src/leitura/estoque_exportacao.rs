@@ -19,6 +19,12 @@ pub struct ParamsExport {
     pub status: Option<String>,
     pub busca: Option<String>,
     pub ordem: Option<String>,
+    pub cobertura_min: Option<f64>,
+    pub cobertura_max: Option<f64>,
+    #[serde(default)]
+    pub apenas_sugestao: bool,
+    #[serde(default)]
+    pub apenas_fora_linha: bool,
     pub formato: Option<String>,
 }
 
@@ -35,6 +41,10 @@ pub async fn exportar(
         status: params.status.as_deref(),
         busca: params.busca.as_deref().filter(|s| !s.is_empty()),
         ordem: params.ordem.as_deref().unwrap_or("sugerida_desc"),
+        cobertura_min: params.cobertura_min,
+        cobertura_max: params.cobertura_max,
+        apenas_sugestao: params.apenas_sugestao,
+        apenas_fora_linha: params.apenas_fora_linha,
     };
     // Sem paginação: o filtro inteiro. i64::MAX como LIMIT devolve todas as linhas.
     let linhas = leituras::produtos_paginado(&estado.pool, filtro, i64::MAX, 0)
