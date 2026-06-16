@@ -83,9 +83,10 @@ Detalhamento operacional destes princípios em **§5**, **§15** e **§16**.
   (bins). Logging: **`tracing`** estruturado. Datas: **`chrono`** (datas de negócio são
   `date`, fuso América/São_Paulo na exibição). Serialização: **`serde`**.
 - O ERP **"One" não tem API** e **não será alterado** (segue como legado em uso até a
-  migração completa). A aquisição de produção é por **replicação lógica do PostgreSQL** do
-  One (tempo real) para um **banco de staging independente** (o banco do One só serve de
-  fonte — ver §6), de onde uma camada anticorrupção alimenta o contrato do doc 05 §2. A
+  migração completa). Como o One é **PostgreSQL 9.5** (sem replicação lógica), a aquisição de
+  produção é por **acesso direto somente-leitura** (consulta incremental ao One), alimentando o
+  **banco independente do PCP** (o banco do One só serve de fonte — ver §6), com uma camada
+  anticorrupção sobre o contrato do doc 05 §2. A
   **importação de arquivo (CSV/dump)** fica para o **backfill** inicial. Toda fonte vive
   atrás do **trait** (`FonteDados`) para não acoplar o resto ao ERP.
 
@@ -213,7 +214,7 @@ consome valores prontos da API.
 - **Tabela de execuções** do pipeline (por módulo: início, fim, duração, linhas, erro) —
   visível na UI admin. Falha de módulo → notificação + banner "dados de DD/MM".
 - Fonte de dados atrás do trait `FonteDados`: `ImportadorArquivo` (CSV/dump) para o backfill e
-  `FonteReplicaOne` (lê o staging alimentado pela replicação lógica do One — tempo real). O
+  `FonteConsultaOne` (consulta read-only incremental ao One — quase tempo real por polling). O
   motor não sabe de onde vêm os dados.
 - SLA: dados do dia prontos até **05:00**.
 
