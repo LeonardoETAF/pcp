@@ -596,6 +596,10 @@ input {
   background: transparent;
   cursor: pointer;
 }
+.barra__marca:focus,
+.barra__marca:focus-visible {
+  outline: none;
+}
 .barra__logo {
   width: 160px;
   height: auto;
@@ -635,8 +639,8 @@ input {
   color: #fff;
 }
 .menu__item[aria-current="page"] {
-  background: #f3f1ec;
-  color: #141210;
+  background: #2c2824; /* mesma família do menu, um pouco mais clara */
+  color: #fff;
 }
 /* Ícones do diretório public/icons recoloridos com a cor do texto (herdam branco no escuro). */
 .icone-mask {
