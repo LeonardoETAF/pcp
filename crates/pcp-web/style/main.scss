@@ -68,19 +68,10 @@
   --transicao: 150ms ease;
 }
 
-/* ---------- Tema escuro (preferência do sistema + override manual) ---------- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) {
-    --fundo: #0f1216;
-    --superficie: #171b21;
-    --superficie-2: #1f242c;
-    --borda: #2a3038;
-    --texto: #e7ebf0;
-    --texto-suave: #9aa4b1;
-  }
-}
-
-:root[data-tema="escuro"] {
+/* ---------- Tema escuro (aplicado via data-tema na raiz da app — §16) ----------
+   Modelo de 2 estados: o toggle define `data-tema="escuro"` na `.app-raiz`; as variáveis
+   redefinidas aqui cascateiam para os descendentes (vencem o :root claro). */
+[data-tema="escuro"] {
   --fundo: #0f1216;
   --superficie: #171b21;
   --superficie-2: #1f242c;
@@ -259,8 +250,56 @@ input {
   text-align: center;
 }
 
-/* ---------- Layout autenticado (placeholder do shell) ---------- */
-.appbar {
+/* ---------- Layout autenticado (sidebar + header + conteúdo) ---------- */
+.app-raiz {
+  min-height: 100dvh;
+}
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: 100dvh;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-5);
+  padding: var(--e-5) var(--e-4);
+  background: var(--superficie);
+  border-right: 1px solid var(--borda);
+}
+.sidebar__logo {
+  width: 150px;
+  height: auto;
+  padding: 0 var(--e-2);
+}
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+}
+.nav__link {
+  display: block;
+  padding: var(--e-3) var(--e-4);
+  border-radius: var(--raio-md);
+  color: var(--texto-suave);
+  text-decoration: none;
+  font-weight: var(--peso-medio);
+  transition: background var(--transicao), color var(--transicao);
+}
+.nav__link:hover {
+  background: var(--superficie-2);
+  color: var(--texto);
+}
+.nav__link[aria-current="page"] {
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-contraste);
+}
+.app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -268,17 +307,44 @@ input {
   padding: var(--e-3) var(--e-5);
   background: var(--superficie);
   border-bottom: 1px solid var(--borda);
-  box-shadow: var(--sombra-1);
 }
-.appbar__logo {
-  height: 32px;
-  width: auto;
+.topbar__titulo {
+  font-weight: var(--peso-medio);
+  color: var(--texto-suave);
+}
+.topbar__acoes {
+  display: flex;
+  gap: var(--e-2);
 }
 .conteudo {
   padding: var(--e-6);
-  max-width: 1100px;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+}
+.placeholder__titulo {
+  margin-bottom: var(--e-2);
 }
 .texto-suave {
   color: var(--texto-suave);
+}
+
+/* Responsivo: em telas estreitas a sidebar vira topo (empilha). */
+@media (max-width: 720px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--borda);
+  }
+  .nav {
+    flex-direction: row;
+  }
+  .sidebar__logo {
+    width: 110px;
+  }
 }
