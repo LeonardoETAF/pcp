@@ -1,0 +1,255 @@
+/* =============================================================================
+   PCP — Design System (CSS à mão, 100% Rust-ecosystem; compilado pelo cargo-leptos).
+   CLAUDE.md §16: tokens, tema claro/escuro, cores semânticas e por classe ABC.
+   Cor primária da marca: laranja #FF6600 (secundárias: verde #33CC33, roxo #660066).
+   ============================================================================= */
+
+/* ---------- Design tokens (claro = padrão) ---------- */
+:root {
+  /* Marca */
+  --cor-primaria: #ff6600;
+  --cor-primaria-escura: #cc5200;
+  --cor-primaria-clara: #ff8533;
+  --cor-secundaria: #33cc33;
+  --cor-apoio: #660066;
+  --cor-primaria-contraste: #ffffff;
+
+  /* Neutros / superfícies */
+  --fundo: #f6f7f9;
+  --superficie: #ffffff;
+  --superficie-2: #f0f2f5;
+  --borda: #e2e6ea;
+  --texto: #1b1f24;
+  --texto-suave: #5b6470;
+  --texto-inverso: #ffffff;
+
+  /* Cores semânticas (semáforo de status — §12) */
+  --semaforo-critico: #d92d20;
+  --semaforo-alto: #f79009;
+  --semaforo-medio: #eab308;
+  --semaforo-ok: #12b76a;
+  --semaforo-info: #2e90fa;
+
+  /* Cor fixa por classe ABC (§12) */
+  --abc-a: #1570ef;
+  --abc-b: #12b76a;
+  --abc-c: #eab308;
+  --abc-d: #98a2b3;
+  --abc-f: #d92d20;
+  --abc-n: #9e77ed;
+
+  /* Tipografia */
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --peso-medio: 550;
+  --peso-forte: 700;
+
+  /* Espaçamento (escala 4px) */
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-5: 1.5rem;
+  --e-6: 2rem;
+  --e-8: 3rem;
+
+  /* Raios e elevação */
+  --raio-sm: 6px;
+  --raio-md: 10px;
+  --raio-lg: 16px;
+  --sombra-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --sombra-2: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
+  --sombra-3: 0 12px 24px rgba(16, 24, 40, 0.12);
+
+  --transicao: 150ms ease;
+}
+
+/* ---------- Tema escuro (preferência do sistema + override manual) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --fundo: #0f1216;
+    --superficie: #171b21;
+    --superficie-2: #1f242c;
+    --borda: #2a3038;
+    --texto: #e7ebf0;
+    --texto-suave: #9aa4b1;
+  }
+}
+
+:root[data-tema="escuro"] {
+  --fundo: #0f1216;
+  --superficie: #171b21;
+  --superficie-2: #1f242c;
+  --borda: #2a3038;
+  --texto: #e7ebf0;
+  --texto-suave: #9aa4b1;
+}
+
+/* ---------- Reset enxuto ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: var(--fonte);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fundo);
+  -webkit-font-smoothing: antialiased;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+/* ---------- Componentes base ---------- */
+.card {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
+  padding: var(--e-5);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-5);
+  border: 1px solid transparent;
+  border-radius: var(--raio-md);
+  font-weight: var(--peso-medio);
+  cursor: pointer;
+  transition: background var(--transicao), box-shadow var(--transicao), transform var(--transicao);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn--primario {
+  background: var(--cor-primaria);
+  color: var(--cor-primaria-contraste);
+}
+.btn--primario:hover {
+  background: var(--cor-primaria-escura);
+}
+.btn--secundario {
+  background: var(--superficie);
+  border-color: var(--borda);
+  color: var(--texto);
+}
+.btn--secundario:hover {
+  background: var(--superficie-2);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+.campo__rotulo {
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-medio);
+  color: var(--texto-suave);
+}
+.input {
+  width: 100%;
+  padding: var(--e-3) var(--e-4);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+.input:focus-visible {
+  border-color: var(--cor-primaria);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--e-2);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-medio);
+  color: var(--texto-inverso);
+}
+.badge--abc-a { background: var(--abc-a); }
+.badge--abc-b { background: var(--abc-b); }
+.badge--abc-c { background: var(--abc-c); color: #1b1f24; }
+.badge--abc-d { background: var(--abc-d); }
+.badge--abc-f { background: var(--abc-f); }
+.badge--abc-n { background: var(--abc-n); }
+
+.estado-vazio {
+  padding: var(--e-8);
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+/* ---------- Tela de login ---------- */
+.login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--e-5);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(255, 102, 0, 0.12), transparent 60%),
+    var(--fundo);
+}
+.login__cartao {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-6);
+  box-shadow: var(--sombra-3);
+}
+.login__logo {
+  width: 160px;
+  height: auto;
+  margin-bottom: var(--e-2);
+}
+.login__titulo {
+  font-size: var(--fs-xl);
+  font-weight: var(--peso-forte);
+}
+.login__sub {
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--e-3);
+}
+.login__form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.login__form .btn {
+  margin-top: var(--e-2);
+  width: 100%;
+}
