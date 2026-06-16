@@ -12,13 +12,14 @@
 
 O One está numa **LAN** (`192.168.88.251:5432`, IP privado) e o PCP roda numa **VPS** remota.
 A VPS **não alcança** um IP privado diretamente, e **NÃO se deve expor o 9.5 (EOL) na internet**.
-Duas formas seguras (escolher uma — ver §6):
+Duas formas seguras (decisão registrada em §6):
 
-- **(A) VPN site-to-site / VPS como cliente VPN:** a VPS entra na LAN por túnel; o ETL conecta em
-  `192.168.88.251` como se fosse local. Simples de programar; exige infra de VPN.
-- **(B) Conector on-premise (recomendado p/ segurança):** um **agente nosso roda DENTRO da LAN**
-  (lê o One localmente, read-only) e **envia** os dados para a VPS por **saída TLS** (push). O One
-  **nunca** recebe conexão de fora — zero exposição do banco legado. É o mais seguro para um DB EOL.
+- **(B) Conector on-premise — ADOTADO:** um **agente nosso roda DENTRO da LAN** (lê o One
+  localmente, read-only) e **envia** os dados para a VPS por **saída TLS** (push). O One **nunca**
+  recebe conexão de fora — zero exposição do banco legado.
+- **(A) VPN site-to-site / VPS como cliente VPN (alternativa):** a VPS entra na LAN por túnel e
+  consulta `192.168.88.251` como se fosse local. Operação mais simples (deploy único na VPS), mas
+  abre a direção de entrada.
 
 > Em ambos, a regra de ouro: **conexão somente-leitura ao One, TLS, segredos em variável de
 > ambiente** (CLAUDE.md §7). Jamais publicar a porta do 9.5 na internet, mesmo com firewall.
@@ -68,11 +69,31 @@ da UI usa o canal **SSE/LISTEN-NOTIFY** que já existe, disparado ao fim de cada
 
 Encolheu muito (não há `wal_level`/publicação/slot/restart):
 1. **Usuário somente-leitura** (`GRANT SELECT`) nas tabelas mapeadas.
-2. **Acesso de rede** da VPS ao `192.168.88.251:5432` — via **VPN** (ou liberar o conector on-LAN).
+2. **Acesso de rede:** liberar a **máquina-ponte (conector)** na LAN a ler o One localmente
+   (read-only). Não precisa abrir nada para fora (o conector só faz saída TLS para a VPS).
 3. Confirmar **índices** nas colunas de data usadas como marca-d'água.
 
-## 6. Decisões em aberto (suas)
+## 6. Conectividade — DECISÃO (2026-06-16)
 
-- **Conectividade:** VPN (A) **ou** conector on-premise com push (B)? Recomendo **(B)** pela
-  segurança (não expõe o 9.5); **(A)** se já houver/for fácil ter VPN.
-- Onde roda o agente de ETL: na VPS (se VPN) ou numa máquina da LAN (se conector on-premise).
+**Produção:** **conector on-premise (push de saída)**, rodando numa **máquina-ponte dedicada** na
+LAN (o usuário já tem uma máquina reservada para isso). Vence em **segurança E desempenho** — não
+há trade-off entre os dois:
+
+- **Segurança:** o One **nunca** recebe conexão de fora; sem porta de entrada na LAN; a credencial
+  do One **fica na LAN**. Se a VPS for comprometida, o invasor **não alcança** o One nem a rede
+  (menor raio de dano) — postura ideal para um banco **EOL (9.5)**.
+- **Desempenho:** as consultas ao banco são **locais** (LAN gigabit, ~0,1 ms) em vez de cruzarem a
+  internet a cada round-trip; só o **dado necessário, filtrado e comprimível**, vai para a VPS.
+  Ganho real no **backfill** e em queries pesadas; no polling leve do dia a dia, empata com VPN.
+
+Reforços da máquina-ponte: dedicada (sem outros serviços), SO atualizado, firewall, idealmente em
+segmento que só enxergue o One; usuário read-only; TLS; segredos em env.
+
+**Alternativa (não adotada):** **VPN** (WireGuard na máquina dedicada + **ACL** travando a VPS para
+alcançar só `192.168.88.251:5432`). Operação mais simples (ETL inteiro na VPS), desempenho
+equivalente só no tráfego leve, mas abre a direção de entrada na LAN.
+
+**Desenvolvimento (agora):** **conexão local direta** — o dev está na mesma rede do One; nada de
+VPN/conector é necessário nesta fase.
+
+- Onde roda o agente de ETL: **na máquina-ponte da LAN** (conector). Na VPS só ficaria se fosse VPN.
