@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.filtro_salvo (usuario_id, nome, filtro)\n           VALUES ($1, $2, $3)\n           ON CONFLICT (usuario_id, nome)\n             DO UPDATE SET filtro = EXCLUDED.filtro, criado_em = now()\n           RETURNING id, nome, filtro",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "filtro_salvo",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "nome",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "filtro_salvo",
+            "name": "nome"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "filtro",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "filtro_salvo",
+            "name": "filtro"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4ef3753a9155d380885625decb31e947473a586aac9232d26e4b9edee4e4fb33"
+}

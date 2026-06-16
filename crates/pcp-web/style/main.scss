@@ -1300,6 +1300,45 @@ input {
   cursor: pointer;
 }
 
+.filtros-salvos {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+}
+.chip-salvo {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.chip-salvo .chip {
+  border: 0;
+  border-radius: 0;
+}
+.chip-salvo__x {
+  border: 0;
+  border-left: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  padding: 0 var(--e-3);
+  cursor: pointer;
+  font-size: var(--fs-xs);
+}
+.chip-salvo__x:hover {
+  background: var(--superficie-2);
+  color: var(--semaforo-critico);
+}
+.filtros-salvos__novo {
+  display: flex;
+  gap: var(--e-2);
+  margin-left: auto;
+}
+.input--nome {
+  width: 180px;
+}
+
 .barra-exportar {
   display: flex;
   align-items: center;

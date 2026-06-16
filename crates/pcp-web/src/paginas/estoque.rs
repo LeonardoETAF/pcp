@@ -7,7 +7,10 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
-use crate::api::{estoque, exportar_estoque, painel, ConsultaEstoque, LinhaEstoque, PainelResumo};
+use crate::api::{
+    estoque, excluir_filtro, exportar_estoque, listar_filtros, painel, salvar_filtro,
+    ConsultaEstoque, LinhaEstoque, PainelResumo,
+};
 use crate::contexto::Sessao;
 use crate::download;
 
@@ -102,6 +105,21 @@ pub fn PaginaEstoque() -> impl IntoView {
         deslocamento: deslocamento.get(),
     };
 
+    // Aplica um filtro salvo: reescreve os sinais e volta à primeira página.
+    let aplicar_filtro = move |c: ConsultaEstoque| {
+        classe.set(c.classe);
+        status.set(c.status);
+        let termo = c.busca.unwrap_or_default();
+        busca_input.set(termo.clone());
+        busca.set(termo);
+        ordem.set(c.ordem.unwrap_or_else(|| "sugerida_desc".to_owned()));
+        cobertura_min.set(c.cobertura_min);
+        cobertura_max.set(c.cobertura_max);
+        apenas_sugestao.set(c.apenas_sugestao);
+        apenas_fora_linha.set(c.apenas_fora_linha);
+        deslocamento.set(0);
+    };
+
     // Exporta o filtro atual inteiro (CSV/JSON) e dispara o download no cliente (§12).
     let exportar = move |formato: &'static str| {
         let Some(token) = sessao.0.get_untracked() else {
@@ -176,6 +194,8 @@ pub fn PaginaEstoque() -> impl IntoView {
                 apenas_fora_linha
                 resetar
             />
+
+            <FiltrosSalvos consulta_atual aplicar=aplicar_filtro />
 
             <div class="barra-exportar">
                 <span class="texto-suave">"Exportar filtro completo:"</span>
@@ -492,6 +512,123 @@ fn ChipClasse(
         >
             {rotulo}
         </button>
+    }
+}
+
+/// Filtros salvos do usuário (doc 03 §3.2): aplica (clique no nome), salva o filtro atual com um
+/// nome e exclui. Persistência por usuário no backend; o filtro em si é JSON opaco da consulta.
+#[component]
+fn FiltrosSalvos(
+    consulta_atual: impl Fn() -> ConsultaEstoque + Copy + 'static,
+    aplicar: impl Fn(ConsultaEstoque) + Copy + Send + Sync + 'static,
+) -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let recarregar = RwSignal::new(0_u32);
+    let nome = RwSignal::new(String::new());
+
+    let lista = Resource::new(
+        move || (sessao.0.get(), recarregar.get()),
+        |(token, _)| async move {
+            match token {
+                Some(t) => listar_filtros(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
+
+    let salvar = move || {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let n = nome.get_untracked().trim().to_owned();
+        if n.is_empty() {
+            return;
+        }
+        let Ok(filtro) = serde_json::to_value(untrack(consulta_atual)) else {
+            return;
+        };
+        leptos::task::spawn_local(async move {
+            match salvar_filtro(token, n, filtro).await {
+                Ok(_) => {
+                    nome.set(String::new());
+                    recarregar.update(|x| *x += 1);
+                }
+                Err(e) => leptos::logging::error!("salvar filtro: {e}"),
+            }
+        });
+    };
+
+    view! {
+        <div class="filtros-salvos">
+            <span class="campo-select__rotulo">"Filtros salvos"</span>
+            <Suspense fallback=|| ()>
+                {move || {
+                    lista
+                        .get()
+                        .map(|itens| {
+                            itens
+                                .into_iter()
+                                .map(|f| {
+                                    let filtro = f.filtro.clone();
+                                    let id = f.id.clone();
+                                    view! {
+                                        <span class="chip-salvo">
+                                            <button
+                                                type="button"
+                                                class="chip"
+                                                on:click=move |_| {
+                                                    if let Ok(c) = serde_json::from_value::<
+                                                        ConsultaEstoque,
+                                                    >(filtro.clone()) {
+                                                        aplicar(c);
+                                                    }
+                                                }
+                                            >
+                                                {f.nome.clone()}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="chip-salvo__x"
+                                                aria-label="Excluir filtro"
+                                                on:click=move |_| {
+                                                    let Some(token) = sessao.0.get_untracked() else {
+                                                        return;
+                                                    };
+                                                    let id = id.clone();
+                                                    leptos::task::spawn_local(async move {
+                                                        if excluir_filtro(token, id).await.is_ok() {
+                                                            recarregar.update(|x| *x += 1);
+                                                        }
+                                                    });
+                                                }
+                                            >
+                                                "✕"
+                                            </button>
+                                        </span>
+                                    }
+                                })
+                                .collect_view()
+                        })
+                }}
+            </Suspense>
+            <form
+                class="filtros-salvos__novo"
+                on:submit=move |ev| {
+                    ev.prevent_default();
+                    salvar();
+                }
+            >
+                <input
+                    class="input input--nome"
+                    placeholder="Nome do filtro"
+                    prop:value=move || nome.get()
+                    on:input=move |ev| nome.set(event_target_value(&ev))
+                />
+                <button type="submit" class="btn btn--secundario btn--sm">
+                    "Salvar"
+                </button>
+            </form>
+        </div>
     }
 }
 

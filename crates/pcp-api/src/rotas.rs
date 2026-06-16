@@ -1,13 +1,13 @@
 //! Montagem do roteador Axum (CLAUDE.md §2/§7): rotas públicas de auth + subgrupo `/pcp`
 //! protegido por middleware deny-by-default.
 
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 
 use crate::autenticacao::exigir_autenticacao;
 use crate::estado::AppState;
 use crate::leitura;
-use crate::{handlers_auth, handlers_pcp};
+use crate::{filtros_salvos, handlers_auth, handlers_pcp};
 
 /// Constrói o roteador completo da API.
 pub fn rotas(estado: AppState) -> Router {
@@ -21,6 +21,11 @@ pub fn rotas(estado: AppState) -> Router {
             "/pcp/estoque/exportar",
             get(leitura::estoque_exportacao::exportar),
         )
+        .route(
+            "/pcp/estoque/filtros",
+            get(filtros_salvos::listar).post(filtros_salvos::criar),
+        )
+        .route("/pcp/estoque/filtros/{id}", delete(filtros_salvos::excluir))
         .route("/pcp/alertas", get(leitura::alertas::alertas))
         .route("/pcp/abc", get(leitura::abc::abc))
         .route("/pcp/eventos", get(leitura::eventos::eventos))

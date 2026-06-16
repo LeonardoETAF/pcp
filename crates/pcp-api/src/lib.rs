@@ -7,6 +7,7 @@ mod autenticacao;
 pub mod bootstrap;
 mod erro;
 mod estado;
+mod filtros_salvos;
 mod handlers_auth;
 mod handlers_pcp;
 mod jwt;

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM pcp.filtro_salvo WHERE id = $1 AND usuario_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "464b93ce76b9c99eccd83e333bfa39c069d8a9e879e307f84bab0c6f95798961"
+}

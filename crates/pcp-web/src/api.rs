@@ -143,6 +143,75 @@ pub async fn exportar_estoque(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Filtro salvo do usuário (`/pcp/estoque/filtros`). `filtro` é o JSON opaco de [`ConsultaEstoque`].
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FiltroSalvo {
+    pub id: String,
+    pub nome: String,
+    pub filtro: serde_json::Value,
+}
+
+/// Lista os filtros salvos do usuário (`GET /pcp/estoque/filtros`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ListarFiltros, prefix = "/api")]
+pub async fn listar_filtros(token: String) -> Result<Vec<FiltroSalvo>, ServerFnError> {
+    obter_json("/pcp/estoque/filtros", &token).await
+}
+
+/// Salva (ou atualiza por nome) um filtro do usuário (`POST /pcp/estoque/filtros`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou nome inválido.
+#[server(name = SalvarFiltro, prefix = "/api")]
+pub async fn salvar_filtro(
+    token: String,
+    nome: String,
+    filtro: serde_json::Value,
+) -> Result<FiltroSalvo, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/estoque/filtros"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "nome": nome, "filtro": filtro }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao salvar o filtro"));
+    }
+    resposta
+        .json::<FiltroSalvo>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Exclui um filtro salvo do usuário (`DELETE /pcp/estoque/filtros/{id}`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede ou sessão expirada.
+#[server(name = ExcluirFiltro, prefix = "/api")]
+pub async fn excluir_filtro(token: String, id: String) -> Result<(), ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .delete(format!("{base}/pcp/estoque/filtros/{id}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao excluir o filtro"));
+    }
+    Ok(())
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors
