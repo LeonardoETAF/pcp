@@ -572,7 +572,12 @@ input {
 }
 
 /* ---------- Shell autenticado (sidebar escura + topbar + conteúdo) — padrão do mockup ---------- */
-.app-raiz { min-height: 100dvh; }
+/* color resolvido aqui (onde o data-tema troca os tokens) → descendentes herdam branco no
+   tema escuro, em vez da cor herdada do body (que fica no tema claro). */
+.app-raiz {
+  min-height: 100dvh;
+  color: var(--texto);
+}
 .shell {
   display: grid;
   grid-template-columns: 264px 1fr;
