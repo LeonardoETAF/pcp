@@ -12,6 +12,7 @@ use crate::contexto::Sessao;
 
 /// Vista de entrada (login real via server function).
 #[component]
+#[allow(clippy::too_many_lines)] // view declarativa do formulário de login
 pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
     let login = ServerAction::<Login>::new();
     let sessao = expect_context::<Sessao>();
@@ -80,10 +81,19 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                             aria-label="Mostrar ou ocultar a senha"
                             on:click=move |_| mostrar_senha.update(|m| *m = !*m)
                         >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
+                            <span
+                                class="icone-mask"
+                                style=move || {
+                                    let arq = if mostrar_senha.get() {
+                                        "ocultar.svg"
+                                    } else {
+                                        "visualizar.svg"
+                                    };
+                                    format!(
+                                        "-webkit-mask-image:url(/icons/{arq});mask-image:url(/icons/{arq})",
+                                    )
+                                }
+                            ></span>
                         </button>
                     </div>
                 </div>
