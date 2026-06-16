@@ -152,7 +152,7 @@ Disponível para quando entrar: `F10011.NFI_UNIT` (preço de venda na NF), entid
 | P6 | Fora de linha | ✅ `F03005.EST_FLIN`. |
 | P7 | Depósitos/almoxarifado | ✅ `F03005` = saldo **global**; por depósito só no WMS (não usamos). |
 | P8 | Reserva | ✅ usar **`EST_QTDD`** (saldo disponível) sempre. |
-| P9 | Entrega recorrente/API | → resolvido pela **replicação lógica** ([replicacao-tempo-real.md](replicacao-tempo-real.md)). |
+| P9 | Entrega recorrente/API | → **acesso direto read-only** (One é PG 9.5; sem replicação) — [acesso-direto-one.md](acesso-direto-one.md). |
 
 ## 8. Mapeamento completo — confirmações menores pendentes
 
@@ -164,9 +164,9 @@ bloqueiam a implementação pela definição adotada (pedidos não cancelados):
 - **Fatura:** tabelas confirmadas `F10901` (cabeçalho) + `F10911` (item) — ver §2 Opção A.
 - **Só se formos por "autorizado":** confirmar se a data é `PEDV_DATA` (aprovação) ou `PEDV_DTAP` (pagamento).
 
-Faltam ainda os pré-requisitos de **infraestrutura** da replicação (não do mapeamento): versão do
-PostgreSQL do One, PKs, provisionar o staging e a conectividade — ver
-[replicacao-tempo-real.md](replicacao-tempo-real.md) Parte C.
+Faltam ainda os pré-requisitos de **infraestrutura** do acesso direto (não do mapeamento):
+usuário read-only no One, conectividade VPS↔LAN (VPN ou conector on-premise) e índices nas colunas
+de data — ver [acesso-direto-one.md](acesso-direto-one.md).
 
 ## 9. Nota de escopo (IMPORTANTE) — papel do One e dois sentidos de "PCP"
 
