@@ -237,8 +237,9 @@ input {
 }
 .marca__watermark {
   position: absolute;
-  left: 4%;
-  top: 38%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 70%;
   opacity: 0.045;
   pointer-events: none;
@@ -270,7 +271,10 @@ input {
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   font-weight: var(--peso-forte);
   line-height: 1.12;
-  max-width: 12ch;
+}
+/* Cada frase em sua própria linha; se a largura não permitir, quebra naturalmente. */
+.marca__titulo-linha {
+  display: block;
 }
 .marca__texto {
   color: var(--auth-muted-escuro);

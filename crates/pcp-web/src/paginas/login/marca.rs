@@ -13,9 +13,12 @@ pub fn PainelMarca() -> impl IntoView {
                 <p class="marca__sub">"Planejamento e Controle de Produção"</p>
             </div>
             <div class="marca__centro">
-                <h2 class="marca__titulo">"Do chão de fábrica ao pedido — tudo em um só sistema."</h2>
+                <h2 class="marca__titulo">
+                    <span class="marca__titulo-linha">"Do chão de fábrica ao pedido"</span>
+                    <span class="marca__titulo-linha">"tudo em um só sistema."</span>
+                </h2>
                 <p class="marca__texto">
-                    "Acompanhe ordens, planejamento, estoque e expedição em tempo real, com indicadores que ajudam a decidir."
+                    "Acompanhe pedidos, planejamento, estoque e expedição em tempo real, com indicadores que ajudam a decidir."
                 </p>
                 <ul class="marca__features">
                     <li class="feature">
@@ -26,7 +29,7 @@ pub fn PainelMarca() -> impl IntoView {
                                 <path d="m9 13 2 2 4-4" />
                             </svg>
                         </span>
-                        <span>"Ordens de produção e apontamento"</span>
+                        <span>"Pedidos de produção e apontamento"</span>
                     </li>
                     <li class="feature">
                         <span class="feature__icone">
@@ -37,7 +40,7 @@ pub fn PainelMarca() -> impl IntoView {
                                 <path d="M13 6v0M10 12v0M17 18v0" />
                             </svg>
                         </span>
-                        <span>"Planejamento e cronograma (Gantt)"</span>
+                        <span>"Planejamento e cronograma"</span>
                     </li>
                     <li class="feature">
                         <span class="feature__icone">
