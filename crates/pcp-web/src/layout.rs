@@ -127,7 +127,7 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             <p class="barra__secao">"PCP"</p>
             <div class="barra__divisor"></div>
             <nav class="menu">
-                <ItemMenu href="/dashboard" rotulo="Dashboard" icone="dashboard.svg" />
+                <ItemMenu href="/dashboard" rotulo="Dashboard" icone="layout-sidebar.svg" />
                 <ItemMenu href="/estoque" rotulo="Estoque" icone="estoque-inventario.svg" />
             </nav>
             <div class="usuario">
