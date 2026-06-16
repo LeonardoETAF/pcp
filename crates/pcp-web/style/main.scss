@@ -582,7 +582,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--e-5) var(--e-4);
+  padding: var(--e-5) var(--e-4) var(--e-2);
   background: #141210; /* sidebar escura, independente do tema do conteúdo */
   color: #fff;
 }
@@ -683,7 +683,7 @@ input {
   align-items: center;
   justify-content: center;
   gap: var(--e-3);
-  padding: var(--e-2) var(--e-3) var(--e-1);
+  padding: var(--e-5) var(--e-3) var(--e-1);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .usuario__avatar {
