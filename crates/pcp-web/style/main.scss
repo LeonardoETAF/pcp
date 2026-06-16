@@ -652,6 +652,10 @@ input {
   -webkit-mask-position: center;
   mask-position: center;
 }
+.menu__item .icone-mask {
+  width: 23px;
+  height: 23px;
+}
 
 /* Menu recolhido: só ícones (maiores), logo vira símbolo, textos ocultos. */
 .shell--recolhido {
@@ -673,6 +677,10 @@ input {
 .shell--recolhido .icone-mask {
   width: 28px;
   height: 28px;
+}
+.shell--recolhido .menu__item .icone-mask {
+  width: 32px;
+  height: 32px;
 }
 .shell--recolhido .barra__divisor {
   display: block;
