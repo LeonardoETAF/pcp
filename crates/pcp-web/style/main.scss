@@ -825,8 +825,7 @@ input {
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-1);
 }
-.kpi--critico { border-top: 3px solid var(--semaforo-critico); }
-.kpi--alto { border-top: 3px solid var(--cor-primaria); }
+/* realces coloridos dos KPIs desativados por enquanto (cartões uniformes). */
 .kpi__valor {
   font-size: var(--fs-xl);
   font-weight: var(--peso-forte);
@@ -856,7 +855,7 @@ input {
   font-weight: var(--peso-forte);
 }
 .link-ver-todos {
-  color: var(--cor-primaria);
+  color: var(--texto-suave);
   text-decoration: none;
   font-size: var(--fs-sm);
   font-weight: var(--peso-medio);
@@ -941,7 +940,7 @@ input {
 .barra-linha__preenche {
   display: block;
   height: 100%;
-  background: var(--cor-primaria);
+  background: var(--texto-suave);
   border-radius: 999px;
 }
 .barra-linha__valor {

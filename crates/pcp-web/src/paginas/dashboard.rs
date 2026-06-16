@@ -96,7 +96,7 @@ pub fn PaginaDashboard() -> impl IntoView {
 fn topo(p: &PainelResumo) -> impl IntoView {
     let cobertura = p
         .cobertura_media
-        .map_or_else(|| "—".to_owned(), |c| format!("{c:.1} d"));
+        .map_or_else(|| "0 d".to_owned(), |c| format!("{c:.1} d"));
     let cards = view! {
         <div class="kpis">
             <Kpi valor=p.total_produtos.to_string() rotulo="Produtos" sub="ativos no catálogo" />
