@@ -23,6 +23,9 @@ pub enum ApiError {
     /// Conflito de estado (ex.: e-mail já cadastrado).
     #[error("{0}")]
     Conflito(String),
+    /// Recurso inexistente (ex.: produto não encontrado).
+    #[error("não encontrado")]
+    NaoEncontrado,
     /// Falha interna (detalhe registrado no log, não exposto).
     #[error("erro interno")]
     Interno,
@@ -35,6 +38,7 @@ impl ApiError {
             ApiError::Proibido => StatusCode::FORBIDDEN,
             ApiError::Requisicao(_) => StatusCode::BAD_REQUEST,
             ApiError::Conflito(_) => StatusCode::CONFLICT,
+            ApiError::NaoEncontrado => StatusCode::NOT_FOUND,
             ApiError::Interno => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

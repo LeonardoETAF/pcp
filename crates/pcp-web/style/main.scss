@@ -1154,6 +1154,141 @@ input {
   border: 1px solid rgba(217, 45, 32, 0.35);
 }
 
+/* ── Detalhe do Produto (doc 03 §4): cabeçalho, regra, métricas, gráficos ── */
+
+.prod-cab {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e-4);
+}
+.prod-cab__id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  min-width: 0;
+}
+.prod-cab__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.prod-cab__codigo {
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-suave);
+}
+.prod-cab__sku {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+
+.prod-regra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.prod-regra__texto {
+  color: var(--texto-suave);
+}
+.prod-regra__chips {
+  display: flex;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.pilula {
+  display: inline-flex;
+  flex-direction: column;
+  padding: var(--e-2) var(--e-4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie-2);
+}
+.pilula__rotulo {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+}
+.pilula__valor {
+  font-weight: var(--peso-medio);
+}
+
+.prod-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--e-4);
+}
+.metrica-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-4);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+}
+.metrica-card__rotulo {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+}
+.metrica-card__valor {
+  font-size: var(--fs-lg);
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.prod-graficos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--e-5);
+}
+.grafico {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+.graf__barra {
+  fill: var(--cor-primaria);
+}
+.graf__linha {
+  stroke: var(--cor-primaria);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.graf__area {
+  fill: var(--cor-primaria);
+  opacity: 0.12;
+}
+
+.estado-erro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--e-3);
+}
+
+/* Skeletons de carregamento (§16: nenhuma tela toda branca) */
+.prod-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.sk {
+  border-radius: var(--raio-md);
+  background: linear-gradient(90deg, var(--superficie-2) 25%, var(--superficie) 50%, var(--superficie-2) 75%);
+  background-size: 200% 100%;
+  animation: sk-brilho 1.3s ease-in-out infinite;
+}
+.sk--barra { height: 56px; }
+.sk--bloco { height: 120px; }
+.sk--grade { height: 200px; }
+@keyframes sk-brilho {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 720px) {
+  .prod-graficos { grid-template-columns: 1fr; }
+}
+
 /* ── Gestão de Estoque (doc 03 §3): cards clicáveis, filtros, tabela, paginação ── */
 
 .carta-resumo--clicavel {

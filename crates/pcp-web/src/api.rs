@@ -212,6 +212,90 @@ pub async fn excluir_filtro(token: String, id: String) -> Result<(), ServerFnErr
     Ok(())
 }
 
+/// Um ponto de série (dia ISO → valor) dos gráficos de 90 dias.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Ponto {
+    pub data: String,
+    pub valor: i64,
+}
+
+/// Regra da classe aplicada ao produto (valores vindos da config — o front só exibe).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RegraClasse {
+    pub meta_cobertura_dias: u32,
+    pub limiar_critico_dias: Option<u32>,
+    pub fator_estoque: f64,
+    pub justificativa: String,
+}
+
+/// Métricas do produto (já calculadas pelo motor).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MetricasProduto {
+    pub qtd_estoque: i64,
+    pub qtd_reserva: i64,
+    pub qtd_disponivel: i64,
+    pub cobertura_dias: f64,
+    pub media_diaria: f64,
+    pub estoque_seguranca: i64,
+    pub estoque_minimo: i64,
+    pub estoque_total_recomendado: i64,
+    pub qtd_sugerida: i64,
+    pub volume_janela: i64,
+    pub dias_com_vendas: i64,
+    pub outliers_detectados: i64,
+    pub coef_variacao: f64,
+}
+
+/// Detalhe completo de um produto (`GET /pcp/produto/{codigo}`). Frontend burro: só exibe (§3).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DetalheProduto {
+    pub codigo_estoque: String,
+    pub sku: Option<String>,
+    pub produto: Option<String>,
+    pub configuracao: Option<String>,
+    pub classe: String,
+    pub status: String,
+    pub fora_de_linha: bool,
+    pub percentual_acumulado: Option<f64>,
+    pub dt_ref: String,
+    pub regra: RegraClasse,
+    pub metricas: MetricasProduto,
+    pub vendas_90d: Vec<Ponto>,
+    pub estoque_90d: Vec<Ponto>,
+}
+
+/// Carrega o detalhe de um produto. `Ok(None)` se não existir (404) — o resto é erro.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = DetalheProdutoFn, prefix = "/api")]
+pub async fn produto_detalhe(
+    token: String,
+    codigo: String,
+) -> Result<Option<DetalheProduto>, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .get(format!("{base}/pcp/produto/{codigo}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if resposta.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(None);
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao carregar o produto"));
+    }
+    resposta
+        .json::<DetalheProduto>()
+        .await
+        .map(Some)
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

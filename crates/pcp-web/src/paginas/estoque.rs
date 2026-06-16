@@ -13,61 +13,7 @@ use crate::api::{
 };
 use crate::contexto::Sessao;
 use crate::download;
-
-/// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10/§12).
-fn nome_exibicao(l: &LinhaEstoque) -> String {
-    let produto = l
-        .produto
-        .clone()
-        .unwrap_or_else(|| l.codigo_estoque.clone());
-    match l.configuracao.as_deref().and_then(|c| c.split(':').nth(1)) {
-        Some(cor) if !cor.trim().is_empty() => format!("{produto} - {}", cor.trim()),
-        _ => produto,
-    }
-}
-
-/// Inteiro com separador de milhar à brasileira (§12): `1234567` → `1.234.567`.
-fn fmt_milhar(n: i64) -> String {
-    let negativo = n < 0;
-    let digitos = n.unsigned_abs().to_string();
-    let n_dig = digitos.len();
-    let mut saida = String::with_capacity(n_dig + n_dig / 3 + 1);
-    for (i, ch) in digitos.chars().enumerate() {
-        if i != 0 && (n_dig - i).is_multiple_of(3) {
-            saida.push('.');
-        }
-        saida.push(ch);
-    }
-    if negativo {
-        format!("-{saida}")
-    } else {
-        saida
-    }
-}
-
-/// Cobertura: sentinela 999 vira "Sem histórico" (§12); senão 1 casa decimal.
-fn fmt_cobertura(c: f64) -> String {
-    if c >= 999.0 {
-        "Sem histórico".to_owned()
-    } else {
-        format!("{c:.1}")
-    }
-}
-
-fn rotulo_status(codigo: &str) -> &'static str {
-    match codigo {
-        "sem_estoque" => "Sem estoque",
-        "fora_de_linha" => "Fora de linha",
-        "sem_historico" => "Sem histórico",
-        "critico" => "Crítico",
-        "estoque_baixo" => "Estoque baixo",
-        "baixo" => "Baixo",
-        "adequado" => "Adequado",
-        "alto" => "Alto",
-        "excessivo" => "Excessivo",
-        _ => "—",
-    }
-}
+use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
 
 #[component]
 #[allow(clippy::too_many_lines)] // a maior parte é markup declarativo (view!), não lógica
@@ -665,7 +611,11 @@ fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
 
 #[component]
 fn Linha(i: LinhaEstoque) -> impl IntoView {
-    let nome = nome_exibicao(&i);
+    let nome = nome_exibicao(
+        i.produto.as_deref(),
+        i.configuracao.as_deref(),
+        &i.codigo_estoque,
+    );
     let href = format!("/estoque/{}", i.codigo_estoque);
     let classe_abc = format!("badge badge--abc-{}", i.classe.to_lowercase());
     let classe_status = format!("badge badge--status-{}", i.status);

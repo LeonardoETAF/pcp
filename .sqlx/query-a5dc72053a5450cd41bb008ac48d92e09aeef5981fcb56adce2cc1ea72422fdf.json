@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT dt_ref AS \"data!\", SUM(qtd_vendida)::bigint AS \"valor!\"\n           FROM pcp.vendas_dia\n           WHERE codigo_estoque = $1\n             AND dt_ref > ($2::date - INTERVAL '90 days') AND dt_ref <= $2\n           GROUP BY dt_ref ORDER BY dt_ref",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data!",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "dt_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "valor!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "a5dc72053a5450cd41bb008ac48d92e09aeef5981fcb56adce2cc1ea72422fdf"
+}

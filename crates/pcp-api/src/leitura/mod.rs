@@ -8,3 +8,4 @@ pub mod dashboard;
 pub mod estoque;
 pub mod estoque_exportacao;
 pub mod eventos;
+pub mod produto;

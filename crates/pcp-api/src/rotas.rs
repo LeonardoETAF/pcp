@@ -26,6 +26,7 @@ pub fn rotas(estado: AppState) -> Router {
             get(filtros_salvos::listar).post(filtros_salvos::criar),
         )
         .route("/pcp/estoque/filtros/{id}", delete(filtros_salvos::excluir))
+        .route("/pcp/produto/{codigo}", get(leitura::produto::produto))
         .route("/pcp/alertas", get(leitura::alertas::alertas))
         .route("/pcp/abc", get(leitura::abc::abc))
         .route("/pcp/eventos", get(leitura::eventos::eventos))

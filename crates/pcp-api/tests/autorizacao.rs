@@ -19,11 +19,19 @@ async fn estado_de_teste() -> AppState {
     let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para os testes de banco");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
+    let config = std::sync::Arc::new(
+        pcp_config::carregar_de_arquivo(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../config/pcp.config.yaml"
+        ))
+        .expect("config de negócio"),
+    );
     AppState::novo(
         pool,
         SEGREDO.to_vec(),
         Duration::minutes(15),
         Duration::days(7),
+        config,
     )
 }
 

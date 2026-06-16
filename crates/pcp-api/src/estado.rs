@@ -17,17 +17,20 @@ pub struct AppState {
     pub jwt_secret: Arc<Vec<u8>>,
     pub access_ttl: Duration,
     pub refresh_ttl: Duration,
+    /// Constantes de negócio (doc 02 §11) — fonte única; a API só lê (CLAUDE.md §3.7).
+    pub config: Arc<pcp_config::Config>,
     eventos: broadcast::Sender<String>,
 }
 
 impl AppState {
-    /// Monta o estado a partir do pool e dos parâmetros de token.
+    /// Monta o estado a partir do pool, dos parâmetros de token e da configuração de negócio.
     #[must_use]
     pub fn novo(
         pool: PgPool,
         jwt_secret: Vec<u8>,
         access_ttl: Duration,
         refresh_ttl: Duration,
+        config: Arc<pcp_config::Config>,
     ) -> Self {
         let (eventos, _) = broadcast::channel(CAPACIDADE_EVENTOS);
         Self {
@@ -35,6 +38,7 @@ impl AppState {
             jwt_secret: Arc::new(jwt_secret),
             access_ttl,
             refresh_ttl,
+            config,
             eventos,
         }
     }
@@ -78,6 +82,8 @@ pub struct ConfigApi {
     pub bind_addr: SocketAddr,
     pub admin_email: Option<String>,
     pub admin_senha: Option<String>,
+    /// Caminho do YAML de constantes de negócio (doc 02 §11). Default `config/pcp.config.yaml`.
+    pub config_path: String,
 }
 
 impl ConfigApi {
@@ -109,6 +115,8 @@ impl ConfigApi {
             bind_addr,
             admin_email: std::env::var("PCP_ADMIN_EMAIL").ok(),
             admin_senha: std::env::var("PCP_ADMIN_SENHA").ok(),
+            config_path: std::env::var("PCP_CONFIG_PATH")
+                .unwrap_or_else(|_| "config/pcp.config.yaml".into()),
         })
     }
 }

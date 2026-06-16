@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT dt_ref AS \"data!\", qtd_disponivel::bigint AS \"valor!\"\n           FROM pcp.estoque_snapshot\n           WHERE codigo_estoque = $1\n             AND dt_ref > ($2::date - INTERVAL '90 days') AND dt_ref <= $2\n           ORDER BY dt_ref",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data!",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "estoque_snapshot",
+            "name": "dt_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "valor!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "dcd841dcbddd51de029d02982e294d4359d75c16bb8fad942c461c08fbb472e7"
+}

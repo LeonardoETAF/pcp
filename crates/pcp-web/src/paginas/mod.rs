@@ -5,3 +5,4 @@ pub mod dashboard;
 pub mod estoque;
 pub mod login;
 pub mod placeholders;
+pub mod produto;

@@ -1864,6 +1864,7 @@ dependencies = [
  "hex",
  "http-body-util",
  "jsonwebtoken",
+ "pcp-config",
  "pcp-db",
  "rand_core 0.6.4",
  "serde",

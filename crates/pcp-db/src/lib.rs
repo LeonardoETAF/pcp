@@ -11,6 +11,7 @@ mod pool;
 
 pub mod agregacoes;
 pub mod derivadas;
+pub mod detalhe;
 pub mod eventos;
 pub mod filtros_salvos;
 pub mod leituras;

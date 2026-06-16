@@ -15,6 +15,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cfg = ConfigApi::do_ambiente()?;
+    let config = std::sync::Arc::new(pcp_config::carregar_de_arquivo(&cfg.config_path)?);
     let pool = pcp_db::criar_pool(&cfg.database_url, 10).await?;
     pcp_db::aplicar_migrations(&pool).await?;
 
@@ -22,7 +23,13 @@ async fn main() -> anyhow::Result<()> {
         bootstrap::garantir_admin_inicial(&pool, email, senha).await?;
     }
 
-    let estado = AppState::novo(pool, cfg.jwt_secret, cfg.access_ttl, cfg.refresh_ttl);
+    let estado = AppState::novo(
+        pool,
+        cfg.jwt_secret,
+        cfg.access_ttl,
+        cfg.refresh_ttl,
+        config,
+    );
 
     // Ponte de tempo real (SSE — §16): escuta o pipeline (LISTEN/NOTIFY) numa task dedicada.
     tokio::spawn(pcp_api::escutar_pipeline(

@@ -1,0 +1,287 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.codigo_estoque, p.sku, p.produto, p.configuracao, p.classe, p.status,\n                  p.fora_de_linha, p.fator_estoque, p.qtd_estoque, p.qtd_reserva,\n                  p.qtd_disponivel, p.cobertura_dias, p.media_diaria, p.estoque_seguranca,\n                  p.estoque_minimo, p.estoque_total_recomendado, p.qtd_sugerida,\n                  p.volume_janela, p.dias_com_vendas, p.coef_variacao, p.dt_ref,\n                  COALESCE(ep.outliers_detectados, 0)::bigint AS \"outliers_detectados!\",\n                  c.percentual_acumulado AS \"percentual_acumulado?\"\n           FROM pcp.produto_ativo p\n           LEFT JOIN pcp.estoque_param ep ON ep.codigo_estoque = p.codigo_estoque\n           LEFT JOIN pcp.classificacao c ON c.codigo_estoque = p.codigo_estoque\n                AND c.dt_calculo = (SELECT MAX(dt_calculo) FROM pcp.classificacao\n                                    WHERE codigo_estoque = p.codigo_estoque)\n           WHERE p.codigo_estoque = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "sku",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "sku"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "produto",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "configuracao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "configuracao"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "classe",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "fora_de_linha",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "fora_de_linha"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "fator_estoque",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "fator_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "qtd_estoque",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "qtd_reserva",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_reserva"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "qtd_disponivel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_disponivel"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "cobertura_dias",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "cobertura_dias"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "media_diaria",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "media_diaria"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "estoque_seguranca",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_seguranca"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "estoque_minimo",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_minimo"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "estoque_total_recomendado",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "estoque_total_recomendado"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "qtd_sugerida",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "qtd_sugerida"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "volume_janela",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "volume_janela"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "dias_com_vendas",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "dias_com_vendas"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "coef_variacao",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "coef_variacao"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "dt_ref",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "dt_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "outliers_detectados!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 22,
+        "name": "percentual_acumulado?",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "percentual_acumulado"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "2b1c87b3eb812f4ed89b412cf5bdc857e19610192ee1d9307f8ee7f5e196ed88"
+}

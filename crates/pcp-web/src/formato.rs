@@ -1,0 +1,62 @@
+//! Helpers de apresentação compartilhados (pt-BR, §12). Sem regra de negócio — só formatação e
+//! rótulos de exibição reutilizados pelas telas de estoque e detalhe do produto.
+
+/// Inteiro com separador de milhar à brasileira (§12): `1234567` → `1.234.567`.
+#[must_use]
+pub fn fmt_milhar(n: i64) -> String {
+    let negativo = n < 0;
+    let digitos = n.unsigned_abs().to_string();
+    let n_dig = digitos.len();
+    let mut saida = String::with_capacity(n_dig + n_dig / 3 + 1);
+    for (i, ch) in digitos.chars().enumerate() {
+        if i != 0 && (n_dig - i).is_multiple_of(3) {
+            saida.push('.');
+        }
+        saida.push(ch);
+    }
+    if negativo {
+        format!("-{saida}")
+    } else {
+        saida
+    }
+}
+
+/// Cobertura: sentinela 999 vira "Sem histórico" (§12); senão 1 casa decimal.
+#[must_use]
+pub fn fmt_cobertura(c: f64) -> String {
+    if c >= 999.0 {
+        "Sem histórico".to_owned()
+    } else {
+        format!("{c:.1}")
+    }
+}
+
+/// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10/§12).
+#[must_use]
+pub fn nome_exibicao(produto: Option<&str>, configuracao: Option<&str>, codigo: &str) -> String {
+    let base = produto
+        .filter(|s| !s.is_empty())
+        .unwrap_or(codigo)
+        .to_owned();
+    match configuracao.and_then(|c| c.split(':').nth(1)) {
+        Some(cor) if !cor.trim().is_empty() => format!("{base} - {}", cor.trim()),
+        _ => base,
+    }
+}
+
+/// Rótulo pt-BR do status canônico (doc 02 §5.2 / §12).
+#[must_use]
+pub fn rotulo_status(codigo: &str) -> &'static str {
+    match codigo {
+        "sem_estoque" => "Sem estoque",
+        "fora_de_linha" => "Fora de linha",
+        "sem_historico" => "Sem histórico",
+        "critico" => "Crítico",
+        "estoque_baixo" => "Estoque baixo",
+        "baixo" => "Baixo",
+        "adequado" => "Adequado",
+        "alto" => "Alto",
+        "excessivo" => "Excessivo",
+        _ => "—",
+    }
+}
