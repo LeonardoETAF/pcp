@@ -17,6 +17,10 @@ pub fn rotas(estado: AppState) -> Router {
         .route("/pcp/usuarios", post(handlers_pcp::criar_usuario))
         .route("/pcp/dashboard", get(leitura::dashboard::dashboard))
         .route("/pcp/estoque", get(leitura::estoque::estoque))
+        .route(
+            "/pcp/estoque/exportar",
+            get(leitura::estoque_exportacao::exportar),
+        )
         .route("/pcp/alertas", get(leitura::alertas::alertas))
         .route("/pcp/abc", get(leitura::abc::abc))
         .route("/pcp/eventos", get(leitura::eventos::eventos))

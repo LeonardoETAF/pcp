@@ -117,6 +117,48 @@ pub async fn estoque(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Exporta o filtro completo de estoque (`GET /pcp/estoque/exportar`) em CSV ou JSON. Devolve o
+/// conteúdo como texto; o download em si é disparado no cliente (CLAUDE.md §12). Sem paginação.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ExportarEstoque, prefix = "/api")]
+pub async fn exportar_estoque(
+    token: String,
+    consulta: ConsultaEstoque,
+    formato: String,
+) -> Result<String, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let mut params: Vec<(&str, String)> = vec![("formato", formato)];
+    for (chave, valor) in [
+        ("classe", consulta.classe),
+        ("status", consulta.status),
+        ("busca", consulta.busca),
+        ("ordem", consulta.ordem),
+    ] {
+        if let Some(v) = valor.filter(|s| !s.is_empty()) {
+            params.push((chave, v));
+        }
+    }
+    let resposta = reqwest::Client::new()
+        .get(format!("{base}/pcp/estoque/exportar"))
+        .query(&params)
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao exportar dados"));
+    }
+    resposta
+        .text()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

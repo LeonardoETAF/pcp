@@ -1267,6 +1267,13 @@ input {
 .badge--status-fora_de_linha,
 .badge--status-sem_historico { background: var(--abc-d); }
 
+.barra-exportar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e-2);
+}
+
 .paginacao {
   display: flex;
   align-items: center;

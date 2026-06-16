@@ -15,6 +15,7 @@
 pub mod api;
 pub mod app;
 mod contexto;
+mod download;
 mod hydratacao;
 mod layout;
 mod paginas;

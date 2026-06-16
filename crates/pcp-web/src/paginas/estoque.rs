@@ -7,8 +7,9 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
-use crate::api::{estoque, painel, ConsultaEstoque, LinhaEstoque, PainelResumo};
+use crate::api::{estoque, exportar_estoque, painel, ConsultaEstoque, LinhaEstoque, PainelResumo};
 use crate::contexto::Sessao;
+use crate::download;
 
 /// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10/§12).
 fn nome_exibicao(l: &LinhaEstoque) -> String {
@@ -83,6 +84,32 @@ pub fn PaginaEstoque() -> impl IntoView {
     // Qualquer mudança de filtro volta para a primeira página.
     let resetar = move || deslocamento.set(0);
 
+    // Exporta o filtro atual inteiro (CSV/JSON) e dispara o download no cliente (§12).
+    let exportar = move |formato: &'static str| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let consulta = ConsultaEstoque {
+            classe: classe.get_untracked(),
+            status: status.get_untracked(),
+            busca: Some(busca.get_untracked()),
+            ordem: Some(ordem.get_untracked()),
+            limite: 0,
+            deslocamento: 0,
+        };
+        let nome = if formato == "json" {
+            "estoque.json"
+        } else {
+            "estoque.csv"
+        };
+        leptos::task::spawn_local(async move {
+            match exportar_estoque(token, consulta, formato.to_owned()).await {
+                Ok(conteudo) => download::baixar(nome, &conteudo),
+                Err(e) => leptos::logging::error!("exportação falhou: {e}"),
+            }
+        });
+    };
+
     let painel_res = Resource::new(
         move || (sessao.0.get(), tick.get()),
         |(t, _)| async move {
@@ -150,6 +177,24 @@ pub fn PaginaEstoque() -> impl IntoView {
             </Suspense>
 
             <Filtros classe status busca busca_input ordem limite resetar />
+
+            <div class="barra-exportar">
+                <span class="texto-suave">"Exportar filtro completo:"</span>
+                <button
+                    type="button"
+                    class="btn btn--secundario btn--sm"
+                    on:click=move |_| exportar("csv")
+                >
+                    "CSV"
+                </button>
+                <button
+                    type="button"
+                    class="btn btn--secundario btn--sm"
+                    on:click=move |_| exportar("json")
+                >
+                    "JSON"
+                </button>
+            </div>
 
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }

@@ -6,4 +6,5 @@ pub mod abc;
 pub mod alertas;
 pub mod dashboard;
 pub mod estoque;
+pub mod estoque_exportacao;
 pub mod eventos;
