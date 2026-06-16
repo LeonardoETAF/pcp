@@ -253,3 +253,32 @@ input {
   margin-top: var(--e-2);
   width: 100%;
 }
+.login__erro {
+  color: var(--semaforo-critico);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+/* ---------- Layout autenticado (placeholder do shell) ---------- */
+.appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-4);
+  padding: var(--e-3) var(--e-5);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+  box-shadow: var(--sombra-1);
+}
+.appbar__logo {
+  height: 32px;
+  width: auto;
+}
+.conteudo {
+  padding: var(--e-6);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.texto-suave {
+  color: var(--texto-suave);
+}

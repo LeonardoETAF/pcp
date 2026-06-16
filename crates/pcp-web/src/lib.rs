@@ -12,5 +12,6 @@
 // pedantic vira ruído em todo componente. Relaxado só este sub-lint (CLAUDE.md §5).
 #![allow(clippy::must_use_candidate)]
 
+pub mod api;
 pub mod app;
 mod hydratacao;

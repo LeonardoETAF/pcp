@@ -15,11 +15,18 @@ crate-type = ["cdylib", "rlib"]
 leptos = { version = "0.8" }
 leptos_router = { version = "0.8" }
 leptos_meta = { version = "0.8" }
+serde = { version = "1", features = ["derive"] }
 axum = { version = "0.8", optional = true }
 leptos_axum = { version = "0.8", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
+# Só no servidor SSR: as server functions chamam a pcp-api (server-to-server, sem CORS).
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+], optional = true }
+serde_json = { version = "1", optional = true }
 
 [features]
 default = ["ssr"]
@@ -28,6 +35,8 @@ ssr = [
     "dep:axum",
     "dep:tokio",
     "dep:leptos_axum",
+    "dep:reqwest",
+    "dep:serde_json",
     "leptos/ssr",
     "leptos_meta/ssr",
     "leptos_router/ssr",

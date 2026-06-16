@@ -17,6 +17,11 @@ async fn main() {
     let routes = generate_route_list(App);
 
     let app = Router::new()
+        // Endpoints das server functions (login etc.) — server-to-server com a pcp-api.
+        .route(
+            "/api/{*fn_name}",
+            axum::routing::post(leptos_axum::handle_server_fns),
+        )
         .leptos_routes(&leptos_options, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
