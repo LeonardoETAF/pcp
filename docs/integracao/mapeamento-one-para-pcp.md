@@ -147,7 +147,7 @@ Disponível para quando entrar: `F10011.NFI_UNIT` (preço de venda na NF), entid
 | P1 | O que é "venda"/qual data | ✅ **pedidos `F05001` não cancelados** (data `PEDV_DATC`). Ver §2. |
 | P2 | Como marca personalizado | ✅ `F03001.ITM_PRODA` (produto customizável c/ estampa/borda). |
 | P3 | Variação/configuração | ✅ `descricaoConfiguraveis` já vem `"CHAVE: valor"` (1+ atributos). |
-| P4 | Chave do produto | ✅ `F03001.ITM_ID` (mesma FK em estoque/pedido/cardex/NF). |
+| P4 | Chave do produto | ✅ `codigo_estoque` ← `F03001.ITM_ID` (chave natural do One; FK em estoque/pedido/fatura). |
 | P5 | Snapshot completo (incl. zero/fora) | ✅ `F03005` tem linha por produto mesmo com saldo 0 + `EST_FLIN`. |
 | P6 | Fora de linha | ✅ `F03005.EST_FLIN`. |
 | P7 | Depósitos/almoxarifado | ✅ `F03005` = saldo **global**; por depósito só no WMS (não usamos). |
@@ -159,8 +159,12 @@ Disponível para quando entrar: `F10011.NFI_UNIT` (preço de venda na NF), entid
 O mapeamento funcional está **fechado** (P1–P9 resolvidos). Restam só confirmações que **não**
 bloqueiam a implementação pela definição adotada (pedidos não cancelados):
 
-- **Paridade:** validar os números contra `6797`/`10001`/`10473` + a distribuição (doc 08 §3)
-  quando houver dados; se "pedidos não cancelados" não bater, alternar para autorizados/faturados.
+- **Paridade (revisada):** os produtos de referência `6797`/`10001`/`10473` (doc 08) são códigos
+  do **sistema de PCP antigo separado**, **não** existem no One (`ITM_ID`/`ITM_REF`/`ITM_SKU` →
+  vazio, verificado 2026-06-16). Logo, **não** servem para validar contra o One. `codigo_estoque`
+  = **`ITM_ID`** (chave natural do One). Paridade passa a ser: (a) distribuição ABC do doc 08 §3
+  como sanidade aproximada; (b) escolher produtos de referência **do próprio One** (por `ITM_ID`)
+  e recalcular à mão quando houver dados; (c) se o negócio tiver um de-para código-antigo→One, usá-lo.
 - **Fatura:** tabelas confirmadas `F10901` (cabeçalho) + `F10911` (item) — ver §2 Opção A.
 - **Só se formos por "autorizado":** confirmar se a data é `PEDV_DATA` (aprovação) ou `PEDV_DTAP` (pagamento).
 
