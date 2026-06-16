@@ -19,7 +19,7 @@ fn titulo_da_rota(path: &str) -> &'static str {
         "/ai-chat" => "Chat IA",
         "/configuracoes" => "Configurações",
         p if p.starts_with("/estoque/") => "Detalhe do Produto",
-        _ => "Visão geral",
+        _ => "Dashboard",
     }
 }
 
@@ -127,12 +127,8 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             <p class="barra__secao">"PCP"</p>
             <div class="barra__divisor"></div>
             <nav class="menu">
-                <ItemMenu href="/dashboard" rotulo="Visão geral" icone="dashboard.svg" />
+                <ItemMenu href="/dashboard" rotulo="Dashboard" icone="dashboard.svg" />
                 <ItemMenu href="/estoque" rotulo="Estoque" icone="estoque-inventario.svg" />
-                <ItemMenu href="/alertas" rotulo="Alertas" icone="alerta.svg" />
-                <ItemMenu href="/abc" rotulo="Classificação ABC" icone="relatorios-kpis.svg" />
-                <ItemMenu href="/ai-chat" rotulo="Chat IA" icone="ia-assistente.svg" />
-                <ItemMenu href="/configuracoes" rotulo="Configurações" icone="configuracoes.svg" />
             </nav>
             <div class="usuario">
                 <span class="usuario__avatar">
