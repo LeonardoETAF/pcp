@@ -21,7 +21,7 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
     Effect::new(move |_| {
         if let Some(Ok(token)) = login.value().get() {
             sessao.0.set(Some(token));
-            navegar.with_value(|n| n("/", NavigateOptions::default()));
+            navegar.with_value(|n| n("/dashboard", NavigateOptions::default()));
         }
     });
     let tem_erro = move || matches!(login.value().get(), Some(Err(_)));
