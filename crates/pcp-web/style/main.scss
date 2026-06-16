@@ -608,6 +608,11 @@ input {
   padding: 0 var(--e-3);
   margin-bottom: var(--e-2);
 }
+.barra__divisor {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 var(--e-2) var(--e-3);
+}
 .menu {
   display: flex;
   flex-direction: column;
@@ -656,6 +661,7 @@ input {
 }
 .shell--recolhido .barra__secao,
 .shell--recolhido .menu__rotulo,
+.shell--recolhido .usuario__avatar,
 .shell--recolhido .usuario__dados {
   display: none;
 }
@@ -664,15 +670,16 @@ input {
   justify-content: center;
 }
 .shell--recolhido .icone-mask {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 .usuario {
   margin-top: auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--e-3);
-  padding: var(--e-3);
+  padding: var(--e-4) var(--e-3);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .usuario__avatar {
@@ -692,7 +699,7 @@ input {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
 }
 .usuario__nome {
   font-weight: var(--peso-medio);

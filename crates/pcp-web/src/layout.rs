@@ -60,7 +60,19 @@ pub fn LayoutAutenticado() -> impl IntoView {
                                 aria-label="Alternar tema"
                                 on:click=alternar_tema
                             >
-                                {move || if tema.0.get() == "escuro" { "☀" } else { "🌙" }}
+                                <span
+                                    class="icone-mask"
+                                    style=move || {
+                                        let arq = if tema.0.get() == "escuro" {
+                                            "modo-claro.svg"
+                                        } else {
+                                            "modo-escuro.svg"
+                                        };
+                                        format!(
+                                            "-webkit-mask-image:url(/icons/{arq});mask-image:url(/icons/{arq})",
+                                        )
+                                    }
+                                ></span>
                             </button>
                             <A href="/alertas" attr:class="icone-btn" attr:aria-label="Alertas">
                                 <Icone arquivo="sino-notificacao.svg" />
@@ -113,12 +125,13 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
                 <img class="barra__logo" src=logo_src alt="SuperCopo" />
             </button>
             <p class="barra__secao">"PCP"</p>
+            <div class="barra__divisor"></div>
             <nav class="menu">
                 <ItemMenu href="/dashboard" rotulo="Visão geral" icone="dashboard.svg" />
                 <ItemMenu href="/estoque" rotulo="Estoque" icone="estoque-inventario.svg" />
                 <ItemMenu href="/alertas" rotulo="Alertas" icone="alerta.svg" />
                 <ItemMenu href="/abc" rotulo="Classificação ABC" icone="relatorios-kpis.svg" />
-                <ItemMenu href="/ai-chat" rotulo="Chat IA" icone="ajuda.svg" />
+                <ItemMenu href="/ai-chat" rotulo="Chat IA" icone="ia-assistente.svg" />
                 <ItemMenu href="/configuracoes" rotulo="Configurações" icone="configuracoes.svg" />
             </nav>
             <div class="usuario">
