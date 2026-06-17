@@ -92,14 +92,15 @@ pub async fn criar(
     }
     let prioridade = recomendacao::prioridade_de(&req.prioridade)
         .ok_or_else(|| ApiError::Requisicao("prioridade inválida".to_owned()))?;
-    let lead = lead_time(&estado.config, prioridade);
+    let config = estado.config();
+    let lead = lead_time(&config, prioridade);
     let prazo = prazo_ou_default(req.prazo.as_deref(), lead)?;
 
     let auto = aprovacao_automatica(
         req.qtd_solicitada,
         prioridade,
-        i64::from(estado.config.reposicao.aprovacao_automatica.qtd_max),
-        recomendacao::excecao_aprovacao(&estado.config),
+        i64::from(config.reposicao.aprovacao_automatica.qtd_max),
+        recomendacao::excecao_aprovacao(&config),
     );
     let estado_inicial = if auto {
         EstadoSolicitacao::Aprovada

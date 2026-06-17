@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT valor AS \"valor!\" FROM pcp.config_efetiva WHERE id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "valor!",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "config_efetiva",
+            "name": "valor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0379a96050f5c74ee2dba8db0246ff863d481ad672e33a5d26c5515b517ba95d"
+}

@@ -1,24 +1,13 @@
-//! Páginas operacionais ainda em construção (placeholders). Cada uma vira um arquivo/feature
-//! própria nos prompts seguintes (2.5 Detalhe do Produto, 3.x ABC/Config/Chat). Frontend burro.
+//! Páginas ainda em construção (placeholders). Chat IA entra na Fase 4. Frontend burro.
 
 use leptos::prelude::*;
 
 #[component]
-fn EmConstrucao(titulo: &'static str) -> impl IntoView {
+pub fn ChatIa() -> impl IntoView {
     view! {
         <section class="placeholder">
-            <h1 class="placeholder__titulo">{titulo}</h1>
-            <p class="texto-suave">"Em construção — entra nos próximos prompts."</p>
+            <h1 class="placeholder__titulo">"Chat IA"</h1>
+            <p class="texto-suave">"Em construção — entra na Fase 4 (IA)."</p>
         </section>
     }
-}
-
-#[component]
-pub fn ChatIa() -> impl IntoView {
-    view! { <EmConstrucao titulo="Chat IA" /> }
-}
-
-#[component]
-pub fn Configuracoes() -> impl IntoView {
-    view! { <EmConstrucao titulo="Configurações" /> }
 }

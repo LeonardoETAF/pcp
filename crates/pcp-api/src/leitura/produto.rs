@@ -96,14 +96,15 @@ pub async fn produto(
         .ok_or(ApiError::NaoEncontrado)?;
     let vendas = detalhe::vendas_90d(&estado.pool, &codigo, d.dt_ref).await?;
     let estoque = detalhe::estoque_90d(&estado.pool, &codigo, d.dt_ref).await?;
+    let config = estado.config();
 
     let regra = RegraClasseDto {
-        meta_cobertura_dias: recomendacao::meta_cobertura(&estado.config, &d.classe),
-        limiar_critico_dias: limiar_critico(&estado.config, &d.classe),
+        meta_cobertura_dias: recomendacao::meta_cobertura(&config, &d.classe),
+        limiar_critico_dias: limiar_critico(&config, &d.classe),
         fator_estoque: d.fator_estoque,
         justificativa: justificativa(&d),
     };
-    let recomendacao = recomendacao_producao(&estado.config, &d);
+    let recomendacao = recomendacao_producao(&config, &d);
     let metricas = MetricasDto {
         qtd_estoque: d.qtd_estoque,
         qtd_reserva: d.qtd_reserva,

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.config_auditoria (chave, valor_anterior, valor_novo, por_id)\n               VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a766463b9265dfe74c5a09f1654ca29fff8b5fcb3618dbef2989374fffaeaae5"
+}

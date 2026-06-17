@@ -12,6 +12,7 @@ pcp-core = { path = "../pcp-core" }
 pcp-db = { path = "../pcp-db" }
 pcp-config = { path = "../pcp-config" }
 axum = "0.8"
+arc-swap = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 serde = { version = "1", features = ["derive"] }

@@ -7,12 +7,14 @@ use axum::Router;
 use crate::autenticacao::exigir_autenticacao;
 use crate::estado::AppState;
 use crate::leitura;
-use crate::{ciclo_vida, filtros_salvos, handlers_auth, handlers_pcp, solicitacoes};
+use crate::{ciclo_vida, config, filtros_salvos, handlers_auth, handlers_pcp, solicitacoes};
 
 /// Constrói o roteador completo da API.
 pub fn rotas(estado: AppState) -> Router {
     let protegidas = Router::new()
         .route("/pcp/me", get(handlers_pcp::me))
+        .route("/pcp/config", get(config::obter).put(config::salvar))
+        .route("/pcp/config/auditoria", get(config::auditoria))
         .route("/pcp/aprovacoes", get(handlers_pcp::area_aprovacoes))
         .route("/pcp/usuarios", post(handlers_pcp::criar_usuario))
         .route("/pcp/dashboard", get(leitura::dashboard::dashboard))

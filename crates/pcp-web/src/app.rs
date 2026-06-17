@@ -10,10 +10,11 @@ use crate::contexto::{Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::abc::ClassificacaoAbc;
 use crate::paginas::alertas::PaginaAlertas;
+use crate::paginas::configuracoes::Configuracoes;
 use crate::paginas::dashboard::PaginaDashboard;
 use crate::paginas::estoque::PaginaEstoque;
 use crate::paginas::login::PaginaLogin;
-use crate::paginas::placeholders::{ChatIa, Configuracoes};
+use crate::paginas::placeholders::ChatIa;
 use crate::paginas::produto::DetalheProdutoPagina;
 
 /// Documento HTML servido no SSR (inclui scripts de hidratação e auto-reload em dev).

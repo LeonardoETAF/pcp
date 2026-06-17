@@ -6,6 +6,7 @@
 mod autenticacao;
 pub mod bootstrap;
 mod ciclo_vida;
+mod config;
 mod erro;
 mod estado;
 mod filtros_salvos;

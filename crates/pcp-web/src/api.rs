@@ -524,6 +524,73 @@ pub async fn transicionar_ciclo_vida(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Uma entrada da auditoria de configuração (`GET /pcp/config/auditoria`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EntradaAuditoriaConfig {
+    pub chave: String,
+    pub valor_anterior: Option<String>,
+    pub valor_novo: Option<String>,
+    pub por_id: String,
+    pub em: String,
+}
+
+/// Configuração de negócio vigente como JSON opaco (`GET /pcp/config`). O frontend não conhece a
+/// regra (§3): só edita valores e devolve o documento. A validação é do servidor.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede ou sessão expirada.
+#[server(name = ObterConfig, prefix = "/api")]
+pub async fn obter_config(token: String) -> Result<serde_json::Value, ServerFnError> {
+    obter_json("/pcp/config", &token).await
+}
+
+/// Salva a configuração (`PUT /pcp/config`) — gestor+. Servidor valida e recarrega a quente.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão, config inválida (mensagem do servidor) ou falha de rede.
+#[server(name = SalvarConfig, prefix = "/api")]
+pub async fn salvar_config(
+    token: String,
+    config: serde_json::Value,
+) -> Result<serde_json::Value, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .put(format!("{base}/pcp/config"))
+        .bearer_auth(&token)
+        .json(&config)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new(
+            "apenas gestor pode editar a configuração",
+        ));
+    }
+    if resposta.status() == reqwest::StatusCode::BAD_REQUEST {
+        let msg = resposta.text().await.unwrap_or_default();
+        return Err(ServerFnError::new(format!("configuração inválida: {msg}")));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao salvar a configuração"));
+    }
+    resposta
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Auditoria de configuração (`GET /pcp/config/auditoria`) — gestor+.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão ou falha de rede.
+#[server(name = AuditoriaConfig, prefix = "/api")]
+pub async fn auditoria_config(token: String) -> Result<Vec<EntradaAuditoriaConfig>, ServerFnError> {
+    obter_json("/pcp/config/auditoria", &token).await
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

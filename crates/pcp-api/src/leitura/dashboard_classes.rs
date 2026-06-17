@@ -31,9 +31,10 @@ pub struct ClasseDto {
 pub async fn classes(State(estado): State<AppState>) -> Result<Json<Vec<ClasseDto>>, ApiError> {
     let resumo = leituras::resumo_por_classe(&estado.pool).await?;
     let total_fisico: i64 = resumo.iter().map(|r| r.estoque_fisico).sum();
+    let config = estado.config();
     let dtos = resumo
         .into_iter()
-        .map(|r| dto(r, total_fisico, &estado.config))
+        .map(|r| dto(r, total_fisico, &config))
         .collect();
     Ok(Json(dtos))
 }

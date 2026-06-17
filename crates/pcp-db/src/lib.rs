@@ -11,6 +11,7 @@ mod pool;
 
 pub mod agregacoes;
 pub mod ciclo_vida;
+pub mod config_persist;
 pub mod derivadas;
 pub mod detalhe;
 pub mod eventos;

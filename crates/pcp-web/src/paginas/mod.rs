@@ -2,6 +2,7 @@
 
 pub mod abc;
 pub mod alertas;
+pub mod configuracoes;
 pub mod dashboard;
 pub mod estoque;
 pub mod login;

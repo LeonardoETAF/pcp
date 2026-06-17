@@ -3,6 +3,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use arc_swap::ArcSwap;
 use chrono::Duration;
 use pcp_db::PgPool;
 use tokio::sync::broadcast;
@@ -17,8 +18,9 @@ pub struct AppState {
     pub jwt_secret: Arc<Vec<u8>>,
     pub access_ttl: Duration,
     pub refresh_ttl: Duration,
-    /// Constantes de negócio (doc 02 §11) — fonte única; a API só lê (CLAUDE.md §3.7).
-    pub config: Arc<pcp_config::Config>,
+    /// Constantes de negócio (doc 02 §11) — fonte única; recarregada a quente após edição
+    /// (CLAUDE.md §3.7). `ArcSwap` dá leitura sem lock no caminho quente.
+    config: Arc<ArcSwap<pcp_config::Config>>,
     eventos: broadcast::Sender<String>,
 }
 
@@ -38,9 +40,20 @@ impl AppState {
             jwt_secret: Arc::new(jwt_secret),
             access_ttl,
             refresh_ttl,
-            config,
+            config: Arc::new(ArcSwap::from(config)),
             eventos,
         }
+    }
+
+    /// Snapshot atual da configuração de negócio (clone barato do `Arc`).
+    #[must_use]
+    pub fn config(&self) -> Arc<pcp_config::Config> {
+        self.config.load_full()
+    }
+
+    /// Troca a configuração vigente (recarga a quente após edição persistida).
+    pub fn trocar_config(&self, nova: Arc<pcp_config::Config>) {
+        self.config.store(nova);
     }
 
     /// Emissor para publicar eventos de tempo real (usado pela ponte LISTEN/NOTIFY → SSE).

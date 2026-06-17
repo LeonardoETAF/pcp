@@ -492,6 +492,36 @@ input {
   font-size: var(--fs-sm);
   text-align: center;
 }
+.form-auth__ok {
+  color: var(--semaforo-ok);
+  font-size: var(--fs-sm);
+}
+
+/* Configurações (doc 03 §8) — editor de constantes */
+.config-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--e-4);
+}
+.config-campos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+.config-campo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+}
+.config-campo__rotulo {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+.config-campo .input--num {
+  width: 120px;
+}
 .vista__rodape {
   margin-top: var(--e-5);
   text-align: center;

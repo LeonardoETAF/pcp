@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.config_efetiva (id, valor, atualizado_em, atualizado_por)\n           VALUES (true, $1, now(), $2)\n           ON CONFLICT (id) DO UPDATE SET valor = $1, atualizado_em = now(), atualizado_por = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a84c1a1417ad5dee8e0fdb25300a2b1cf6f71b9f89518acbcd34e901a5ccc86f"
+}
