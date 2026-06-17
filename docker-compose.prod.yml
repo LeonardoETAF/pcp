@@ -1,0 +1,65 @@
+# Stack COMPLETA containerizada (staging/prod) — CLAUDE.md §1/§7. O ambiente de DEV usa o
+# docker-compose.yml (só Postgres) + `cargo`/`cargo leptos`. Aqui sobem Postgres + API + Web.
+# Segredos vêm do ambiente/.env, NUNCA hardcoded (§7.4); `:?` falha rápido se faltar.
+# Separação de ambientes: use um .env por ambiente, ex.:
+#   docker compose -f docker-compose.prod.yml --env-file .env.staging up -d --build
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod    up -d --build
+services:
+  postgres:
+    image: postgres:16
+    container_name: pcp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: pcp
+    volumes:
+      - pcp_pgdata:/var/lib/postgresql/data
+      # Fixa o search_path do role (evita colisão role==schema no controle de migrations).
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pcp -d pcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: pcp-api
+    image: pcp-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Aplica as migrations no start (pcp-db) e atende em 8080 dentro da rede do compose.
+      DATABASE_URL: postgres://pcp:${POSTGRES_PASSWORD:?}@postgres:5432/pcp
+      PCP_JWT_SECRET: ${PCP_JWT_SECRET:?defina PCP_JWT_SECRET (32+ chars)}
+      PCP_ACCESS_TTL_MIN: ${PCP_ACCESS_TTL_MIN:-15}
+      PCP_REFRESH_TTL_DIAS: ${PCP_REFRESH_TTL_DIAS:-7}
+      PCP_API_BIND: 0.0.0.0:8080
+      PCP_ADMIN_EMAIL: ${PCP_ADMIN_EMAIL:-}
+      PCP_ADMIN_SENHA: ${PCP_ADMIN_SENHA:-}
+      PCP_WEBHOOK_FALHA_URL: ${PCP_WEBHOOK_FALHA_URL:-}
+    # Sem `ports`: a API não fica exposta ao host — só o Web a alcança (deny-by-default na borda).
+    expose:
+      - "8080"
+
+  web:
+    build:
+      context: .
+      target: pcp-web
+    image: pcp-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # SSR chama a API server-to-server pela rede interna (sem CORS, sem expor a API).
+      PCP_API_URL: http://api:8080
+      LEPTOS_SITE_ADDR: 0.0.0.0:3000
+    ports:
+      - "${PCP_WEB_PORT:-3000}:3000"
+
+volumes:
+  pcp_pgdata:

@@ -1,0 +1,10 @@
+# Fora do contexto de build (acelera e evita vazar segredos — CLAUDE.md §7.4).
+target/
+.git/
+.github/
+.env
+*.env
+!.env.example
+docs/
+*.md
+docker/postgres-init/
