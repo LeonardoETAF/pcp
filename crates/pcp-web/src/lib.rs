@@ -17,6 +17,7 @@
 
 pub mod api;
 pub mod app;
+mod armazenamento;
 mod contexto;
 mod download;
 mod formato;

@@ -18,9 +18,30 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
     let sessao = expect_context::<Sessao>();
     let navegar = StoredValue::new(use_navigate());
     let mostrar_senha = RwSignal::new(false);
+    // "Lembrar-me": guarda só o e-mail no navegador (a senha fica com o gerenciador do
+    // navegador via autocomplete — nunca em localStorage, §7).
+    let email = RwSignal::new(String::new());
+    let lembrar = RwSignal::new(false);
+
+    // Ao montar (cliente), preenche o e-mail lembrado e marca o checkbox.
+    Effect::new(move |_| {
+        if let Some(salvo) = crate::armazenamento::ler(crate::armazenamento::EMAIL_LEMBRADO) {
+            email.set(salvo);
+            lembrar.set(true);
+        }
+    });
 
     Effect::new(move |_| {
         if let Some(Ok(token)) = login.value().get() {
+            // Persiste/limpa o e-mail conforme "Lembrar-me".
+            if lembrar.get_untracked() {
+                crate::armazenamento::gravar(
+                    crate::armazenamento::EMAIL_LEMBRADO,
+                    &email.get_untracked(),
+                );
+            } else {
+                crate::armazenamento::remover(crate::armazenamento::EMAIL_LEMBRADO);
+            }
             sessao.0.set(Some(token.clone()));
             // Redireciona para a página inicial preferida do usuário (doc 03 §8).
             leptos::task::spawn_local(async move {
@@ -53,6 +74,8 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                             name="email"
                             placeholder="voce@empresa.com.br"
                             autocomplete="username"
+                            prop:value=move || email.get()
+                            on:input=move |ev| email.set(event_target_value(&ev))
                         />
                     </div>
                 </div>
@@ -104,8 +127,12 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     </div>
                 </div>
                 <label class="lembrar">
-                    <input type="checkbox" checked />
-                    <span>"Manter conectado neste dispositivo"</span>
+                    <input
+                        type="checkbox"
+                        prop:checked=move || lembrar.get()
+                        on:change=move |ev| lembrar.set(event_target_checked(&ev))
+                    />
+                    <span>"Lembrar-me"</span>
                 </label>
                 {move || {
                     tem_erro()
