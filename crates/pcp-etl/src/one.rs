@@ -110,41 +110,46 @@ impl FonteConsultaOne {
         Ok(inicio)
     }
 
-    /// Lê o estoque cru do One.
+    /// Lê o estoque cru do One. Falha (não silencia) se uma coluna esperada não decodificar —
+    /// quantidade de estoque errada/zerada por engano afeta a recomendação (§7 integridade).
     async fn estoque_cru(&self) -> Result<Vec<BronzeEstoque>, ErroEtl> {
         let linhas = sqlx::query(SQL_ESTOQUE).fetch_all(&self.one).await?;
-        Ok(linhas
+        linhas
             .iter()
-            .map(|r| BronzeEstoque {
-                itm_id: r.get::<i64, _>("itm_id"),
-                itm_sku: texto(r, "itm_sku"),
-                itm_desc: texto(r, "itm_desc"),
-                est_qtde: inteiro(r, "est_qtde"),
-                est_qtdd: inteiro(r, "est_qtdd"),
-                est_qtem: r.try_get::<Option<i32>, _>("est_qtem").ok().flatten(),
-                est_flin: booleano(r, "est_flin"),
-                itm_proda: booleano(r, "itm_proda"),
+            .map(|r| {
+                Ok(BronzeEstoque {
+                    itm_id: r.try_get("itm_id")?,
+                    itm_sku: texto(r, "itm_sku")?,
+                    itm_desc: texto(r, "itm_desc")?,
+                    est_qtde: inteiro(r, "est_qtde")?,
+                    est_qtdd: inteiro(r, "est_qtdd")?,
+                    est_qtem: r.try_get::<Option<i32>, _>("est_qtem")?,
+                    est_flin: booleano(r, "est_flin")?,
+                    itm_proda: booleano(r, "itm_proda")?,
+                })
             })
-            .collect())
+            .collect()
     }
 
-    /// Lê as vendas cruas do One a partir de `desde`.
+    /// Lê as vendas cruas do One a partir de `desde`. Falha em erro de coluna (não silencia).
     async fn vendas_cru(&self, desde: NaiveDate) -> Result<Vec<BronzeVenda>, ErroEtl> {
         let linhas = sqlx::query(SQL_VENDAS)
             .bind(desde)
             .fetch_all(&self.one)
             .await?;
-        Ok(linhas
+        linhas
             .iter()
-            .map(|r| BronzeVenda {
-                pedv_datc: r.get::<NaiveDate, _>("pedv_datc"),
-                itmp_prd: r.get::<i64, _>("itmp_prd"),
-                itm_sku: texto(r, "itm_sku"),
-                itm_desc: texto(r, "itm_desc"),
-                itmp_qnt: inteiro(r, "itmp_qnt"),
-                itm_proda: booleano(r, "itm_proda"),
+            .map(|r| {
+                Ok(BronzeVenda {
+                    pedv_datc: r.try_get("pedv_datc")?,
+                    itmp_prd: r.try_get("itmp_prd")?,
+                    itm_sku: texto(r, "itm_sku")?,
+                    itm_desc: texto(r, "itm_desc")?,
+                    itmp_qnt: inteiro(r, "itmp_qnt")?,
+                    itm_proda: booleano(r, "itm_proda")?,
+                })
             })
-            .collect())
+            .collect()
     }
 
     /// Grava o estoque cru no bronze (full refresh do dia: troca a `data_ref`).
@@ -244,24 +249,20 @@ impl FonteDados for FonteConsultaOne {
     }
 }
 
-/// Lê uma coluna textual opcional, normalizando branco → `None`.
-fn texto(r: &PgRow, col: &str) -> Option<String> {
-    r.try_get::<Option<String>, _>(col)
-        .ok()
-        .flatten()
+/// Lê uma coluna textual opcional, normalizando branco → `None`. Erro de decodificação propaga
+/// (não é silenciado): só `NULL` vira `None`.
+fn texto(r: &PgRow, col: &str) -> Result<Option<String>, ErroEtl> {
+    Ok(r.try_get::<Option<String>, _>(col)?
         .map(|s| s.trim().to_owned())
-        .filter(|s| !s.is_empty())
+        .filter(|s| !s.is_empty()))
 }
 
-/// Lê uma quantidade inteira agregada (SUM pode vir nula quando todas as parcelas são nulas).
-fn inteiro(r: &PgRow, col: &str) -> i32 {
-    r.try_get::<Option<i32>, _>(col).ok().flatten().unwrap_or(0)
+/// Lê uma quantidade inteira agregada; `NULL` (SUM de tudo nulo) vira `0`, erro de tipo propaga.
+fn inteiro(r: &PgRow, col: &str) -> Result<i32, ErroEtl> {
+    Ok(r.try_get::<Option<i32>, _>(col)?.unwrap_or(0))
 }
 
-/// Lê um booleano agregado (`BOOL_OR` pode vir nulo), assumindo `false` na ausência.
-fn booleano(r: &PgRow, col: &str) -> bool {
-    r.try_get::<Option<bool>, _>(col)
-        .ok()
-        .flatten()
-        .unwrap_or(false)
+/// Lê um booleano agregado; `NULL` (`BOOL_OR` vazio) vira `false`, erro de tipo propaga.
+fn booleano(r: &PgRow, col: &str) -> Result<bool, ErroEtl> {
+    Ok(r.try_get::<Option<bool>, _>(col)?.unwrap_or(false))
 }
