@@ -11,6 +11,7 @@ publish.workspace = true
 pcp-core = { path = "../pcp-core" }
 pcp-db = { path = "../pcp-db" }
 pcp-config = { path = "../pcp-config" }
+pcp-ai = { path = "../pcp-ai" }
 axum = "0.8"
 arc-swap = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time"] }

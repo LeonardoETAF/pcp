@@ -3,4 +3,7 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
-// Esqueleto: insights, chat e análise por produto entram nos prompts 4.1–4.3.
+pub mod estatistica;
+pub mod insights;
+
+pub use insights::{analisar, AlertaInteligente, ContextoProduto, Insights, PontoVenda};

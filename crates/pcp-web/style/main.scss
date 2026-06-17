@@ -1280,6 +1280,13 @@ input {
 .badge--certeza-media { background: var(--semaforo-alto); color: #1b1f24; }
 .badge--certeza-baixa { background: var(--abc-d); }
 
+/* Badges de severidade dos insights (doc 06 §3.3) */
+.badge--sev-critico { background: var(--semaforo-critico); }
+.badge--sev-atencao { background: var(--semaforo-alto); color: #1b1f24; }
+.badge--sev-positivo { background: var(--semaforo-ok); }
+.badge--sev-informativo { background: var(--semaforo-info); }
+.insights-alertas { margin-top: var(--e-4); }
+
 /* ── Detalhe do Produto (doc 03 §4): cabeçalho, regra, métricas, gráficos ── */
 
 .prod-cab {

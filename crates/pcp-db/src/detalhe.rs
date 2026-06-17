@@ -126,6 +126,37 @@ pub async fn vendas_90d(
         .collect())
 }
 
+/// Série de vendas (soma por dia) no intervalo `[inicio, ate]` — insumo dos insights (doc 06 §3).
+/// Só dias com venda; o motor de insights densifica os dias sem registro.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn vendas_intervalo(
+    pool: &PgPool,
+    codigo: &str,
+    inicio: NaiveDate,
+    ate: NaiveDate,
+) -> Result<Vec<PontoSerie>, ErroDb> {
+    let linhas = sqlx::query!(
+        r#"SELECT dt_ref AS "data!", SUM(qtd_vendida)::bigint AS "valor!"
+           FROM pcp.vendas_dia
+           WHERE codigo_estoque = $1 AND dt_ref >= $2 AND dt_ref <= $3
+           GROUP BY dt_ref ORDER BY dt_ref"#,
+        codigo,
+        inicio,
+        ate,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|r| PontoSerie {
+            data: r.data,
+            valor: r.valor,
+        })
+        .collect())
+}
+
 /// Evolução do estoque disponível (snapshot diário) dos 90 dias até `ate` — gráfico do doc 03 §4.
 ///
 /// # Errors

@@ -774,6 +774,41 @@ pub async fn override_sazonalidade(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Alerta inteligente dos insights estatísticos (doc 06 §3.3).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AlertaInteligente {
+    pub categoria: String,
+    pub severidade: String,
+    pub titulo: String,
+    pub detalhe: String,
+}
+
+/// Insights estatísticos do produto (`GET /pcp/produto/{codigo}/insights`). Tudo já calculado no
+/// backend pelo motor `pcp-ai` (frontend burro — §3).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Insights {
+    pub slope: f64,
+    pub correlacao: f64,
+    pub baseline_ma7: f64,
+    pub forca_sazonal: f64,
+    pub fatores_dia: [f64; 7],
+    pub previsao_7d: Vec<f64>,
+    pub total_previsto_7d: f64,
+    pub total_previsto_30d: f64,
+    pub confianca: f64,
+    pub dias_com_venda_pct: f64,
+    pub alertas: Vec<AlertaInteligente>,
+}
+
+/// Insights estatísticos de um produto.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ProdutoInsights, prefix = "/api")]
+pub async fn produto_insights(token: String, codigo: String) -> Result<Insights, ServerFnError> {
+    obter_json(&format!("/pcp/produto/{codigo}/insights"), &token).await
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

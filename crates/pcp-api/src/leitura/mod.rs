@@ -10,4 +10,5 @@ pub mod dashboard_classes;
 pub mod estoque;
 pub mod estoque_exportacao;
 pub mod eventos;
+pub mod insights;
 pub mod produto;

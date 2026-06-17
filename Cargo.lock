@@ -1856,9 +1856,11 @@ checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
 name = "pcp-ai"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "pcp-config",
  "pcp-core",
  "pcp-db",
+ "serde",
 ]
 
 [[package]]
@@ -1874,6 +1876,7 @@ dependencies = [
  "hex",
  "http-body-util",
  "jsonwebtoken",
+ "pcp-ai",
  "pcp-config",
  "pcp-core",
  "pcp-db",

@@ -7,8 +7,9 @@ use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
 use crate::api::{
-    criar_solicitacao, listar_solicitacoes, perfil, produto_detalhe, transicionar_solicitacao,
-    DetalheProduto, MetricasProduto, Ponto, Recomendacao, RegraClasse, Solicitacao,
+    criar_solicitacao, listar_solicitacoes, perfil, produto_detalhe, produto_insights,
+    transicionar_solicitacao, AlertaInteligente, DetalheProduto, Insights, MetricasProduto, Ponto,
+    Recomendacao, RegraClasse, Solicitacao,
 };
 use crate::contexto::Sessao;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
@@ -119,7 +120,121 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
             </section>
         </div>
 
+        <InsightsSecao codigo=d.codigo_estoque.clone() />
         <CentroComando codigo=d.codigo_estoque.clone() recomendacao=d.recomendacao.clone() />
+    }
+}
+
+fn rotulo_severidade(s: &str) -> &'static str {
+    match s {
+        "critico" => "Crítico",
+        "atencao" => "Atenção",
+        "positivo" => "Positivo",
+        _ => "Info",
+    }
+}
+
+/// Insights inteligentes (doc 03 §4.1 / doc 06 §3): alertas, previsão e tendência — calculados no
+/// backend (`pcp-ai`). Frontend burro: só exibe.
+#[component]
+fn InsightsSecao(codigo: String) -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let codigo = StoredValue::new(codigo);
+    let dados = Resource::new(
+        move || sessao.0.get(),
+        move |t| async move {
+            match t {
+                Some(t) => produto_insights(t, codigo.get_value()).await.ok(),
+                None => None,
+            }
+        },
+    );
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Insights inteligentes"</h2>
+                <p class="texto-suave">"Tendência, previsão e alertas (motor estatístico)."</p>
+            </header>
+            <Suspense fallback=|| view! { <p class="texto-suave">"Analisando…"</p> }>
+                {move || {
+                    dados
+                        .get()
+                        .flatten()
+                        .map_or_else(
+                            || {
+                                view! {
+                                    <p class="estado-vazio">"Sem dados suficientes para insights."</p>
+                                }
+                                    .into_any()
+                            },
+                            |i| corpo_insights(&i).into_any(),
+                        )
+                }}
+            </Suspense>
+        </section>
+    }
+}
+
+#[allow(clippy::cast_possible_truncation)] // previsões pequenas: arredondamento p/ exibição
+fn corpo_insights(i: &Insights) -> impl IntoView {
+    let tendencia = if i.slope > 0.05 {
+        "Alta"
+    } else if i.slope < -0.05 {
+        "Queda"
+    } else {
+        "Estável"
+    };
+    let alertas = i.alertas.clone();
+    view! {
+        <div class="prod-metricas">
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Previsão 7 dias"</span>
+                <span class="metrica-card__valor">{fmt_milhar(i.total_previsto_7d.round() as i64)}</span>
+            </div>
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Previsão 30 dias"</span>
+                <span class="metrica-card__valor">
+                    {fmt_milhar(i.total_previsto_30d.round() as i64)}
+                </span>
+            </div>
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Confiança"</span>
+                <span class="metrica-card__valor">{format!("{:.0}%", i.confianca * 100.0)}</span>
+            </div>
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Tendência"</span>
+                <span class="metrica-card__valor">{tendencia}</span>
+            </div>
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Força sazonal"</span>
+                <span class="metrica-card__valor">{format!("{:.2}", i.forca_sazonal)}</span>
+            </div>
+            <div class="metrica-card">
+                <span class="metrica-card__rotulo">"Dias com venda"</span>
+                <span class="metrica-card__valor">{format!("{:.0}%", i.dias_com_venda_pct)}</span>
+            </div>
+        </div>
+        {(!alertas.is_empty())
+            .then(|| {
+                view! {
+                    <ul class="solic-lista insights-alertas">
+                        {alertas.into_iter().map(|a| linha_alerta_ia(&a)).collect_view()}
+                    </ul>
+                }
+            })}
+    }
+}
+
+fn linha_alerta_ia(a: &AlertaInteligente) -> impl IntoView {
+    let badge = format!("badge badge--sev-{}", a.severidade);
+    view! {
+        <li class="solic-item">
+            <span class=badge>{rotulo_severidade(&a.severidade)}</span>
+            <div class="solic-item__dados">
+                <span class="solic-item__qtd">{a.titulo.clone()}</span>
+                <span class="texto-suave">{a.detalhe.clone()}</span>
+            </div>
+        </li>
     }
 }
 
