@@ -17,6 +17,7 @@ pub mod detalhe;
 pub mod eventos;
 pub mod filtros_salvos;
 pub mod leituras;
+pub mod preferencias;
 pub mod refresh_tokens;
 pub mod sazonalidade;
 pub mod snapshot;

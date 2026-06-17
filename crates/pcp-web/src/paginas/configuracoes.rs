@@ -7,7 +7,11 @@ use std::collections::BTreeMap;
 use leptos::prelude::*;
 use serde_json::Value;
 
-use crate::api::{auditoria_config, obter_config, perfil, salvar_config, EntradaAuditoriaConfig};
+use crate::api::{
+    atualizar_usuario, auditoria_config, criar_usuario, listar_sazonalidade, listar_usuarios,
+    obter_config, obter_preferencias, override_sazonalidade, perfil, salvar_config,
+    salvar_preferencias, EntradaAuditoriaConfig, UsuarioConta,
+};
 use crate::contexto::Sessao;
 
 #[component]
@@ -52,7 +56,415 @@ pub fn Configuracoes() -> impl IntoView {
                 }}
             </Suspense>
             <AuditoriaConfig />
+            <Preferencias />
+            <Sazonalidade />
+            <Usuarios />
         </section>
+    }
+}
+
+/// Preferências de exibição do próprio usuário (doc 03 §8): página inicial e tamanho de página.
+#[component]
+fn Preferencias() -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let msg = RwSignal::new(None::<String>);
+    let pagina = RwSignal::new("dashboard".to_owned());
+    let tamanho = RwSignal::new(50_i32);
+
+    let prefs = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => obter_preferencias(t).await.ok(),
+                None => None,
+            }
+        },
+    );
+    Effect::new(move |_| {
+        if let Some(Some(p)) = prefs.get() {
+            pagina.set(p.pagina_inicial);
+            tamanho.set(p.tamanho_pagina);
+        }
+    });
+
+    let salvar = move |_| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let (pi, tp) = (pagina.get_untracked(), tamanho.get_untracked());
+        leptos::task::spawn_local(async move {
+            match salvar_preferencias(token, pi, tp).await {
+                Ok(_) => msg.set(Some("Preferências salvas.".to_owned())),
+                Err(e) => msg.set(Some(e.to_string())),
+            }
+        });
+    };
+
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Minhas preferências"</h2>
+                <p class="texto-suave">"Página inicial e tamanho de página."</p>
+            </header>
+            <div class="solic-form">
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Página inicial"</span>
+                    <select
+                        class="select"
+                        prop:value=move || pagina.get()
+                        on:change=move |ev| pagina.set(event_target_value(&ev))
+                    >
+                        <option value="dashboard">"Dashboard"</option>
+                        <option value="estoque">"Estoque"</option>
+                        <option value="alertas">"Alertas"</option>
+                        <option value="abc">"Classificação ABC"</option>
+                    </select>
+                </label>
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Tamanho de página"</span>
+                    <select
+                        class="select"
+                        prop:value=move || tamanho.get().to_string()
+                        on:change=move |ev| {
+                            if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                tamanho.set(v);
+                            }
+                        }
+                    >
+                        <option value="50">"50"</option>
+                        <option value="100">"100"</option>
+                        <option value="500">"500"</option>
+                        <option value="1000">"1000"</option>
+                    </select>
+                </label>
+                <button type="button" class="btn btn--primario" on:click=salvar>
+                    "Salvar"
+                </button>
+            </div>
+            {move || msg.get().map(|m| view! { <p class="texto-suave">{m}</p> })}
+        </section>
+    }
+}
+
+fn nome_mes(mes: i16) -> &'static str {
+    match mes {
+        1 => "Jan",
+        2 => "Fev",
+        3 => "Mar",
+        4 => "Abr",
+        5 => "Mai",
+        6 => "Jun",
+        7 => "Jul",
+        8 => "Ago",
+        9 => "Set",
+        10 => "Out",
+        11 => "Nov",
+        12 => "Dez",
+        _ => "—",
+    }
+}
+
+/// Fatores sazonais (doc 03 §8): vigentes + override manual com justificativa (gestor).
+#[component]
+fn Sazonalidade() -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let recarregar = RwSignal::new(0_u32);
+    let justificativa = RwSignal::new(String::new());
+    let msg = RwSignal::new(None::<String>);
+    let edits = RwSignal::new(BTreeMap::<i16, String>::new());
+
+    let papel = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => perfil(t).await.unwrap_or_default(),
+                None => String::new(),
+            }
+        },
+    );
+    let eh_gestor = move || matches!(papel.get().as_deref(), Some("gestor" | "admin"));
+
+    let fatores = Resource::new(
+        move || (sessao.0.get(), recarregar.get()),
+        |(t, _)| async move {
+            match t {
+                Some(t) => listar_sazonalidade(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
+    // Inicializa os campos a partir dos fatores carregados (12 meses; default 1.00).
+    Effect::new(move |_| {
+        let mapa: BTreeMap<i16, f64> = fatores
+            .get()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|f| (f.mes, f.fator))
+            .collect();
+        edits.set(
+            (1..=12_i16)
+                .map(|mes| {
+                    (
+                        mes,
+                        format!("{:.2}", mapa.get(&mes).copied().unwrap_or(1.0)),
+                    )
+                })
+                .collect(),
+        );
+    });
+
+    let salvar = move |mes: i16| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let Some(valor) = edits
+            .get_untracked()
+            .get(&mes)
+            .and_then(|s| s.parse::<f64>().ok())
+        else {
+            msg.set(Some("Informe um fator numérico.".to_owned()));
+            return;
+        };
+        let just = justificativa.get_untracked();
+        leptos::task::spawn_local(async move {
+            match override_sazonalidade(token, mes, valor, just).await {
+                Ok(_) => {
+                    msg.set(Some(format!("Fator de {} salvo.", nome_mes(mes))));
+                    recarregar.update(|n| *n += 1);
+                }
+                Err(e) => msg.set(Some(e.to_string())),
+            }
+        });
+    };
+
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Sazonalidade"</h2>
+                <p class="texto-suave">"Fatores vigentes por mês; override manual (gestor)."</p>
+            </header>
+            {move || msg.get().map(|m| view! { <p class="texto-suave">{m}</p> })}
+            <Show when=eh_gestor>
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Justificativa do override"</span>
+                    <input
+                        class="input"
+                        placeholder="Opcional"
+                        prop:value=move || justificativa.get()
+                        on:input=move |ev| justificativa.set(event_target_value(&ev))
+                    />
+                </label>
+            </Show>
+            {move || {
+                let gestor = eh_gestor();
+                view! {
+                    <div class="cobertura-classes">
+                        {(1..=12_i16)
+                            .map(|mes| {
+                                view! {
+                                    <div class="cob-classe">
+                                        <span class="config-campo__rotulo">{nome_mes(mes)}</span>
+                                        <input
+                                            class="input input--num"
+                                            type="number"
+                                            step="0.01"
+                                            prop:disabled=!gestor
+                                            prop:value=move || {
+                                                edits.get().get(&mes).cloned().unwrap_or_default()
+                                            }
+                                            on:input=move |ev| {
+                                                let v = event_target_value(&ev);
+                                                edits.update(|m| {
+                                                    m.insert(mes, v);
+                                                });
+                                            }
+                                        />
+                                        {gestor
+                                            .then(|| {
+                                                view! {
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn--secundario btn--sm"
+                                                        on:click=move |_| salvar(mes)
+                                                    >
+                                                        "Salvar"
+                                                    </button>
+                                                }
+                                            })}
+                                    </div>
+                                }
+                            })
+                            .collect_view()}
+                    </div>
+                }
+            }}
+        </section>
+    }
+}
+
+/// Gestão de usuários e papéis (doc 03 §8) — somente admin.
+#[component]
+#[allow(clippy::too_many_lines)] // tabela + formulário de criação
+fn Usuarios() -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let recarregar = RwSignal::new(0_u32);
+    let msg = RwSignal::new(None::<String>);
+    let (n_email, n_senha, n_papel, n_nome) = (
+        RwSignal::new(String::new()),
+        RwSignal::new(String::new()),
+        RwSignal::new("analista".to_owned()),
+        RwSignal::new(String::new()),
+    );
+
+    let papel = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => perfil(t).await.unwrap_or_default(),
+                None => String::new(),
+            }
+        },
+    );
+    let eh_admin = move || matches!(papel.get().as_deref(), Some("admin"));
+
+    let lista = Resource::new(
+        move || (sessao.0.get(), recarregar.get()),
+        |(t, _)| async move {
+            match t {
+                Some(t) => listar_usuarios(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
+
+    let criar = move |_| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let (e, s, p, n) = (
+            n_email.get_untracked(),
+            n_senha.get_untracked(),
+            n_papel.get_untracked(),
+            n_nome.get_untracked(),
+        );
+        leptos::task::spawn_local(async move {
+            match criar_usuario(token, e, s, p, n).await {
+                Ok(()) => {
+                    n_email.set(String::new());
+                    n_senha.set(String::new());
+                    n_nome.set(String::new());
+                    msg.set(Some("Usuário criado.".to_owned()));
+                    recarregar.update(|x| *x += 1);
+                }
+                Err(err) => msg.set(Some(err.to_string())),
+            }
+        });
+    };
+
+    view! {
+        <Show when=eh_admin>
+            <section class="cartao">
+                <header class="cartao__cab">
+                    <h2 class="cartao__titulo">"Usuários e papéis"</h2>
+                    <p class="texto-suave">"Somente admin (CLAUDE.md §7.3)."</p>
+                </header>
+                {move || msg.get().map(|m| view! { <p class="texto-suave">{m}</p> })}
+                <div class="solic-form">
+                    <input
+                        class="input"
+                        placeholder="E-mail"
+                        prop:value=move || n_email.get()
+                        on:input=move |ev| n_email.set(event_target_value(&ev))
+                    />
+                    <input
+                        class="input"
+                        type="password"
+                        placeholder="Senha"
+                        prop:value=move || n_senha.get()
+                        on:input=move |ev| n_senha.set(event_target_value(&ev))
+                    />
+                    <input
+                        class="input"
+                        placeholder="Nome (opcional)"
+                        prop:value=move || n_nome.get()
+                        on:input=move |ev| n_nome.set(event_target_value(&ev))
+                    />
+                    <select
+                        class="select"
+                        prop:value=move || n_papel.get()
+                        on:change=move |ev| n_papel.set(event_target_value(&ev))
+                    >
+                        <option value="analista">"Analista"</option>
+                        <option value="gestor">"Gestor"</option>
+                        <option value="admin">"Admin"</option>
+                    </select>
+                    <button type="button" class="btn btn--primario" on:click=criar>
+                        "Criar"
+                    </button>
+                </div>
+                <Suspense fallback=|| view! { <p class="texto-suave">"Carregando…"</p> }>
+                    {move || {
+                        let itens = lista.get().unwrap_or_default();
+                        view! {
+                            <ul class="solic-lista">
+                                {itens
+                                    .into_iter()
+                                    .map(|u| view! { <LinhaUsuario u recarregar /> })
+                                    .collect_view()}
+                            </ul>
+                        }
+                    }}
+                </Suspense>
+            </section>
+        </Show>
+    }
+}
+
+#[component]
+fn LinhaUsuario(u: UsuarioConta, recarregar: RwSignal<u32>) -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let papel = RwSignal::new(u.papel.clone());
+    let ativo = RwSignal::new(u.ativo);
+    let id = StoredValue::new(u.id.clone());
+    let salvar = move |_| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let (p, a) = (papel.get_untracked(), ativo.get_untracked());
+        leptos::task::spawn_local(async move {
+            let _ = atualizar_usuario(token, id.get_value(), p, a).await;
+            recarregar.update(|n| *n += 1);
+        });
+    };
+    view! {
+        <li class="solic-item">
+            <div class="solic-item__dados">
+                <span class="solic-item__qtd">{u.email.clone()}</span>
+                <span class="texto-suave">{u.nome.clone().unwrap_or_default()}</span>
+            </div>
+            <div class="solic-item__acoes">
+                <select
+                    class="select"
+                    prop:value=move || papel.get()
+                    on:change=move |ev| papel.set(event_target_value(&ev))
+                >
+                    <option value="analista">"Analista"</option>
+                    <option value="gestor">"Gestor"</option>
+                    <option value="admin">"Admin"</option>
+                </select>
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        prop:checked=move || ativo.get()
+                        on:change=move |ev| ativo.set(event_target_checked(&ev))
+                    />
+                    <span>"Ativo"</span>
+                </label>
+                <button type="button" class="btn btn--secundario btn--sm" on:click=salvar>
+                    "Salvar"
+                </button>
+            </div>
+        </li>
     }
 }
 

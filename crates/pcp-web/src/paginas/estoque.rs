@@ -8,8 +8,8 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use crate::api::{
-    estoque, excluir_filtro, exportar_estoque, listar_filtros, painel, salvar_filtro,
-    ConsultaEstoque, LinhaEstoque, PainelResumo,
+    estoque, excluir_filtro, exportar_estoque, listar_filtros, obter_preferencias, painel,
+    salvar_filtro, ConsultaEstoque, LinhaEstoque, PainelResumo,
 };
 use crate::contexto::Sessao;
 use crate::download;
@@ -33,6 +33,22 @@ pub fn PaginaEstoque() -> impl IntoView {
     let limite = RwSignal::new(50_i64);
     let deslocamento = RwSignal::new(0_i64);
     let tick = RwSignal::new(0_u32);
+
+    // Tamanho de página inicial = preferência do usuário (doc 03 §8), aplicada ao carregar.
+    let prefs = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => obter_preferencias(t).await.ok(),
+                None => None,
+            }
+        },
+    );
+    Effect::new(move |_| {
+        if let Some(Some(p)) = prefs.get() {
+            limite.set(i64::from(p.tamanho_pagina));
+        }
+    });
 
     // Qualquer mudança de filtro volta para a primeira página.
     let resetar = move || deslocamento.set(0);

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT fator FROM pcp.fatores_sazonais WHERE mes = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "fator",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "fatores_sazonais",
+            "name": "fator"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int2"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e3aed98ab1829b9e4ac56fad1a7d7af550d05f4a1259f490be62fbed62a1633b"
+}

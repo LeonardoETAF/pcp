@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.fatores_sazonais (mes, fator) VALUES ($1, $2) ON CONFLICT (mes) DO UPDATE SET fator = $2, atualizado_em = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int2",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e75760a6893e860c6efbdaf89d3310771c1cb6c19365e34ed211aea51585174c"
+}

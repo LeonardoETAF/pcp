@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pcp.usuario SET papel = $2, ativo = $3, atualizado_em = now() WHERE id = $1 RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "senha_hash",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "senha_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "papel",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "papel"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "nome",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "nome"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "ativo",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "ativo"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "usuario",
+            "name": "criado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "7e11ac7cc67db96353690e3fc969574c45635e09fb95201e4b1bd1467c6ea114"
+}

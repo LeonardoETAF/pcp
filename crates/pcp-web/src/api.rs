@@ -591,6 +591,189 @@ pub async fn auditoria_config(token: String) -> Result<Vec<EntradaAuditoriaConfi
     obter_json("/pcp/config/auditoria", &token).await
 }
 
+/// Usuário para a tela de gestão (`/pcp/usuarios`). Sem `senha_hash` (nunca trafega).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UsuarioConta {
+    pub id: String,
+    pub email: String,
+    pub papel: String,
+    pub nome: Option<String>,
+    pub ativo: bool,
+}
+
+/// Preferências de exibição do usuário (`/pcp/preferencias`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Preferencia {
+    pub pagina_inicial: String,
+    pub tamanho_pagina: i32,
+}
+
+/// Fator sazonal de um mês (`/pcp/sazonalidade`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FatorMes {
+    pub mes: i16,
+    pub fator: f64,
+}
+
+/// Lista usuários (`GET /pcp/usuarios`) — admin.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão ou falha de rede.
+#[server(name = ListarUsuarios, prefix = "/api")]
+pub async fn listar_usuarios(token: String) -> Result<Vec<UsuarioConta>, ServerFnError> {
+    obter_json("/pcp/usuarios", &token).await
+}
+
+/// Cria usuário (`POST /pcp/usuarios`) — admin.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão, dados inválidos ou e-mail já cadastrado.
+#[server(name = CriarUsuario, prefix = "/api")]
+pub async fn criar_usuario(
+    token: String,
+    email: String,
+    senha: String,
+    papel: String,
+    nome: String,
+) -> Result<(), ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let nome = (!nome.trim().is_empty()).then_some(nome);
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/usuarios"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "email": email, "senha": senha, "papel": papel, "nome": nome }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new("apenas admin gere usuários"));
+    }
+    if resposta.status() == reqwest::StatusCode::CONFLICT {
+        return Err(ServerFnError::new("e-mail já cadastrado"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new(
+            "falha ao criar usuário (verifique os dados)",
+        ));
+    }
+    Ok(())
+}
+
+/// Atualiza papel/situação de um usuário (`PUT /pcp/usuarios/{id}`) — admin.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão ou falha de rede.
+#[server(name = AtualizarUsuario, prefix = "/api")]
+pub async fn atualizar_usuario(
+    token: String,
+    id: String,
+    papel: String,
+    ativo: bool,
+) -> Result<UsuarioConta, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .put(format!("{base}/pcp/usuarios/{id}"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "papel": papel, "ativo": ativo }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new("apenas admin gere usuários"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao atualizar usuário"));
+    }
+    resposta
+        .json::<UsuarioConta>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Preferências do usuário (`GET /pcp/preferencias`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede ou sessão expirada.
+#[server(name = ObterPreferencias, prefix = "/api")]
+pub async fn obter_preferencias(token: String) -> Result<Preferencia, ServerFnError> {
+    obter_json("/pcp/preferencias", &token).await
+}
+
+/// Salva preferências do usuário (`PUT /pcp/preferencias`).
+///
+/// # Errors
+/// [`ServerFnError`] em valores inválidos ou falha de rede.
+#[server(name = SalvarPreferencias, prefix = "/api")]
+pub async fn salvar_preferencias(
+    token: String,
+    pagina_inicial: String,
+    tamanho_pagina: i32,
+) -> Result<Preferencia, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .put(format!("{base}/pcp/preferencias"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "pagina_inicial": pagina_inicial,
+            "tamanho_pagina": tamanho_pagina,
+        }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao salvar preferências"));
+    }
+    resposta
+        .json::<Preferencia>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Fatores sazonais vigentes (`GET /pcp/sazonalidade`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede ou sessão expirada.
+#[server(name = ListarSazonalidade, prefix = "/api")]
+pub async fn listar_sazonalidade(token: String) -> Result<Vec<FatorMes>, ServerFnError> {
+    obter_json("/pcp/sazonalidade", &token).await
+}
+
+/// Override manual do fator de um mês (`PUT /pcp/sazonalidade/{mes}`) — gestor.
+///
+/// # Errors
+/// [`ServerFnError`] sem permissão, fator fora do intervalo ou falha de rede.
+#[server(name = OverrideSazonalidade, prefix = "/api")]
+pub async fn override_sazonalidade(
+    token: String,
+    mes: i16,
+    fator: f64,
+    justificativa: String,
+) -> Result<FatorMes, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let justificativa = (!justificativa.trim().is_empty()).then_some(justificativa);
+    let resposta = reqwest::Client::new()
+        .put(format!("{base}/pcp/sazonalidade/{mes}"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "fator": fator, "justificativa": justificativa }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new("apenas gestor edita sazonalidade"));
+    }
+    if resposta.status() == reqwest::StatusCode::BAD_REQUEST {
+        let msg = resposta.text().await.unwrap_or_default();
+        return Err(ServerFnError::new(msg));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao salvar o fator"));
+    }
+    resposta
+        .json::<FatorMes>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

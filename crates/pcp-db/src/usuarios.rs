@@ -86,3 +86,41 @@ pub async fn contar(pool: &PgPool) -> Result<i64, ErroDb> {
         .await?;
     Ok(total.unwrap_or(0))
 }
+
+/// Lista todos os usuários (gestão — doc 03 §8). `senha_hash` nunca é exposto pela API.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn listar(pool: &PgPool) -> Result<Vec<Usuario>, ErroDb> {
+    let linhas = sqlx::query_as!(
+        Usuario,
+        "SELECT id, email, senha_hash, papel, nome, ativo, criado_em \
+         FROM pcp.usuario ORDER BY email",
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas)
+}
+
+/// Atualiza papel e/ou situação (ativo) de um usuário. `papel` validado pelo chamador.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn atualizar(
+    pool: &PgPool,
+    id: Uuid,
+    papel: &str,
+    ativo: bool,
+) -> Result<Option<Usuario>, ErroDb> {
+    let u = sqlx::query_as!(
+        Usuario,
+        "UPDATE pcp.usuario SET papel = $2, ativo = $3, atualizado_em = now() \
+         WHERE id = $1 RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
+        id,
+        papel,
+        ativo,
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(u)
+}

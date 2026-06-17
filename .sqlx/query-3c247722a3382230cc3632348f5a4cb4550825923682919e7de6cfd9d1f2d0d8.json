@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pagina_inicial, tamanho_pagina FROM pcp.preferencia_usuario WHERE usuario_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pagina_inicial",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "preferencia_usuario",
+            "name": "pagina_inicial"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "tamanho_pagina",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "preferencia_usuario",
+            "name": "tamanho_pagina"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3c247722a3382230cc3632348f5a4cb4550825923682919e7de6cfd9d1f2d0d8"
+}

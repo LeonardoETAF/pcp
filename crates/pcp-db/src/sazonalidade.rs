@@ -1,10 +1,77 @@
 //! Fatores sazonais (`pcp.fatores_sazonais`) e agregação de vendas por mês para o cálculo
 //! (doc 02 §4). A regra (fator/clamp) vive no `pcp-core`; aqui só persistência e agregação.
 
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::erro::ErroDb;
+
+/// Uma entrada da auditoria de override manual de fator sazonal (doc 02 §4 / §7.5).
+#[derive(Debug, Clone)]
+pub struct EntradaSazonalAuditoria {
+    pub mes: i16,
+    pub fator_anterior: Option<f64>,
+    pub fator_novo: f64,
+    pub justificativa: Option<String>,
+    pub por_id: Uuid,
+    pub em: DateTime<Utc>,
+}
+
+/// Override manual do fator de um mês (gestor), registrando a auditoria, numa transação (§7.5).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn override_mes(
+    pool: &PgPool,
+    mes: i16,
+    fator: f64,
+    justificativa: Option<&str>,
+    por_id: Uuid,
+) -> Result<(), ErroDb> {
+    let mut tx = pool.begin().await?;
+    let anterior =
+        sqlx::query_scalar!("SELECT fator FROM pcp.fatores_sazonais WHERE mes = $1", mes)
+            .fetch_optional(&mut *tx)
+            .await?;
+    sqlx::query!(
+        "INSERT INTO pcp.fatores_sazonais (mes, fator) VALUES ($1, $2) \
+         ON CONFLICT (mes) DO UPDATE SET fator = $2, atualizado_em = now()",
+        mes,
+        fator,
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "INSERT INTO pcp.fator_sazonal_auditoria (mes, fator_anterior, fator_novo, justificativa, por_id) \
+         VALUES ($1, $2, $3, $4, $5)",
+        mes,
+        anterior,
+        fator,
+        justificativa,
+        por_id,
+    )
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Últimos overrides de sazonalidade (mais recentes primeiro).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn auditoria(pool: &PgPool, limite: i64) -> Result<Vec<EntradaSazonalAuditoria>, ErroDb> {
+    let linhas = sqlx::query_as!(
+        EntradaSazonalAuditoria,
+        "SELECT mes, fator_anterior, fator_novo, justificativa, por_id, em \
+         FROM pcp.fator_sazonal_auditoria ORDER BY em DESC LIMIT $1",
+        limite,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas)
+}
 
 /// Total vendido e dias com venda de um mês (insumo da média diária — doc 02 §4.1).
 #[derive(Debug, Clone)]

@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT mes, fator_anterior, fator_novo, justificativa, por_id, em FROM pcp.fator_sazonal_auditoria ORDER BY em DESC LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "mes",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "mes"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "fator_anterior",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "fator_anterior"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "fator_novo",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "fator_novo"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "justificativa",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "justificativa"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "por_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "por_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_auditoria",
+            "name": "em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d625f53b7a3ba7f0ae6d5891683bb48b53b3b26c5ff3ed97f6200d827598ac5e"
+}

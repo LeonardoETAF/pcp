@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.preferencia_usuario (usuario_id, pagina_inicial, tamanho_pagina) VALUES ($1, $2, $3) ON CONFLICT (usuario_id) DO UPDATE SET pagina_inicial = $2, tamanho_pagina = $3, atualizado_em = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "181ca3ee2ae052e48fba1d5f1dbb180854d90a636929bf88b45dab37296277fb"
+}

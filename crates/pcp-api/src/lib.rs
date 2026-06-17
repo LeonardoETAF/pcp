@@ -15,11 +15,14 @@ mod handlers_pcp;
 mod jwt;
 mod leitura;
 mod papel;
+mod preferencias;
 mod recomendacao;
 mod rotas;
+mod sazonalidade;
 pub mod senha;
 mod solicitacoes;
 pub mod tempo_real;
+mod usuarios;
 
 pub use erro::ApiError;
 pub use estado::{AppState, ConfigApi, ErroBootstrap};

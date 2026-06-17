@@ -7,7 +7,7 @@ use leptos_router::hooks::use_navigate;
 use leptos_router::NavigateOptions;
 
 use super::Vista;
-use crate::api::Login;
+use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
 
 /// Vista de entrada (login real via server function).
@@ -21,8 +21,14 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
 
     Effect::new(move |_| {
         if let Some(Ok(token)) = login.value().get() {
-            sessao.0.set(Some(token));
-            navegar.with_value(|n| n("/dashboard", NavigateOptions::default()));
+            sessao.0.set(Some(token.clone()));
+            // Redireciona para a página inicial preferida do usuário (doc 03 §8).
+            leptos::task::spawn_local(async move {
+                let destino = obter_preferencias(token)
+                    .await
+                    .map_or_else(|_| "dashboard".to_owned(), |p| p.pagina_inicial);
+                navegar.with_value(|n| n(&format!("/{destino}"), NavigateOptions::default()));
+            });
         }
     });
     let tem_erro = move || matches!(login.value().get(), Some(Err(_)));

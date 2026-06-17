@@ -7,7 +7,10 @@ use axum::Router;
 use crate::autenticacao::exigir_autenticacao;
 use crate::estado::AppState;
 use crate::leitura;
-use crate::{ciclo_vida, config, filtros_salvos, handlers_auth, handlers_pcp, solicitacoes};
+use crate::{
+    ciclo_vida, config, filtros_salvos, handlers_auth, handlers_pcp, preferencias, sazonalidade,
+    solicitacoes, usuarios,
+};
 
 /// Constrói o roteador completo da API.
 pub fn rotas(estado: AppState) -> Router {
@@ -16,7 +19,24 @@ pub fn rotas(estado: AppState) -> Router {
         .route("/pcp/config", get(config::obter).put(config::salvar))
         .route("/pcp/config/auditoria", get(config::auditoria))
         .route("/pcp/aprovacoes", get(handlers_pcp::area_aprovacoes))
-        .route("/pcp/usuarios", post(handlers_pcp::criar_usuario))
+        .route(
+            "/pcp/usuarios",
+            get(usuarios::listar).post(handlers_pcp::criar_usuario),
+        )
+        .route(
+            "/pcp/usuarios/{id}",
+            axum::routing::put(usuarios::atualizar),
+        )
+        .route(
+            "/pcp/preferencias",
+            get(preferencias::obter).put(preferencias::salvar),
+        )
+        .route("/pcp/sazonalidade", get(sazonalidade::listar))
+        .route("/pcp/sazonalidade/auditoria", get(sazonalidade::auditoria))
+        .route(
+            "/pcp/sazonalidade/{mes}",
+            axum::routing::put(sazonalidade::override_mes),
+        )
         .route("/pcp/dashboard", get(leitura::dashboard::dashboard))
         .route(
             "/pcp/dashboard/classes",
