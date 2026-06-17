@@ -137,14 +137,19 @@ pub fn PaginaEstoque() -> impl IntoView {
                     painel_res
                         .get()
                         .map(|res| match res {
-                            Ok(p) => cards_resumo(&p, status, resetar).into_any(),
+                            Ok(p) => {
+                                view! {
+                                    {kpis_estoque(&p)}
+                                    {abas_classe(&p, classe, resetar)}
+                                }
+                                    .into_any()
+                            }
                             Err(_) => ().into_any(),
                         })
                 }}
             </Suspense>
 
             <Filtros
-                classe
                 status
                 busca
                 busca_input
@@ -155,27 +160,10 @@ pub fn PaginaEstoque() -> impl IntoView {
                 apenas_sugestao
                 apenas_fora_linha
                 resetar
+                exportar
             />
 
             <FiltrosSalvos consulta_atual aplicar=aplicar_filtro />
-
-            <div class="barra-exportar">
-                <span class="texto-suave">"Exportar filtro completo:"</span>
-                <button
-                    type="button"
-                    class="btn btn--secundario btn--sm"
-                    on:click=move |_| exportar("csv")
-                >
-                    "CSV"
-                </button>
-                <button
-                    type="button"
-                    class="btn btn--secundario btn--sm"
-                    on:click=move |_| exportar("json")
-                >
-                    "JSON"
-                </button>
-            </div>
 
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }
@@ -196,8 +184,10 @@ pub fn PaginaEstoque() -> impl IntoView {
                             Ok(pag) => {
                                 let total = pag.total;
                                 view! {
-                                    <Tabela itens=pag.itens />
-                                    <Paginacao limite deslocamento total />
+                                    <div class="tabela-cartao">
+                                        <Tabela itens=pag.itens />
+                                        <Paginacao limite deslocamento total />
+                                    </div>
                                 }
                                     .into_any()
                             }
@@ -208,42 +198,99 @@ pub fn PaginaEstoque() -> impl IntoView {
     }
 }
 
-/// Cards de resumo clicáveis: Total (limpa) + um por status presente (aplica o filtro). Doc 03 §3.
-fn cards_resumo(
-    p: &PainelResumo,
-    status: RwSignal<Option<String>>,
-    resetar: impl Fn() + Copy + 'static,
-) -> impl IntoView {
-    let total: i64 = p.por_status.iter().map(|c| c.quantidade).sum();
-    let cards: Vec<_> = p
+/// KPIs do estoque (métricas reais do painel — frontend burro, §3). Sem dimensão financeira
+/// (custo/preço adiados — §6) nem "giro" (não calculado pelo motor): só o que a API já entrega.
+fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
+    let classes_ativas = p.por_classe.iter().filter(|c| c.quantidade > 0).count();
+    let abaixo: i64 = p
         .por_status
         .iter()
-        .map(|c| {
-            let codigo = c.rotulo.clone();
-            (rotulo_status(&codigo), codigo, c.quantidade)
+        .filter(|c| {
+            matches!(
+                c.rotulo.as_str(),
+                "critico" | "sem_estoque" | "estoque_baixo" | "baixo"
+            )
         })
-        .collect();
-
+        .map(|c| c.quantidade)
+        .sum();
+    let cobertura = p
+        .cobertura_media
+        .map_or_else(|| "—".to_owned(), |c| format!("{c:.0}"));
     view! {
-        <div class="cards-resumo">
-            <CartaResumo
-                rotulo="Total"
-                valor=total
-                codigo=None
-                status
-                resetar
+        <div class="kpis">
+            <KpiEstoque
+                icone="estoque-inventario.svg"
+                valor=fmt_milhar(p.total_produtos)
+                rotulo="Produtos ativos"
+                sub=format!("em {classes_ativas} classes ABC")
             />
-            {cards
+            <KpiEstoque
+                icone="alerta.svg"
+                valor=fmt_milhar(abaixo)
+                rotulo="Abaixo do recomendado"
+                sub="requer produção".to_owned()
+                sub_alerta=true
+            />
+            <KpiEstoque
+                icone="relogio.svg"
+                valor=cobertura
+                rotulo="Cobertura média"
+                sub="dias — nível de serviço".to_owned()
+            />
+            <KpiEstoque
+                icone="ordens-producao.svg"
+                valor=fmt_milhar(p.total_sugerido)
+                rotulo="A produzir"
+                sub="soma das sugestões (un)".to_owned()
+            />
+        </div>
+    }
+}
+
+#[component]
+fn KpiEstoque(
+    icone: &'static str,
+    valor: String,
+    rotulo: &'static str,
+    sub: String,
+    #[prop(optional)] sub_alerta: bool,
+) -> impl IntoView {
+    let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
+    view! {
+        <div class="kpi">
+            <span class="kpi__chip">
+                <span class="icone-mask" style=estilo></span>
+            </span>
+            <span class="kpi__valor">{valor}</span>
+            <span class="kpi__rotulo">{rotulo}</span>
+            <span class="kpi__sub" class:kpi__sub--alerta=sub_alerta>
+                {sub}
+            </span>
+        </div>
+    }
+}
+
+/// Abas de filtro por classe ABC (substituem as categorias de material do mockup — no PCP a
+/// categorização canônica é a classe A/B/C/D/F/N, §4). Contagens reais do painel.
+fn abas_classe(
+    p: &PainelResumo,
+    classe: RwSignal<Option<String>>,
+    resetar: impl Fn() + Copy + 'static,
+) -> impl IntoView {
+    let mut presentes: Vec<(String, i64)> = p
+        .por_classe
+        .iter()
+        .map(|c| (c.rotulo.clone(), c.quantidade))
+        .collect();
+    presentes.sort_by_key(|(c, _)| ordem_classe(c));
+    view! {
+        <div class="abas-classe">
+            <AbaClasse classe rotulo="Todas".to_owned() valor=None contagem=p.total_produtos resetar />
+            {presentes
                 .into_iter()
-                .map(|(rot, codigo, qtd)| {
+                .map(|(cod, qtd)| {
                     view! {
-                        <CartaResumo
-                            rotulo=rot
-                            valor=qtd
-                            codigo=Some(codigo)
-                            status
-                            resetar
-                        />
+                        <AbaClasse classe rotulo=cod.clone() valor=Some(cod) contagem=qtd resetar />
                     }
                 })
                 .collect_view()}
@@ -251,31 +298,44 @@ fn cards_resumo(
     }
 }
 
+/// Ordem canônica das classes para exibição das abas (A→N).
+fn ordem_classe(c: &str) -> u8 {
+    match c {
+        "A" => 0,
+        "B" => 1,
+        "C" => 2,
+        "D" => 3,
+        "F" => 4,
+        "N" => 5,
+        _ => 9,
+    }
+}
+
 #[component]
-fn CartaResumo(
-    rotulo: &'static str,
-    valor: i64,
-    codigo: Option<String>,
-    status: RwSignal<Option<String>>,
+fn AbaClasse(
+    classe: RwSignal<Option<String>>,
+    rotulo: String,
+    valor: Option<String>,
+    contagem: i64,
     resetar: impl Fn() + Copy + 'static,
 ) -> impl IntoView {
-    let alvo = codigo.clone();
+    let alvo = valor.clone();
     let ativo = {
         let alvo = alvo.clone();
-        move || status.get() == alvo
+        move || classe.get() == alvo
     };
     view! {
         <button
             type="button"
-            class="carta-resumo carta-resumo--clicavel"
-            class:carta-resumo--ativa=ativo
+            class="aba"
+            class:aba--ativa=ativo
             on:click=move |_| {
-                status.set(alvo.clone());
+                classe.set(alvo.clone());
                 resetar();
             }
         >
-            <span class="carta-resumo__valor">{fmt_milhar(valor)}</span>
-            <span class="carta-resumo__rotulo">{rotulo}</span>
+            <span>{rotulo}</span>
+            <span class="aba__contagem">{fmt_milhar(contagem)}</span>
         </button>
     }
 }
@@ -283,7 +343,6 @@ fn CartaResumo(
 #[component]
 #[allow(clippy::too_many_lines)] // markup declarativo dos filtros (uma responsabilidade)
 fn Filtros(
-    classe: RwSignal<Option<String>>,
     status: RwSignal<Option<String>>,
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
@@ -294,6 +353,7 @@ fn Filtros(
     apenas_sugestao: RwSignal<bool>,
     apenas_fora_linha: RwSignal<bool>,
     resetar: impl Fn() + Copy + 'static,
+    exportar: impl Fn(&'static str) + Copy + 'static,
 ) -> impl IntoView {
     let aplicar_busca = move || {
         busca.set(busca_input.get());
@@ -301,10 +361,12 @@ fn Filtros(
     };
     // Lê um campo numérico não-negativo (vazio → sem limite).
     let parse_cobertura = |valor: String| valor.parse::<f64>().ok().filter(|n| *n >= 0.0);
+    let estilo_export =
+        "-webkit-mask-image:url(/icons/exportar.svg);mask-image:url(/icons/exportar.svg)";
     view! {
-        <div class="filtros-estoque">
+        <div class="estoque-toolbar">
             <form
-                class="filtros-estoque__busca"
+                class="estoque-toolbar__busca"
                 on:submit=move |ev| {
                     ev.prevent_default();
                     aplicar_busca();
@@ -312,7 +374,7 @@ fn Filtros(
             >
                 <input
                     class="input"
-                    placeholder="Buscar por código, produto ou SKU…"
+                    placeholder="Buscar item, código, SKU…"
                     prop:value=move || busca_input.get()
                     on:input=move |ev| busca_input.set(event_target_value(&ev))
                 />
@@ -321,17 +383,7 @@ fn Filtros(
                 </button>
             </form>
 
-            <div class="chips">
-                <ChipClasse classe rotulo="Todas" valor=None resetar />
-                <ChipClasse classe rotulo="A" valor=Some("A") resetar />
-                <ChipClasse classe rotulo="B" valor=Some("B") resetar />
-                <ChipClasse classe rotulo="C" valor=Some("C") resetar />
-                <ChipClasse classe rotulo="D" valor=Some("D") resetar />
-                <ChipClasse classe rotulo="F" valor=Some("F") resetar />
-                <ChipClasse classe rotulo="N" valor=Some("N") resetar />
-            </div>
-
-            <div class="filtros-estoque__selects">
+            <div class="estoque-toolbar__acoes">
                 <label class="campo-select">
                     <span class="campo-select__rotulo">"Ordenar"</span>
                     <select
@@ -394,9 +446,27 @@ fn Filtros(
                         <option value="1000">"1000"</option>
                     </select>
                 </label>
+                <div class="exportar-grupo" role="group" aria-label="Exportar filtro completo">
+                    <span class="icone-mask exportar-grupo__icone" style=estilo_export></span>
+                    <button
+                        type="button"
+                        class="btn btn--secundario btn--sm"
+                        on:click=move |_| exportar("csv")
+                    >
+                        "CSV"
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn--secundario btn--sm"
+                        on:click=move |_| exportar("json")
+                    >
+                        "JSON"
+                    </button>
+                </div>
             </div>
+        </div>
 
-            <div class="filtros-estoque__avancado">
+        <div class="filtros-estoque__avancado">
                 <div class="faixa">
                     <span class="campo-select__rotulo">"Cobertura (dias)"</span>
                     <input
@@ -450,30 +520,6 @@ fn Filtros(
                     <span>"Apenas fora de linha"</span>
                 </label>
             </div>
-        </div>
-    }
-}
-
-#[component]
-fn ChipClasse(
-    classe: RwSignal<Option<String>>,
-    rotulo: &'static str,
-    valor: Option<&'static str>,
-    resetar: impl Fn() + Copy + 'static,
-) -> impl IntoView {
-    let ativo = move || classe.get().as_deref() == valor;
-    view! {
-        <button
-            type="button"
-            class="chip"
-            class:chip--ativo=ativo
-            on:click=move |_| {
-                classe.set(valor.map(ToOwned::to_owned));
-                resetar();
-            }
-        >
-            {rotulo}
-        </button>
     }
 }
 
@@ -602,16 +648,12 @@ fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
                 <thead>
                     <tr>
                         <th>"Código"</th>
-                        <th>"Produto"</th>
+                        <th>"Item"</th>
                         <th>"Classe"</th>
+                        <th class="tabela__nivel-col">"Nível de estoque"</th>
                         <th class="tabela__num">"Disponível"</th>
-                        <th class="tabela__num">"Média/dia"</th>
-                        <th class="tabela__num">"Cobertura"</th>
-                        <th class="tabela__num">"Mínimo"</th>
-                        <th class="tabela__num">"Recomendada"</th>
-                        <th>"Status"</th>
                         <th class="tabela__num">"Produzir"</th>
-                        <th></th>
+                        <th>"Status"</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -625,7 +667,20 @@ fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
     }
 }
 
+/// Cor do semáforo de status (§12) usada na barra de nível. Espelha os badges de status.
+fn cor_status(status: &str) -> &'static str {
+    match status {
+        "critico" | "sem_estoque" => "var(--semaforo-critico)",
+        "estoque_baixo" => "var(--semaforo-alto)",
+        "baixo" => "var(--semaforo-medio)",
+        "adequado" => "var(--semaforo-ok)",
+        "alto" | "excessivo" => "var(--semaforo-info)",
+        _ => "var(--abc-d)",
+    }
+}
+
 #[component]
+#[allow(clippy::cast_precision_loss)] // quantidades de estoque: conversão exata para f64 na razão
 fn Linha(i: LinhaEstoque) -> impl IntoView {
     let nome = nome_exibicao(
         i.produto.as_deref(),
@@ -635,34 +690,52 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
     let href = format!("/estoque/{}", i.codigo_estoque);
     let classe_abc = format!("badge badge--abc-{}", i.classe.to_lowercase());
     let classe_status = format!("badge badge--status-{}", i.status);
+    // Barra de nível: preenchimento = disponível / recomendado (0–100%), cor pelo status.
+    // O alvo (recomendado) vai no rótulo; nada é recalculado aqui — só visualização (§3).
+    let alvo = i.estoque_total_recomendado.max(1);
+    let pct = ((i.qtd_disponivel as f64 / alvo as f64) * 100.0).clamp(0.0, 100.0);
+    let estilo_barra = format!("width:{pct:.0}%;background:{}", cor_status(&i.status));
+    let recomendada = i.estoque_total_recomendado;
     view! {
         <tr>
             <td class="tabela__cod">{i.codigo_estoque.clone()}</td>
             <td>
-                <div class="tabela__produto">
+                <A href=href attr:class="tabela__produto-link">
                     <span class="tabela__nome">{nome}</span>
                     {i.sku
                         .clone()
                         .filter(|s| !s.is_empty())
                         .map(|s| view! { <span class="tabela__sku">{s}</span> })}
-                </div>
+                </A>
             </td>
             <td>
                 <span class=classe_abc>{i.classe.clone()}</span>
             </td>
-            <td class="tabela__num">{fmt_milhar(i.qtd_disponivel)}</td>
-            <td class="tabela__num">{format!("{:.1}", i.media_diaria)}</td>
-            <td class="tabela__num">{fmt_cobertura(i.cobertura_dias)}</td>
-            <td class="tabela__num">{fmt_milhar(i.estoque_minimo)}</td>
-            <td class="tabela__num">{fmt_milhar(i.estoque_total_recomendado)}</td>
+            <td class="tabela__nivel-col">
+                <div class="nivel">
+                    <div class="nivel__trilho">
+                        <span class="nivel__preenche" style=estilo_barra></span>
+                    </div>
+                    <span class="nivel__ref">{format!("rec. {} un", fmt_milhar(recomendada))}</span>
+                </div>
+            </td>
+            <td class="tabela__num">
+                <div class="tabela__disp">
+                    <span class="tabela__disp-valor">{format!("{} un", fmt_milhar(i.qtd_disponivel))}</span>
+                    <span class="tabela__disp-cob">
+                        {format!("{} de cobertura", fmt_cobertura(i.cobertura_dias))}
+                    </span>
+                </div>
+            </td>
+            <td class="tabela__num tabela__produzir">
+                {if i.qtd_sugerida > 0 {
+                    format!("{} un", fmt_milhar(i.qtd_sugerida))
+                } else {
+                    "—".to_owned()
+                }}
+            </td>
             <td>
                 <span class=classe_status>{rotulo_status(&i.status)}</span>
-            </td>
-            <td class="tabela__num tabela__produzir">{fmt_milhar(i.qtd_sugerida)}</td>
-            <td>
-                <A href=href attr:class="btn btn--secundario btn--sm">
-                    "Ver detalhes"
-                </A>
             </td>
         </tr>
     }
@@ -684,7 +757,18 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
     view! {
         <nav class="paginacao">
             <span class="paginacao__info">
-                {move || format!("{}–{} de {}", fmt_milhar(inicio()), fmt_milhar(fim()), fmt_milhar(total))}
+                {move || {
+                    if total == 0 {
+                        "Nenhum item".to_owned()
+                    } else {
+                        format!(
+                            "Mostrando {}–{} de {} itens",
+                            fmt_milhar(inicio()),
+                            fmt_milhar(fim()),
+                            fmt_milhar(total),
+                        )
+                    }
+                }}
             </span>
             <div class="paginacao__botoes">
                 <button

@@ -10,7 +10,7 @@ use crate::api::{
     Contagem, LinhaEstoque, PainelResumo,
 };
 use crate::contexto::Sessao;
-use crate::formato::fmt_milhar;
+use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
 
 /// Cor de criticidade do KPI (doc 02 §9.2): vermelho/amarelo conforme o threshold.
 #[allow(clippy::cast_precision_loss)] // contagens pequenas: conversão exata para f64
@@ -144,20 +144,12 @@ pub fn PaginaDashboard() -> impl IntoView {
                     view! { <SecaoClasses classes /> }
                 }}
             </Suspense>
-            <div class="painel__grade">
-                <AlertasRecentes recurso=alertas_res />
-                <ListaProdutos
-                    titulo="A produzir"
-                    sub="Maiores sugestões de produção"
-                    recurso=produzir
-                    mostrar_sugestao=true
-                />
-                <ListaProdutos
-                    titulo="Estoque crítico"
-                    sub="Itens em estado crítico"
-                    recurso=criticos
-                    mostrar_sugestao=false
-                />
+            <div class="painel__base">
+                <TabelaProduzir recurso=produzir />
+                <div class="painel__lateral">
+                    <EstoqueCritico recurso=criticos />
+                    <AlertasRecentes recurso=alertas_res />
+                </div>
             </div>
         </div>
     }
@@ -171,23 +163,31 @@ fn topo(p: &PainelResumo) -> impl IntoView {
     let criticos = conta_status(p, "critico");
     let cards = view! {
         <div class="kpis">
-            <Kpi valor=p.total_produtos.to_string() rotulo="Produtos" sub="ativos no catálogo" />
+            <Kpi
+                valor=p.total_produtos.to_string()
+                rotulo="Produtos"
+                sub="Ativos no catálogo"
+                icone="estoque-inventario.svg"
+            />
             <Kpi
                 valor=criticos.to_string()
                 rotulo="Estoque crítico"
-                sub="abaixo do limiar da classe"
+                sub="Abaixo do limiar da classe"
+                icone="alerta.svg"
                 realce=realce_criticos(criticos, p.total_produtos)
             />
             <Kpi
                 valor=cobertura
                 rotulo="Cobertura média"
-                sub="dias (exclui sem histórico)"
+                sub="Dias"
+                icone="relogio.svg"
                 realce=realce_cobertura(p.cobertura_media)
             />
             <Kpi
                 valor=p.total_sugerido.to_string()
                 rotulo="A produzir"
-                sub="soma das sugestões"
+                sub="Soma das sugestões"
+                icone="ordens-producao.svg"
             />
         </div>
     };
@@ -377,6 +377,7 @@ fn Kpi(
     valor: String,
     rotulo: &'static str,
     sub: &'static str,
+    icone: &'static str,
     #[prop(optional)] realce: &'static str,
 ) -> impl IntoView {
     let classe = if realce.is_empty() {
@@ -384,8 +385,12 @@ fn Kpi(
     } else {
         format!("kpi kpi--{realce}")
     };
+    let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
     view! {
         <div class=classe>
+            <span class="kpi__chip">
+                <span class="icone-mask" style=estilo></span>
+            </span>
             <span class="kpi__valor">{valor}</span>
             <span class="kpi__rotulo">{rotulo}</span>
             <span class="kpi__sub">{sub}</span>
@@ -483,19 +488,15 @@ fn Barras(dados: Vec<Contagem>) -> impl IntoView {
     view! { <div class="barras">{linhas}</div> }.into_any()
 }
 
+/// "A produzir" como tabela (estilo editorial): maiores sugestões de produção (doc 03 §2).
 #[component]
-fn ListaProdutos(
-    titulo: &'static str,
-    sub: &'static str,
-    recurso: Resource<Result<Vec<LinhaEstoque>, ServerFnError>>,
-    mostrar_sugestao: bool,
-) -> impl IntoView {
+fn TabelaProduzir(recurso: Resource<Result<Vec<LinhaEstoque>, ServerFnError>>) -> impl IntoView {
     view! {
         <section class="cartao">
             <header class="cartao__cab">
                 <div>
-                    <h2 class="cartao__titulo">{titulo}</h2>
-                    <p class="texto-suave">{sub}</p>
+                    <h2 class="cartao__titulo">"A produzir"</h2>
+                    <p class="texto-suave">"Maiores sugestões de produção"</p>
                 </div>
                 <A href="/estoque" attr:class="link-ver-todos">
                     "Ver estoque"
@@ -514,12 +515,102 @@ fn ListaProdutos(
                             }
                             Ok(itens) => {
                                 view! {
-                                    <ul class="lista-prod">
+                                    <div class="tabela-rolavel">
+                                        <table class="tabela tabela--centro">
+                                            <thead>
+                                                <tr>
+                                                    <th>"Código"</th>
+                                                    <th>"Produto"</th>
+                                                    <th>"Classe"</th>
+                                                    <th>"Disponível"</th>
+                                                    <th>"Recomendada"</th>
+                                                    <th>"Produzir"</th>
+                                                    <th>"Status"</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {itens
+                                                    .into_iter()
+                                                    .map(|i| view! { <LinhaProduzir i /> })
+                                                    .collect_view()}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                    .into_any()
+                            }
+                        })
+                }}
+            </Suspense>
+        </section>
+    }
+}
+
+#[component]
+fn LinhaProduzir(i: LinhaEstoque) -> impl IntoView {
+    let nome = nome_exibicao(
+        i.produto.as_deref(),
+        i.configuracao.as_deref(),
+        &i.codigo_estoque,
+    );
+    let href = format!("/estoque/{}", i.codigo_estoque);
+    view! {
+        <tr>
+            <td class="tabela__cod">
+                <A href=href attr:class="lista-prod__link">
+                    {i.codigo_estoque.clone()}
+                </A>
+            </td>
+            <td>{nome}</td>
+            <td>
+                <span class=format!("badge badge--abc-{}", i.classe.to_lowercase())>
+                    {i.classe.clone()}
+                </span>
+            </td>
+            <td class="tabela__num">{fmt_milhar(i.qtd_disponivel)}</td>
+            <td class="tabela__num">{fmt_milhar(i.estoque_total_recomendado)}</td>
+            <td class="tabela__num tabela__produzir">{fmt_milhar(i.qtd_sugerida)}</td>
+            <td>
+                <span class=format!("badge badge--status-{}", i.status)>
+                    {rotulo_status(&i.status)}
+                </span>
+            </td>
+        </tr>
+    }
+}
+
+/// Lista compacta de estoque crítico (ícone de caixa + nome/código + disponível/cobertura).
+#[component]
+fn EstoqueCritico(recurso: Resource<Result<Vec<LinhaEstoque>, ServerFnError>>) -> impl IntoView {
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <div>
+                    <h2 class="cartao__titulo">"Estoque crítico"</h2>
+                    <p class="texto-suave">"Itens em estado crítico"</p>
+                </div>
+                <A href="/estoque" attr:class="link-ver-todos">
+                    "Ver estoque"
+                </A>
+            </header>
+            <Suspense fallback=|| view! { <p class="texto-suave">"Carregando…"</p> }>
+                {move || {
+                    recurso
+                        .get()
+                        .map(|res| match res {
+                            Err(e) => {
+                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                            }
+                            Ok(itens) if itens.is_empty() => {
+                                view! { <p class="estado-vazio">"Nenhum item crítico."</p> }
+                                    .into_any()
+                            }
+                            Ok(itens) => {
+                                view! {
+                                    <ul class="lista-critico">
                                         {itens
                                             .into_iter()
-                                            .map(|i| {
-                                                linha_produto(&i, mostrar_sugestao)
-                                            })
+                                            .map(|i| view! { <ItemCritico i /> })
                                             .collect_view()}
                                     </ul>
                                 }
@@ -532,29 +623,30 @@ fn ListaProdutos(
     }
 }
 
-fn linha_produto(i: &LinhaEstoque, mostrar_sugestao: bool) -> impl IntoView {
-    let nome = i
-        .produto
-        .clone()
-        .unwrap_or_else(|| i.codigo_estoque.clone());
-    let href = format!("/estoque/{}", i.codigo_estoque);
-    let metrica = if mostrar_sugestao {
-        i.qtd_sugerida.to_string()
-    } else {
-        format!("{:.1}", i.cobertura_dias)
-    };
+#[component]
+fn ItemCritico(i: LinhaEstoque) -> impl IntoView {
+    let nome = nome_exibicao(
+        i.produto.as_deref(),
+        i.configuracao.as_deref(),
+        &i.codigo_estoque,
+    );
+    let estilo = "-webkit-mask-image:url(/icons/estoque-inventario.svg);\
+                  mask-image:url(/icons/estoque-inventario.svg)";
     view! {
-        <li class="lista-prod__item">
-            <span class=format!("badge badge--abc-{}", i.classe.to_lowercase())>
-                {i.classe.clone()}
+        <li class="critico-item">
+            <span class="critico-item__icone">
+                <span class="icone-mask" style=estilo></span>
             </span>
-            <div class="lista-prod__nome">
-                <A href=href attr:class="lista-prod__link">
+            <div class="critico-item__nome">
+                <A href=format!("/estoque/{}", i.codigo_estoque) attr:class="lista-prod__link">
                     {nome}
                 </A>
                 <span class="lista-prod__codigo">{i.codigo_estoque.clone()}</span>
             </div>
-            <span class="lista-prod__metrica">{metrica}</span>
+            <div class="critico-item__valores">
+                <span class="critico-item__qtd">{fmt_milhar(i.qtd_disponivel)}" un"</span>
+                <span class="critico-item__cob">{fmt_cobertura(i.cobertura_dias)}" d"</span>
+            </div>
         </li>
     }
 }
