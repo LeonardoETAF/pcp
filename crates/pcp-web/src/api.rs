@@ -482,6 +482,25 @@ pub async fn abc_tabela(token: String) -> Result<Vec<LinhaAbc>, ServerFnError> {
     obter_json("/pcp/abc/tabela", &token).await
 }
 
+/// Distribuição por classe ABC (`GET /pcp/abc`) — agregação feita no banco (§15: nunca no
+/// cliente). 1 linha por classe presente, com contagem/volume/recomendado.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DistribuicaoAbc {
+    pub classe: String,
+    pub quantidade: i64,
+    pub volume: i64,
+    pub recomendado: i64,
+}
+
+/// Distribuição ABC agregada (`GET /pcp/abc`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = AbcDistribuicao, prefix = "/api")]
+pub async fn abc_distribuicao(token: String) -> Result<Vec<DistribuicaoAbc>, ServerFnError> {
+    obter_json("/pcp/abc", &token).await
+}
+
 /// Fila de sugestões de ciclo de vida abertas (`GET /pcp/ciclo-vida`).
 ///
 /// # Errors

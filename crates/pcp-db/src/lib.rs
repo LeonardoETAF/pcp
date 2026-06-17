@@ -15,6 +15,7 @@ pub mod config_persist;
 pub mod derivadas;
 pub mod detalhe;
 pub mod eventos;
+pub mod expurgo;
 pub mod filtros_salvos;
 pub mod leituras;
 pub mod preferencias;
@@ -26,6 +27,7 @@ pub mod usuarios;
 pub mod vendas;
 
 pub use erro::ErroDb;
+pub use expurgo::expurgar;
 pub use migracoes::aplicar_migrations;
 pub use modelos::{EstoqueSnapshot, NovaVendaDia, NovoEstoqueSnapshot, VendaDia};
 pub use pool::criar_pool;

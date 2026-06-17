@@ -1,13 +1,17 @@
 //! Repositório das vendas diárias (`pcp.vendas_dia`). Idempotência por dia. Sem regra.
 
 use chrono::NaiveDate;
-use sqlx::PgPool;
+use sqlx::{PgPool, QueryBuilder};
 
 use crate::erro::ErroDb;
 use crate::modelos::{NovaVendaDia, VendaDia};
 
+/// Linhas por lote no INSERT em batch (folga sobre o teto de parâmetros do Postgres).
+const LOTE: usize = 5_000;
+
 /// Substitui de forma idempotente as vendas de `dt_ref`: numa única transação, apaga as do
-/// dia e insere as novas (CLAUDE.md §3.3/§6). Retorna a quantidade de linhas inseridas.
+/// dia e insere as novas EM LOTE (CLAUDE.md §3.3/§6/§15 — sem INSERT linha-a-linha). Retorna a
+/// quantidade de linhas inseridas.
 ///
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco; a transação é revertida sem efeito colateral.
@@ -21,22 +25,21 @@ pub async fn substituir_dia(
         .execute(&mut *tx)
         .await?;
     let mut inseridas: u64 = 0;
-    for v in vendas {
-        sqlx::query!(
+    for lote in vendas.chunks(LOTE) {
+        let mut qb = QueryBuilder::new(
             "INSERT INTO pcp.vendas_dia \
-             (dt_ref, codigo_estoque, sku, produto, configuracao, qtd_vendida, is_personalizado) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            v.dt_ref,
-            v.codigo_estoque,
-            v.sku,
-            v.produto,
-            v.configuracao,
-            v.qtd_vendida,
-            v.is_personalizado,
-        )
-        .execute(&mut *tx)
-        .await?;
-        inseridas += 1;
+             (dt_ref, codigo_estoque, sku, produto, configuracao, qtd_vendida, is_personalizado) ",
+        );
+        qb.push_values(lote, |mut b, v| {
+            b.push_bind(v.dt_ref)
+                .push_bind(&v.codigo_estoque)
+                .push_bind(v.sku.as_deref())
+                .push_bind(v.produto.as_deref())
+                .push_bind(v.configuracao.as_deref())
+                .push_bind(v.qtd_vendida)
+                .push_bind(v.is_personalizado);
+        });
+        inseridas += qb.build().execute(&mut *tx).await?.rows_affected();
     }
     tx.commit().await?;
     Ok(inseridas)

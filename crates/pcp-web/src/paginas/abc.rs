@@ -7,7 +7,8 @@ use std::fmt::Write as _;
 use leptos::prelude::*;
 
 use crate::api::{
-    abc_tabela, listar_ciclo_vida, perfil, transicionar_ciclo_vida, LinhaAbc, SugestaoCicloVida,
+    abc_distribuicao, abc_tabela, listar_ciclo_vida, perfil, transicionar_ciclo_vida,
+    DistribuicaoAbc, LinhaAbc, SugestaoCicloVida,
 };
 use crate::contexto::Sessao;
 use crate::download;
@@ -27,6 +28,16 @@ pub fn ClassificacaoAbc() -> impl IntoView {
             }
         },
     );
+    // Distribuição por classe vem agregada do servidor (§15 — nunca contada no cliente).
+    let distribuicao = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => abc_distribuicao(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
 
     view! {
         <section class="pagina">
@@ -38,11 +49,12 @@ pub fn ClassificacaoAbc() -> impl IntoView {
             <Suspense fallback=|| view! { <p class="texto-suave">"Carregando classificação…"</p> }>
                 {move || {
                     let linhas = tabela.get().unwrap_or_default();
+                    let distribuicao = distribuicao.get().unwrap_or_default();
                     if linhas.is_empty() {
                         view! { <p class="estado-vazio">"Sem classificação disponível."</p> }
                             .into_any()
                     } else {
-                        view! { <ConteudoAbc linhas busca /> }.into_any()
+                        view! { <ConteudoAbc linhas distribuicao busca /> }.into_any()
                     }
                 }}
             </Suspense>
@@ -55,21 +67,13 @@ pub fn ClassificacaoAbc() -> impl IntoView {
 /// Card de distribuição + Pareto + tabela com busca/exportação.
 #[component]
 #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)] // contagens pequenas
-fn ConteudoAbc(linhas: Vec<LinhaAbc>, busca: RwSignal<String>) -> impl IntoView {
+fn ConteudoAbc(
+    linhas: Vec<LinhaAbc>,
+    distribuicao: Vec<DistribuicaoAbc>,
+    busca: RwSignal<String>,
+) -> impl IntoView {
     let total = linhas.len();
     let dados = StoredValue::new(linhas);
-
-    // Distribuição por classe (contagem) — apresentação sobre dados já classificados.
-    let distribuicao: Vec<(String, usize)> = {
-        let mut contagem: std::collections::BTreeMap<String, usize> =
-            std::collections::BTreeMap::new();
-        dados.with_value(|l| {
-            for x in l {
-                *contagem.entry(x.classe.clone()).or_insert(0) += 1;
-            }
-        });
-        contagem.into_iter().collect()
-    };
 
     let top20 = dados.with_value(|l| l.iter().take(20).cloned().collect::<Vec<_>>());
 
@@ -105,12 +109,12 @@ fn ConteudoAbc(linhas: Vec<LinhaAbc>, busca: RwSignal<String>) -> impl IntoView 
             <div class="abc-dist">
                 {distribuicao
                     .into_iter()
-                    .map(|(classe, qtd)| {
-                        let badge = format!("badge badge--abc-{}", classe.to_lowercase());
+                    .map(|d| {
+                        let badge = format!("badge badge--abc-{}", d.classe.to_lowercase());
                         view! {
                             <div class="cob-classe">
-                                <span class=badge>{classe}</span>
-                                <span class="cob-classe__valor">{fmt_milhar(qtd as i64)}</span>
+                                <span class=badge>{d.classe}</span>
+                                <span class="cob-classe__valor">{fmt_milhar(d.quantidade)}</span>
                             </div>
                         }
                     })
