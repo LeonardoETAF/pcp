@@ -1,4 +1,6 @@
-# CI do PCP (CLAUDE.md §11): fmt + clippy (-D warnings) + testes em todo push/PR.
+# CI do PCP (CLAUDE.md §11): fmt + clippy (-D warnings) + testes em todo push/PR; e um job de
+# banco que aplica as migrations, verifica o cache .sqlx contra o schema e roda os testes de
+# integração (#[ignore]) contra um Postgres efêmero.
 name: CI
 
 on:
@@ -13,6 +15,9 @@ jobs:
   check:
     name: fmt + clippy + test
     runs-on: ubuntu-latest
+    env:
+      # Sem banco: as macros do SQLx usam o cache .sqlx versionado.
+      SQLX_OFFLINE: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -33,5 +38,47 @@ jobs:
       - name: Testes do núcleo de regra (pcp-core)
         run: cargo test -p pcp-core
 
-      - name: Testes do workspace
+      - name: Testes do workspace (sem os marcados #[ignore])
         run: cargo test --workspace
+
+  banco:
+    name: migrations + sqlx + testes de integração
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pcp
+          POSTGRES_PASSWORD: pcp_ci
+          POSTGRES_DB: pcp
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U pcp -d pcp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # `options=-csearch_path=public,pcp` evita a colisão role==schema no _sqlx_migrations.
+      DATABASE_URL: "postgres://pcp:pcp_ci@localhost:5432/pcp?options=-csearch_path%3Dpublic,pcp"
+      TEST_DATABASE_URL: "postgres://pcp:pcp_ci@localhost:5432/pcp?options=-csearch_path%3Dpublic,pcp"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache do Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Instalar sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features postgres,rustls --locked
+
+      - name: Aplicar migrations
+        run: cargo sqlx migrate run --source migrations
+
+      - name: Verificar cache .sqlx contra o schema (sem drift)
+        run: cargo sqlx prepare --workspace --check
+
+      - name: Testes de integração (#[ignore]) contra o Postgres efêmero
+        run: cargo test --workspace -- --ignored
