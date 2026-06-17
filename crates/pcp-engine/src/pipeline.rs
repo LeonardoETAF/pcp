@@ -155,6 +155,11 @@ pub async fn processar_dia(
         tracing::warn!(erro = %e, "falha ao notificar o fim do pipeline (SSE)");
     }
 
+    // Falha de módulo → notificação por webhook (doc 05 §3). Best-effort, no-op sem a env.
+    if status == StatusPipeline::Parcial {
+        crate::webhook::notificar_falha(data_ref, &execucoes).await;
+    }
+
     Ok(ResultadoPipeline {
         data_ref,
         status,
