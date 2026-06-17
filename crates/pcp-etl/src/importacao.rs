@@ -29,7 +29,19 @@ pub async fn importar<F: FonteDados>(
 ) -> Result<ResumoImportacao, ErroEtl> {
     let vendas = fonte.ler_vendas()?;
     let snapshots = fonte.ler_snapshots()?;
+    gravar(pool, vendas, snapshots).await
+}
 
+/// Grava lotes já lidos de vendas e snapshots, substituindo por dia (idempotente — doc 05 §2.3).
+/// Compartilhado pelo importador de arquivo e pelo conector do One (camada de persistência única).
+///
+/// # Errors
+/// [`ErroEtl`] se a gravação falhar.
+pub async fn gravar(
+    pool: &PgPool,
+    vendas: Vec<NovaVendaDia>,
+    snapshots: Vec<NovoEstoqueSnapshot>,
+) -> Result<ResumoImportacao, ErroEtl> {
     let por_dia_vendas = agrupar_por_dia(vendas, |v: &NovaVendaDia| v.dt_ref);
     let mut resumo = ResumoImportacao {
         dias_vendas: por_dia_vendas.len(),

@@ -13,3 +13,14 @@ csv = "1"
 serde = { version = "1", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
+# Conector somente-leitura ao One (runtime, sem macros — schema legado fora do cache compile-time).
+sqlx = { version = "0.9", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "chrono",
+] }
+# Binário de backfill (orquestração): lê do One e grava no PCP.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow = "1"
+dotenvy = "0.15"

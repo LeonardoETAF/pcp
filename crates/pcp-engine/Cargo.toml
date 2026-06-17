@@ -14,6 +14,10 @@ pcp-db = { path = "../pcp-db" }
 chrono = { version = "0.4", default-features = false }
 thiserror = "1"
 tracing = "0.1"
+# Binário `processar` (orquestração do pipeline para uma data).
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow = "1"
+dotenvy = "0.15"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

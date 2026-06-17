@@ -1929,7 +1929,9 @@ dependencies = [
 name = "pcp-engine"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
+ "dotenvy",
  "pcp-config",
  "pcp-core",
  "pcp-db",
@@ -1943,11 +1945,15 @@ dependencies = [
 name = "pcp-etl"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "csv",
+ "dotenvy",
  "pcp-db",
  "serde",
+ "sqlx",
  "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

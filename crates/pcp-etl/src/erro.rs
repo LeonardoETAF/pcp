@@ -21,4 +21,7 @@ pub enum ErroEtl {
     /// Falha ao gravar no banco.
     #[error(transparent)]
     Db(#[from] pcp_db::ErroDb),
+    /// Falha na consulta somente-leitura ao ERP One (camada anticorrupção, §1/§8).
+    #[error("falha na consulta ao One: {0}")]
+    One(#[from] sqlx::Error),
 }
