@@ -36,6 +36,18 @@ pub enum PrioridadeProducao {
     Baixa,
 }
 
+/// Aprovação automática da solicitação (doc 02 §7.2): quantidade abaixo do teto **e** prioridade
+/// diferente da exceção configurada (tipicamente `Alta`). Regra única — não duplicar (§13).
+#[must_use]
+pub fn aprovacao_automatica(
+    qtd_final: i64,
+    prioridade: PrioridadeProducao,
+    qtd_max: i64,
+    excecao: PrioridadeProducao,
+) -> bool {
+    qtd_final < qtd_max && prioridade != excecao
+}
+
 /// Política de timing (doc 02 §7.3 — escalonamento por criticidade).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Timing {
@@ -236,6 +248,17 @@ mod testes {
         assert_eq!(t(40.0), Timing::DuasSemanas); // < 45
         assert_eq!(t(50.0), Timing::Monitorar); // entre 45 e 67.5
         assert_eq!(t(70.0), Timing::Aguardar); // > 45*1.5 = 67.5
+    }
+
+    #[test]
+    fn aprovacao_automatica_regra() {
+        use super::{aprovacao_automatica, PrioridadeProducao as P};
+        // qtd < teto e prioridade != exceção (alta) → aprova.
+        assert!(aprovacao_automatica(999, P::Media, 1000, P::Alta));
+        // qtd >= teto → não aprova.
+        assert!(!aprovacao_automatica(1000, P::Media, 1000, P::Alta));
+        // prioridade é a exceção → não aprova mesmo com qtd baixa.
+        assert!(!aprovacao_automatica(10, P::Alta, 1000, P::Alta));
     }
 
     #[test]

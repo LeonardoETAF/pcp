@@ -18,6 +18,7 @@ pub mod leituras;
 pub mod refresh_tokens;
 pub mod sazonalidade;
 pub mod snapshot;
+pub mod solicitacoes;
 pub mod usuarios;
 pub mod vendas;
 

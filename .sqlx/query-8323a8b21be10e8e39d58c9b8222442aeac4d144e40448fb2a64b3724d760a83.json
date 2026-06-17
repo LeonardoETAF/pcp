@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.solicitacao_evento (solicitacao_id, de_estado, para_estado, por_id, observacao)\n           VALUES ($1, NULL, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8323a8b21be10e8e39d58c9b8222442aeac4d144e40448fb2a64b3724d760a83"
+}

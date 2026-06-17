@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.codigo_estoque, p.sku, p.produto, p.configuracao, p.classe, p.status,\n                  p.fora_de_linha, p.fator_estoque, p.qtd_estoque, p.qtd_reserva,\n                  p.qtd_disponivel, p.cobertura_dias, p.media_diaria, p.estoque_seguranca,\n                  p.estoque_minimo, p.estoque_total_recomendado, p.qtd_sugerida,\n                  p.volume_janela, p.dias_com_vendas, p.coef_variacao, p.dt_ref,\n                  COALESCE(ep.outliers_detectados, 0)::bigint AS \"outliers_detectados!\",\n                  c.percentual_acumulado AS \"percentual_acumulado?\"\n           FROM pcp.produto_ativo p\n           LEFT JOIN pcp.estoque_param ep ON ep.codigo_estoque = p.codigo_estoque\n           LEFT JOIN pcp.classificacao c ON c.codigo_estoque = p.codigo_estoque\n                AND c.dt_calculo = (SELECT MAX(dt_calculo) FROM pcp.classificacao\n                                    WHERE codigo_estoque = p.codigo_estoque)\n           WHERE p.codigo_estoque = $1",
+  "query": "SELECT p.codigo_estoque, p.sku, p.produto, p.configuracao, p.classe, p.status,\n                  p.fora_de_linha, p.fator_estoque, p.qtd_estoque, p.qtd_reserva,\n                  p.qtd_disponivel, p.cobertura_dias, p.media_diaria, p.estoque_seguranca,\n                  p.estoque_minimo, p.estoque_total_recomendado, p.qtd_sugerida,\n                  p.volume_janela, p.dias_com_vendas, p.coef_variacao, p.dt_ref,\n                  COALESCE(ep.outliers_detectados, 0)::bigint AS \"outliers_detectados!\",\n                  COALESCE(ep.fator_sazonal, 1.0)::float8 AS \"fator_sazonal!\",\n                  c.percentual_acumulado AS \"percentual_acumulado?\"\n           FROM pcp.produto_ativo p\n           LEFT JOIN pcp.estoque_param ep ON ep.codigo_estoque = p.codigo_estoque\n           LEFT JOIN pcp.classificacao c ON c.codigo_estoque = p.codigo_estoque\n                AND c.dt_calculo = (SELECT MAX(dt_calculo) FROM pcp.classificacao\n                                    WHERE codigo_estoque = p.codigo_estoque)\n           WHERE p.codigo_estoque = $1",
   "describe": {
     "columns": [
       {
@@ -242,6 +242,12 @@
       },
       {
         "ordinal": 22,
+        "name": "fator_sazonal!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 23,
         "name": "percentual_acumulado?",
         "type_info": "Float8",
         "origin": {
@@ -280,8 +286,9 @@
       false,
       false,
       null,
+      null,
       true
     ]
   },
-  "hash": "2b1c87b3eb812f4ed89b412cf5bdc857e19610192ee1d9307f8ee7f5e196ed88"
+  "hash": "a9d86626882a4d3283f5b737ad2ea9c5f989b2909e25640ff79ef2f63520efa9"
 }

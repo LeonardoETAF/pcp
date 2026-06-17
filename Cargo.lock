@@ -1865,6 +1865,7 @@ dependencies = [
  "http-body-util",
  "jsonwebtoken",
  "pcp-config",
+ "pcp-core",
  "pcp-db",
  "rand_core 0.6.4",
  "serde",

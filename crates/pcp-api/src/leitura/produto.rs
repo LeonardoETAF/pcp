@@ -4,13 +4,16 @@
 
 use axum::extract::{Path, State};
 use axum::Json;
+use chrono::{Duration, Utc};
 use serde::Serialize;
 
 use pcp_config::Config;
+use pcp_core::{aprovacao_automatica, recomendar_producao, EntradaRecomendacao};
 use pcp_db::detalhe::{self, DetalheProduto, PontoSerie};
 
 use crate::erro::ApiError;
 use crate::estado::AppState;
+use crate::recomendacao;
 
 #[derive(Serialize)]
 pub struct RegraClasseDto {
@@ -35,6 +38,16 @@ pub struct MetricasDto {
     pub dias_com_vendas: i64,
     pub outliers_detectados: i64,
     pub coef_variacao: f64,
+}
+
+/// Recomendação para gerar a solicitação de produção (doc 02 §7.2) — valor padrão editável.
+#[derive(Serialize)]
+pub struct RecomendacaoDto {
+    pub qtd_sugerida: i64,
+    pub prioridade: String,
+    pub lead_time_dias: i64,
+    pub prazo_sugerido: String,
+    pub aprovacao_automatica: bool,
 }
 
 #[derive(Serialize)]
@@ -65,6 +78,7 @@ pub struct DetalheProdutoDto {
     pub dt_ref: String,
     pub regra: RegraClasseDto,
     pub metricas: MetricasDto,
+    pub recomendacao: RecomendacaoDto,
     pub vendas_90d: Vec<PontoDto>,
     pub estoque_90d: Vec<PontoDto>,
 }
@@ -84,11 +98,12 @@ pub async fn produto(
     let estoque = detalhe::estoque_90d(&estado.pool, &codigo, d.dt_ref).await?;
 
     let regra = RegraClasseDto {
-        meta_cobertura_dias: meta_cobertura(&estado.config, &d.classe),
+        meta_cobertura_dias: recomendacao::meta_cobertura(&estado.config, &d.classe),
         limiar_critico_dias: limiar_critico(&estado.config, &d.classe),
         fator_estoque: d.fator_estoque,
         justificativa: justificativa(&d),
     };
+    let recomendacao = recomendacao_producao(&estado.config, &d);
     let metricas = MetricasDto {
         qtd_estoque: d.qtd_estoque,
         qtd_reserva: d.qtd_reserva,
@@ -117,22 +132,38 @@ pub async fn produto(
         dt_ref: d.dt_ref.to_string(),
         regra,
         metricas,
+        recomendacao,
         vendas_90d: vendas.into_iter().map(Into::into).collect(),
         estoque_90d: estoque.into_iter().map(Into::into).collect(),
     }))
 }
 
-/// Meta de cobertura (dias) da classe, vinda da config (doc 02 §3.6 / §11).
-fn meta_cobertura(c: &Config, classe: &str) -> u32 {
-    let m = &c.metas_cobertura_dias;
-    match classe {
-        "A" => m.a,
-        "B" => m.b,
-        "C" => m.c,
-        "D" => m.d,
-        "F" => m.f,
-        "N" => m.n,
-        _ => m.default,
+/// Recomendação §7.2 (serviço único do `pcp-core`) sobre os dados do produto + config.
+fn recomendacao_producao(c: &Config, d: &DetalheProduto) -> RecomendacaoDto {
+    let entrada = EntradaRecomendacao {
+        classe: recomendacao::classe(&d.classe),
+        media_diaria: d.media_diaria,
+        qtd_disponivel: d.qtd_disponivel,
+        estoque_seguranca: d.estoque_seguranca,
+        cobertura_dias: d.cobertura_dias,
+        fora_de_linha: d.fora_de_linha,
+        alerta_critico: d.status == "critico",
+    };
+    let params = recomendacao::parametros(c, &d.classe);
+    let rec = recomendar_producao(&entrada, d.fator_sazonal, &params);
+    let auto = aprovacao_automatica(
+        rec.qtd_final,
+        rec.prioridade,
+        i64::from(c.reposicao.aprovacao_automatica.qtd_max),
+        recomendacao::excecao_aprovacao(c),
+    );
+    let prazo = Utc::now().date_naive() + Duration::days(rec.lead_time_dias);
+    RecomendacaoDto {
+        qtd_sugerida: rec.qtd_final,
+        prioridade: recomendacao::prioridade_str(rec.prioridade).to_owned(),
+        lead_time_dias: rec.lead_time_dias,
+        prazo_sugerido: prazo.to_string(),
+        aprovacao_automatica: auto,
     }
 }
 

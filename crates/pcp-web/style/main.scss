@@ -1285,8 +1285,65 @@ input {
   100% { background-position: -200% 0; }
 }
 
+.centro-comando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.solic-form {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.solic-form__just {
+  flex: 1 1 240px;
+}
+.solic-auto {
+  margin-top: calc(-1 * var(--e-2));
+}
+.solic-lista {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+.solic-item {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+  flex-wrap: wrap;
+}
+.solic-item__dados {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.solic-item__qtd {
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+.solic-item__acoes {
+  display: flex;
+  gap: var(--e-2);
+  margin-left: auto;
+}
+
+/* Badges de estado da solicitação (doc 03 §4.3) */
+.badge--sol-pendente { background: var(--semaforo-medio); color: #1b1f24; }
+.badge--sol-aprovada { background: var(--semaforo-info); }
+.badge--sol-em_producao { background: var(--cor-primaria); color: var(--cor-primaria-contraste); }
+.badge--sol-concluida { background: var(--semaforo-ok); }
+.badge--sol-recusada { background: var(--abc-d); }
+
 @media (max-width: 720px) {
   .prod-graficos { grid-template-columns: 1fr; }
+  .solic-item__acoes { margin-left: 0; }
 }
 
 /* ── Gestão de Estoque (doc 03 §3): cards clicáveis, filtros, tabela, paginação ── */

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT de_estado, para_estado AS \"para_estado!\", por_id, observacao, em\n           FROM pcp.solicitacao_evento\n           WHERE solicitacao_id = $1 ORDER BY em",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "de_estado",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_evento",
+            "name": "de_estado"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "para_estado!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_evento",
+            "name": "para_estado"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "por_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_evento",
+            "name": "por_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "observacao",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_evento",
+            "name": "observacao"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_evento",
+            "name": "em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "8c0ac7a015f288b28e95dd5ee87fa23e290d6fbda63fb3700052e0977c1e128e"
+}

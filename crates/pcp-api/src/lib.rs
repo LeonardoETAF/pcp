@@ -13,8 +13,10 @@ mod handlers_pcp;
 mod jwt;
 mod leitura;
 mod papel;
+mod recomendacao;
 mod rotas;
 pub mod senha;
+mod solicitacoes;
 pub mod tempo_real;
 
 pub use erro::ApiError;

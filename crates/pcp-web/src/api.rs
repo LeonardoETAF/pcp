@@ -260,8 +260,35 @@ pub struct DetalheProduto {
     pub dt_ref: String,
     pub regra: RegraClasse,
     pub metricas: MetricasProduto,
+    pub recomendacao: Recomendacao,
     pub vendas_90d: Vec<Ponto>,
     pub estoque_90d: Vec<Ponto>,
+}
+
+/// Recomendação para gerar a solicitação de produção (doc 02 §7.2) — default editável.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Recomendacao {
+    pub qtd_sugerida: i64,
+    pub prioridade: String,
+    pub lead_time_dias: i64,
+    pub prazo_sugerido: String,
+    pub aprovacao_automatica: bool,
+}
+
+/// Solicitação de produção persistida (`/pcp/solicitacoes`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Solicitacao {
+    pub id: String,
+    pub codigo_estoque: String,
+    pub qtd_solicitada: i64,
+    pub prioridade: String,
+    pub lead_time_dias: i32,
+    pub prazo: String,
+    pub solicitante_id: String,
+    pub justificativa: Option<String>,
+    pub estado: String,
+    pub criado_em: String,
+    pub atualizado_em: String,
 }
 
 /// Carrega o detalhe de um produto. `Ok(None)` se não existir (404) — o resto é erro.
@@ -293,6 +320,106 @@ pub async fn produto_detalhe(
         .json::<DetalheProduto>()
         .await
         .map(Some)
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Lista as solicitações de produção de um produto (`GET /pcp/solicitacoes?codigo=`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ListarSolicitacoes, prefix = "/api")]
+pub async fn listar_solicitacoes(
+    token: String,
+    codigo: String,
+) -> Result<Vec<Solicitacao>, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .get(format!("{base}/pcp/solicitacoes"))
+        .query(&[("codigo", codigo)])
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao carregar solicitações"));
+    }
+    resposta
+        .json::<Vec<Solicitacao>>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Cria uma solicitação de produção (`POST /pcp/solicitacoes`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou dados inválidos.
+#[server(name = CriarSolicitacao, prefix = "/api")]
+pub async fn criar_solicitacao(
+    token: String,
+    codigo_estoque: String,
+    qtd_solicitada: i64,
+    prioridade: String,
+    justificativa: String,
+) -> Result<Solicitacao, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let justificativa = (!justificativa.trim().is_empty()).then_some(justificativa);
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/solicitacoes"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "codigo_estoque": codigo_estoque,
+            "qtd_solicitada": qtd_solicitada,
+            "prioridade": prioridade,
+            "justificativa": justificativa,
+        }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao criar a solicitação"));
+    }
+    resposta
+        .json::<Solicitacao>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
+/// Transiciona o estado de uma solicitação (`POST /pcp/solicitacoes/{id}/transicao`) — gestor+.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sem permissão ou transição inválida.
+#[server(name = TransicionarSolicitacao, prefix = "/api")]
+pub async fn transicionar_solicitacao(
+    token: String,
+    id: String,
+    para_estado: String,
+) -> Result<Solicitacao, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/solicitacoes/{id}/transicao"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "para_estado": para_estado }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new("apenas gestor pode alterar o estado"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao atualizar a solicitação"));
+    }
+    resposta
+        .json::<Solicitacao>()
+        .await
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 

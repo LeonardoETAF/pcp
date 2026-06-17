@@ -12,6 +12,7 @@ mod consolidacao;
 pub mod parametros;
 mod recomendacao;
 pub mod sazonalidade;
+pub mod solicitacao;
 mod status;
 mod tipos;
 
@@ -30,10 +31,11 @@ pub use parametros::{
     StatusParametros,
 };
 pub use recomendacao::{
-    qtd_sugerida, recomendar_producao, EntradaRecomendacao, ParametrosRecomendacao,
-    PrioridadeProducao, RecomendacaoProducao, Timing,
+    aprovacao_automatica, qtd_sugerida, recomendar_producao, EntradaRecomendacao,
+    ParametrosRecomendacao, PrioridadeProducao, RecomendacaoProducao, Timing,
 };
 pub use sazonalidade::{calcular_fator, deve_recalcular, FatoresSazonais, ParametrosSazonalidade};
+pub use solicitacao::estado::EstadoSolicitacao;
 pub use status::{
     cobertura_dias, status_estoque, EntradaStatus, LimiarCriticoDias, StatusEstoque,
     COBERTURA_SEM_HISTORICO,

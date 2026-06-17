@@ -1,0 +1,149 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pcp.solicitacao_producao\n           SET estado = $2, atualizado_em = now()\n           WHERE id = $1\n           RETURNING id, codigo_estoque, qtd_solicitada, prioridade, lead_time_dias, prazo,\n                     solicitante_id, justificativa, estado, criado_em, atualizado_em",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "qtd_solicitada",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "qtd_solicitada"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "prioridade",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "prioridade"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "lead_time_dias",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "lead_time_dias"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "prazo",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "prazo"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "solicitante_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "solicitante_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "justificativa",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "justificativa"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "estado",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "estado"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "criado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "criado_em"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "atualizado_em",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "solicitacao_producao",
+            "name": "atualizado_em"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "de625e6323d1fc8c34a50f1b84794f95f7bd994ac6d1865a65971e3c0f1dfec6"
+}

@@ -25,6 +25,20 @@ impl ClasseAbc {
             ClasseAbc::N => 'N',
         }
     }
+
+    /// Converte do texto persistido (`"A"`..`"N"`); `None` se desconhecido.
+    #[must_use]
+    pub fn tentar_de_str(texto: &str) -> Option<Self> {
+        match texto {
+            "A" => Some(ClasseAbc::A),
+            "B" => Some(ClasseAbc::B),
+            "C" => Some(ClasseAbc::C),
+            "D" => Some(ClasseAbc::D),
+            "F" => Some(ClasseAbc::F),
+            "N" => Some(ClasseAbc::N),
+            _ => None,
+        }
+    }
 }
 
 /// Código de estoque: chave de negócio do produto no ERP (doc 02, glossário). Texto.

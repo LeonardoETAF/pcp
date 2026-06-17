@@ -33,6 +33,7 @@ pub struct DetalheProduto {
     pub dias_com_vendas: i64,
     pub outliers_detectados: i64,
     pub coef_variacao: f64,
+    pub fator_sazonal: f64,
     pub dt_ref: NaiveDate,
 }
 
@@ -55,6 +56,7 @@ pub async fn produto(pool: &PgPool, codigo: &str) -> Result<Option<DetalheProdut
                   p.estoque_minimo, p.estoque_total_recomendado, p.qtd_sugerida,
                   p.volume_janela, p.dias_com_vendas, p.coef_variacao, p.dt_ref,
                   COALESCE(ep.outliers_detectados, 0)::bigint AS "outliers_detectados!",
+                  COALESCE(ep.fator_sazonal, 1.0)::float8 AS "fator_sazonal!",
                   c.percentual_acumulado AS "percentual_acumulado?"
            FROM pcp.produto_ativo p
            LEFT JOIN pcp.estoque_param ep ON ep.codigo_estoque = p.codigo_estoque
@@ -90,6 +92,7 @@ pub async fn produto(pool: &PgPool, codigo: &str) -> Result<Option<DetalheProdut
         dias_com_vendas: r.dias_com_vendas,
         outliers_detectados: r.outliers_detectados,
         coef_variacao: r.coef_variacao,
+        fator_sazonal: r.fator_sazonal,
         dt_ref: r.dt_ref,
     }))
 }

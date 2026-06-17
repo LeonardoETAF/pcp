@@ -6,7 +6,10 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
-use crate::api::{produto_detalhe, DetalheProduto, MetricasProduto, Ponto, RegraClasse};
+use crate::api::{
+    criar_solicitacao, listar_solicitacoes, perfil, produto_detalhe, transicionar_solicitacao,
+    DetalheProduto, MetricasProduto, Ponto, Recomendacao, RegraClasse, Solicitacao,
+};
 use crate::contexto::Sessao;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
 
@@ -115,6 +118,230 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
                 <GraficoLinha dados=d.estoque_90d.clone() vazio="Sem snapshots no período." />
             </section>
         </div>
+
+        <CentroComando codigo=d.codigo_estoque.clone() recomendacao=d.recomendacao.clone() />
+    }
+}
+
+/// Rótulo pt-BR do estado da solicitação (doc 03 §4.3).
+fn rotulo_estado(estado: &str) -> &'static str {
+    match estado {
+        "pendente" => "Pendente",
+        "aprovada" => "Aprovada",
+        "em_producao" => "Em produção",
+        "concluida" => "Concluída",
+        "recusada" => "Recusada",
+        _ => "—",
+    }
+}
+
+/// Ações disponíveis (rótulo, estado destino) a partir do estado atual — espelha a máquina de
+/// estados do `pcp-core` (só habilita transições válidas; o servidor revalida).
+fn acoes_estado(estado: &str) -> Vec<(&'static str, &'static str)> {
+    match estado {
+        "pendente" => vec![("Aprovar", "aprovada"), ("Recusar", "recusada")],
+        "aprovada" => vec![("Em produção", "em_producao")],
+        "em_producao" => vec![("Concluir", "concluida")],
+        _ => vec![],
+    }
+}
+
+/// Centro de comando (doc 03 §4.1): gerar Solicitação de Produção (default da recomendação,
+/// editável) e acompanhar/avançar o status. Frontend burro: a regra/validação é do servidor.
+#[component]
+#[allow(clippy::too_many_lines)] // markup do formulário + lista
+fn CentroComando(codigo: String, recomendacao: Recomendacao) -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let codigo = StoredValue::new(codigo);
+    let recarregar = RwSignal::new(0_u32);
+    let qtd = RwSignal::new(recomendacao.qtd_sugerida.to_string());
+    let prioridade = RwSignal::new(recomendacao.prioridade.clone());
+    let justificativa = RwSignal::new(String::new());
+    let msg = RwSignal::new(None::<String>);
+    let auto = recomendacao.aprovacao_automatica;
+
+    let papel = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => perfil(t).await.unwrap_or_default(),
+                None => String::new(),
+            }
+        },
+    );
+    let eh_gestor = move || matches!(papel.get().as_deref(), Some("gestor" | "admin"));
+
+    let lista = Resource::new(
+        move || (sessao.0.get(), recarregar.get()),
+        move |(t, _)| async move {
+            match t {
+                Some(t) => listar_solicitacoes(t, codigo.get_value())
+                    .await
+                    .unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
+
+    let gerar = move |_| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let qtd_val = qtd.get_untracked().trim().parse::<i64>().unwrap_or(0);
+        if qtd_val <= 0 {
+            msg.set(Some("Informe uma quantidade positiva.".to_owned()));
+            return;
+        }
+        let prio = prioridade.get_untracked();
+        let just = justificativa.get_untracked();
+        leptos::task::spawn_local(async move {
+            match criar_solicitacao(token, codigo.get_value(), qtd_val, prio, just).await {
+                Ok(_) => {
+                    justificativa.set(String::new());
+                    msg.set(None);
+                    recarregar.update(|n| *n += 1);
+                }
+                Err(e) => msg.set(Some(e.to_string())),
+            }
+        });
+    };
+
+    let transicionar = move |id: String, para: &'static str| {
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        leptos::task::spawn_local(async move {
+            match transicionar_solicitacao(token, id, para.to_owned()).await {
+                Ok(_) => recarregar.update(|n| *n += 1),
+                Err(e) => msg.set(Some(e.to_string())),
+            }
+        });
+    };
+
+    view! {
+        <section class="cartao centro-comando">
+            <header class="cartao__cab">
+                <div>
+                    <h2 class="cartao__titulo">"Centro de comando"</h2>
+                    <p class="texto-suave">"Gerar solicitação de produção e acompanhar o status."</p>
+                </div>
+            </header>
+
+            <div class="solic-form">
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Quantidade a produzir"</span>
+                    <input
+                        class="input input--num"
+                        type="number"
+                        min="1"
+                        prop:value=move || qtd.get()
+                        on:input=move |ev| qtd.set(event_target_value(&ev))
+                    />
+                </label>
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Prioridade"</span>
+                    <select
+                        class="select"
+                        prop:value=move || prioridade.get()
+                        on:change=move |ev| prioridade.set(event_target_value(&ev))
+                    >
+                        <option value="alta">"Alta"</option>
+                        <option value="media">"Média"</option>
+                        <option value="baixa">"Baixa"</option>
+                    </select>
+                </label>
+                <label class="campo-select solic-form__just">
+                    <span class="campo-select__rotulo">"Justificativa"</span>
+                    <input
+                        class="input"
+                        placeholder="Opcional"
+                        prop:value=move || justificativa.get()
+                        on:input=move |ev| justificativa.set(event_target_value(&ev))
+                    />
+                </label>
+                <button type="button" class="btn btn--primario" on:click=gerar>
+                    "Gerar solicitação"
+                </button>
+            </div>
+            {auto
+                .then(|| {
+                    view! {
+                        <p class="texto-suave solic-auto">
+                            "Dentro do limite de aprovação automática (qtd e prioridade) — entra já como aprovada."
+                        </p>
+                    }
+                })}
+            {move || {
+                msg.get().map(|m| view! { <p class="form-auth__erro">{m}</p> })
+            }}
+
+            <Suspense fallback=|| view! { <p class="texto-suave">"Carregando solicitações…"</p> }>
+                {move || {
+                    lista
+                        .get()
+                        .map(|itens| {
+                            if itens.is_empty() {
+                                view! {
+                                    <p class="estado-vazio">"Nenhuma solicitação para este produto."</p>
+                                }
+                                    .into_any()
+                            } else {
+                                view! {
+                                    <ul class="solic-lista">
+                                        {itens
+                                            .into_iter()
+                                            .map(|s| linha_solicitacao(&s, eh_gestor(), transicionar))
+                                            .collect_view()}
+                                    </ul>
+                                }
+                                    .into_any()
+                            }
+                        })
+                }}
+            </Suspense>
+        </section>
+    }
+}
+
+fn linha_solicitacao(
+    s: &Solicitacao,
+    eh_gestor: bool,
+    transicionar: impl Fn(String, &'static str) + Copy + Send + Sync + 'static,
+) -> impl IntoView {
+    let classe_estado = format!("badge badge--sol-{}", s.estado);
+    let acoes = if eh_gestor {
+        acoes_estado(&s.estado)
+    } else {
+        vec![]
+    };
+    let id = s.id.clone();
+    view! {
+        <li class="solic-item">
+            <span class=classe_estado>{rotulo_estado(&s.estado)}</span>
+            <div class="solic-item__dados">
+                <span class="solic-item__qtd">{fmt_milhar(s.qtd_solicitada)}" un"</span>
+                <span class="texto-suave">
+                    {format!("Prioridade {} · prazo {}", s.prioridade, s.prazo)}
+                </span>
+            </div>
+            <div class="solic-item__acoes">
+                {acoes
+                    .into_iter()
+                    .map(|(rotulo, destino)| {
+                        let id = id.clone();
+                        view! {
+                            <button
+                                type="button"
+                                class="btn btn--secundario btn--sm"
+                                on:click=move |_| transicionar(id.clone(), destino)
+                            >
+                                {rotulo}
+                            </button>
+                        }
+                    })
+                    .collect_view()}
+            </div>
+        </li>
     }
 }
 
