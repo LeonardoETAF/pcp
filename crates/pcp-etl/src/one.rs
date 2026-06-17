@@ -1,39 +1,40 @@
-//! Conector somente-leitura ao ERP One (`PostgreSQL` 9.5, schema `prd`) — camada anticorrupção
-//! (CLAUDE.md §1/§8; docs/integracao/acesso-direto-one.md). Lê o cru do One e o transforma no
-//! contrato de entrada do PCP (doc 05 §2). O SQL é executado em **runtime**: o schema legado do
-//! One não entra no cache compile-time do `SQLx` — é fonte externa, não pertence ao domínio. A
-//! sessão é forçada **somente-leitura** (§7), defesa extra além do usuário `GRANT SELECT`.
+//! Conector somente-leitura ao ERP One (`PostgreSQL` 9.5, schema `prd`) — fonte assíncrona atrás
+//! do trait [`FonteDados`] (CLAUDE.md §1/§8; docs/integracao/acesso-direto-one.md). Fluxo:
+//! consulta o One (read-only) → grava o cru no schema `bronze` → a ACL ([`crate::bronze`])
+//! transforma para o domínio. SQL em **runtime**: o schema legado não entra no cache compile-time
+//! do `SQLx`. Estoque = full refresh; vendas = **incremental** por `PEDV_DATC` com **janela
+//! deslizante** (re-lê dias recentes p/ capturar cancelamentos). Sessão forçada read-only (§7).
 
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
-use sqlx::Row;
+use sqlx::{QueryBuilder, Row};
 
 use pcp_db::{NovaVendaDia, NovoEstoqueSnapshot};
 
+use crate::bronze::{acl_estoque, acl_venda, BronzeEstoque, BronzeVenda};
 use crate::erro::ErroEtl;
+use crate::fonte::FonteDados;
 
-/// Snapshot completo do estoque (F03005 + F03001), agregado por produto: soma das configurações
-/// e `fora_de_linha` por `BOOL_OR`. Filtra produto acabado (mapeamento §1). `EST_QTDD` é o
-/// disponível canônico (confirmado pelo suporte); `EST_QTDE` é o físico. A **reserva** é
-/// derivada como resíduo (`estoque − disponível`) na transformação — ver `ler_snapshot`.
-const SQL_SNAPSHOT: &str = "\
-SELECT p.itm_id AS itm_id, p.itm_sku AS sku, p.itm_desc AS produto, \
-       ROUND(SUM(e.est_qtde))::int AS qtd_estoque, \
-       ROUND(SUM(e.est_qtdd))::int AS qtd_disponivel, \
-       ROUND(SUM(e.est_qtem))::int AS estoque_min_erp, \
-       BOOL_OR(COALESCE(e.est_flin, false)) AS fora_de_linha \
+/// Estoque cru agregado por produto (F03005 + F03001), só produto acabado. `EST_QTDD` é o
+/// disponível canônico; a reserva é derivada na ACL.
+const SQL_ESTOQUE: &str = "\
+SELECT p.itm_id AS itm_id, p.itm_sku AS itm_sku, p.itm_desc AS itm_desc, \
+       ROUND(SUM(e.est_qtde))::int AS est_qtde, \
+       ROUND(SUM(e.est_qtdd))::int AS est_qtdd, \
+       ROUND(SUM(e.est_qtem))::int AS est_qtem, \
+       BOOL_OR(COALESCE(e.est_flin, false)) AS est_flin, \
+       BOOL_OR(COALESCE(p.itm_proda, false)) AS itm_proda \
 FROM prd.f03005 e JOIN prd.f03001 p ON p.itm_id = e.est_itm \
 WHERE p.itm_gpprd = 'PRODUTO_ACABADO' \
 GROUP BY p.itm_id, p.itm_sku, p.itm_desc";
 
-/// Vendas = itens de pedido NÃO cancelados (mapeamento §2, opção B), consolidados por (data do
-/// pedido, produto). `dt_ref` ← `PEDV_DATC`; exclui item/pedido cancelado. Restringe a produto
-/// acabado para manter o mesmo universo do snapshot. `$1` = data inicial da janela.
+/// Vendas cru = itens de pedido NÃO cancelados, consolidados por (data do pedido, produto).
+/// `$1` = data inicial da janela.
 const SQL_VENDAS: &str = "\
-SELECT p.pedv_datc::date AS dt_ref, i.itmp_prd AS codigo, \
-       prod.itm_sku AS sku, prod.itm_desc AS produto, \
-       ROUND(SUM(i.itmp_qnt))::int AS qtd_vendida, \
-       BOOL_OR(COALESCE(prod.itm_proda, false)) AS is_personalizado \
+SELECT p.pedv_datc::date AS pedv_datc, i.itmp_prd AS itmp_prd, \
+       prod.itm_sku AS itm_sku, prod.itm_desc AS itm_desc, \
+       ROUND(SUM(i.itmp_qnt))::int AS itmp_qnt, \
+       BOOL_OR(COALESCE(prod.itm_proda, false)) AS itm_proda \
 FROM prd.f05001 i \
 JOIN prd.f05002 p ON p.pedv_id = i.itmp_pedv \
 JOIN prd.f03001 prod ON prod.itm_id = i.itmp_prd \
@@ -41,20 +42,39 @@ WHERE i.itmp_stpd <> 'CANCELADO' AND i.itmp_dcan IS NULL AND p.pedv_dcan IS NULL
   AND prod.itm_gpprd = 'PRODUTO_ACABADO' AND p.pedv_datc >= $1 \
 GROUP BY p.pedv_datc::date, i.itmp_prd, prod.itm_sku, prod.itm_desc";
 
-/// Fonte de dados por consulta direta ao One. Pool dedicado, sessão somente-leitura.
+/// Marca-d'água da fonte de vendas em `bronze.sincronizacao`.
+const FONTE_VENDAS: &str = "vendas";
+/// Limite de linhas por lote no INSERT em batch (folga sobre o teto de parâmetros do Postgres).
+const LOTE: usize = 5_000;
+
+/// Parâmetros do ciclo de ingestão do One.
+#[derive(Debug, Clone, Copy)]
+pub struct OpcoesOne {
+    /// Data de referência do snapshot (normalmente hoje).
+    pub data_ref: NaiveDate,
+    /// Profundidade do backfill na primeira sincronização (sem marca-d'água).
+    pub backfill_dias: i64,
+    /// Janela deslizante re-lida a cada ciclo, p/ capturar cancelamentos de pedidos recentes.
+    pub janela_deslizante_dias: i64,
+}
+
+/// Fonte de dados por consulta direta ao One. Lê o One (`one`) e grava o cru no PCP (`pcp`,
+/// schema `bronze`); a marca-d'água torna as vendas incrementais entre ciclos.
 pub struct FonteConsultaOne {
-    pool: PgPool,
+    one: PgPool,
+    pcp: PgPool,
+    opcoes: OpcoesOne,
 }
 
 impl FonteConsultaOne {
-    /// Conecta ao One com URL somente-leitura vinda do ambiente (§7.4). Cada conexão entra em
-    /// modo transação somente-leitura e com `statement_timeout`, para nunca escrever no legado.
+    /// Conecta ao One (URL read-only do ambiente — §7.4) reusando o pool do PCP para o bronze.
+    /// Cada conexão ao One entra em transação somente-leitura e com `statement_timeout`.
     ///
     /// # Errors
     /// [`ErroEtl::One`] se a conexão inicial falhar.
-    pub async fn conectar(url: &str, max_conexoes: u32) -> Result<Self, ErroEtl> {
-        let pool = PgPoolOptions::new()
-            .max_connections(max_conexoes)
+    pub async fn conectar(one_url: &str, pcp: PgPool, opcoes: OpcoesOne) -> Result<Self, ErroEtl> {
+        let one = PgPoolOptions::new()
+            .max_connections(2)
             .after_connect(|conn, _meta| {
                 Box::pin(async move {
                     sqlx::query("SET default_transaction_read_only = on")
@@ -66,77 +86,161 @@ impl FonteConsultaOne {
                     Ok(())
                 })
             })
-            .connect(url)
+            .connect(one_url)
             .await?;
-        Ok(Self { pool })
+        Ok(Self { one, pcp, opcoes })
     }
 
-    /// Lê o snapshot de estoque do dia `data_ref` (full refresh — o One só guarda o saldo atual).
-    ///
-    /// # Errors
-    /// [`ErroEtl::One`] se a consulta falhar.
-    pub async fn ler_snapshot(
-        &self,
-        data_ref: NaiveDate,
-    ) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl> {
-        let linhas = sqlx::query(SQL_SNAPSHOT).fetch_all(&self.pool).await?;
-        Ok(linhas
-            .iter()
-            .map(|r| {
-                let qtd_estoque = inteiro(r, "qtd_estoque");
-                let qtd_disponivel = inteiro(r, "qtd_disponivel");
-                NovoEstoqueSnapshot {
-                    dt_ref: data_ref,
-                    codigo_estoque: r.get::<i64, _>("itm_id").to_string(),
-                    sku: texto(r, "sku"),
-                    produto: texto(r, "produto"),
-                    configuracao: None, // agregado por produto, não por configuração
-                    qtd_estoque,
-                    // Reserva derivada p/ honrar a invariante do contrato (doc 05 §2.2):
-                    // disponivel = estoque − reserva. O One traz EST_QTDR independente, mas as
-                    // três quantidades são doubles e não fecham após arredondar; disponível
-                    // (EST_QTDD) é o canônico (suporte) — a reserva absorve o resíduo.
-                    qtd_reserva: qtd_estoque - qtd_disponivel,
-                    qtd_disponivel,
-                    estoque_min_erp: r
-                        .try_get::<Option<i32>, _>("estoque_min_erp")
-                        .ok()
-                        .flatten(),
-                    fora_de_linha: r
-                        .try_get::<Option<bool>, _>("fora_de_linha")
+    /// Início da janela de vendas: backfill na 1ª vez; senão, marca-d'água − janela deslizante.
+    async fn inicio_janela_vendas(&self) -> Result<NaiveDate, ErroEtl> {
+        let marca: Option<NaiveDate> =
+            sqlx::query("SELECT marca_dagua FROM bronze.sincronizacao WHERE fonte = $1")
+                .bind(FONTE_VENDAS)
+                .fetch_optional(&self.pcp)
+                .await?
+                .and_then(|r| {
+                    r.try_get::<Option<NaiveDate>, _>("marca_dagua")
                         .ok()
                         .flatten()
-                        .unwrap_or(false),
-                }
+                });
+        let inicio = match marca {
+            Some(m) => m - Duration::days(self.opcoes.janela_deslizante_dias),
+            None => self.opcoes.data_ref - Duration::days(self.opcoes.backfill_dias),
+        };
+        Ok(inicio)
+    }
+
+    /// Lê o estoque cru do One.
+    async fn estoque_cru(&self) -> Result<Vec<BronzeEstoque>, ErroEtl> {
+        let linhas = sqlx::query(SQL_ESTOQUE).fetch_all(&self.one).await?;
+        Ok(linhas
+            .iter()
+            .map(|r| BronzeEstoque {
+                itm_id: r.get::<i64, _>("itm_id"),
+                itm_sku: texto(r, "itm_sku"),
+                itm_desc: texto(r, "itm_desc"),
+                est_qtde: inteiro(r, "est_qtde"),
+                est_qtdd: inteiro(r, "est_qtdd"),
+                est_qtem: r.try_get::<Option<i32>, _>("est_qtem").ok().flatten(),
+                est_flin: booleano(r, "est_flin"),
+                itm_proda: booleano(r, "itm_proda"),
             })
             .collect())
     }
 
-    /// Lê as vendas (pedidos não cancelados) a partir de `desde` (inclusive).
-    ///
-    /// # Errors
-    /// [`ErroEtl::One`] se a consulta falhar.
-    pub async fn ler_vendas(&self, desde: NaiveDate) -> Result<Vec<NovaVendaDia>, ErroEtl> {
+    /// Lê as vendas cruas do One a partir de `desde`.
+    async fn vendas_cru(&self, desde: NaiveDate) -> Result<Vec<BronzeVenda>, ErroEtl> {
         let linhas = sqlx::query(SQL_VENDAS)
             .bind(desde)
-            .fetch_all(&self.pool)
+            .fetch_all(&self.one)
             .await?;
         Ok(linhas
             .iter()
-            .map(|r| NovaVendaDia {
-                dt_ref: r.get::<NaiveDate, _>("dt_ref"),
-                codigo_estoque: r.get::<i64, _>("codigo").to_string(),
-                sku: texto(r, "sku"),
-                produto: texto(r, "produto"),
-                configuracao: None, // consolidado por produto (o motor soma as variações)
-                qtd_vendida: inteiro(r, "qtd_vendida"),
-                is_personalizado: r
-                    .try_get::<Option<bool>, _>("is_personalizado")
-                    .ok()
-                    .flatten()
-                    .unwrap_or(false),
+            .map(|r| BronzeVenda {
+                pedv_datc: r.get::<NaiveDate, _>("pedv_datc"),
+                itmp_prd: r.get::<i64, _>("itmp_prd"),
+                itm_sku: texto(r, "itm_sku"),
+                itm_desc: texto(r, "itm_desc"),
+                itmp_qnt: inteiro(r, "itmp_qnt"),
+                itm_proda: booleano(r, "itm_proda"),
             })
             .collect())
+    }
+
+    /// Grava o estoque cru no bronze (full refresh do dia: troca a `data_ref`).
+    async fn landar_estoque(&self, cru: &[BronzeEstoque]) -> Result<(), ErroEtl> {
+        let data_ref = self.opcoes.data_ref;
+        let mut tx = self.pcp.begin().await?;
+        sqlx::query("DELETE FROM bronze.one_estoque WHERE data_ref = $1")
+            .bind(data_ref)
+            .execute(&mut *tx)
+            .await?;
+        for lote in cru.chunks(LOTE) {
+            let mut qb = QueryBuilder::new(
+                "INSERT INTO bronze.one_estoque \
+                 (data_ref, itm_id, itm_sku, itm_desc, est_qtde, est_qtdd, est_qtem, est_flin, itm_proda) ",
+            );
+            qb.push_values(lote, |mut b, r| {
+                b.push_bind(data_ref)
+                    .push_bind(r.itm_id)
+                    .push_bind(r.itm_sku.as_deref())
+                    .push_bind(r.itm_desc.as_deref())
+                    .push_bind(r.est_qtde)
+                    .push_bind(r.est_qtdd)
+                    .push_bind(r.est_qtem)
+                    .push_bind(r.est_flin)
+                    .push_bind(r.itm_proda);
+            });
+            qb.build().execute(&mut *tx).await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Grava as vendas cruas no bronze (full refresh da janela: troca tudo a partir de `desde`).
+    async fn landar_vendas(&self, desde: NaiveDate, cru: &[BronzeVenda]) -> Result<(), ErroEtl> {
+        let mut tx = self.pcp.begin().await?;
+        sqlx::query("DELETE FROM bronze.one_venda WHERE pedv_datc >= $1")
+            .bind(desde)
+            .execute(&mut *tx)
+            .await?;
+        for lote in cru.chunks(LOTE) {
+            let mut qb = QueryBuilder::new(
+                "INSERT INTO bronze.one_venda \
+                 (pedv_datc, itmp_prd, itm_sku, itm_desc, itmp_qnt, itm_proda) ",
+            );
+            qb.push_values(lote, |mut b, r| {
+                b.push_bind(r.pedv_datc)
+                    .push_bind(r.itmp_prd)
+                    .push_bind(r.itm_sku.as_deref())
+                    .push_bind(r.itm_desc.as_deref())
+                    .push_bind(r.itmp_qnt)
+                    .push_bind(r.itm_proda);
+            });
+            qb.build().execute(&mut *tx).await?;
+        }
+        sqlx::query(
+            "INSERT INTO bronze.sincronizacao (fonte, marca_dagua, atualizado_em) \
+             VALUES ($1, $2, now()) \
+             ON CONFLICT (fonte) DO UPDATE SET marca_dagua = EXCLUDED.marca_dagua, atualizado_em = now()",
+        )
+        .bind(FONTE_VENDAS)
+        .bind(self.opcoes.data_ref)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Sincroniza as fontes COMPLEMENTARES (faturada + produção) no bronze a partir de `desde`
+    /// (mapeamento §10). Não fazem parte da demanda — visibilidade e uso futuro do motor.
+    /// Retorna `(linhas_fatura, linhas_producao)`.
+    ///
+    /// # Errors
+    /// [`ErroEtl`] em falha de consulta ao One ou gravação no bronze.
+    pub async fn sincronizar_complementares(
+        &self,
+        desde: NaiveDate,
+    ) -> Result<(u64, u64), ErroEtl> {
+        let faturas = crate::complementar::sincronizar_faturas(&self.one, &self.pcp, desde).await?;
+        let producao = crate::complementar::sincronizar_producao(&self.one, &self.pcp).await?;
+        Ok((faturas, producao))
+    }
+}
+
+impl FonteDados for FonteConsultaOne {
+    async fn ler_vendas(&self) -> Result<Vec<NovaVendaDia>, ErroEtl> {
+        let desde = self.inicio_janela_vendas().await?;
+        let cru = self.vendas_cru(desde).await?;
+        self.landar_vendas(desde, &cru).await?;
+        Ok(cru.iter().map(acl_venda).collect())
+    }
+
+    async fn ler_snapshots(&self) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl> {
+        let cru = self.estoque_cru().await?;
+        self.landar_estoque(&cru).await?;
+        let data_ref = self.opcoes.data_ref;
+        Ok(cru.iter().map(|b| acl_estoque(b, data_ref)).collect())
     }
 }
 
@@ -152,4 +256,12 @@ fn texto(r: &PgRow, col: &str) -> Option<String> {
 /// Lê uma quantidade inteira agregada (SUM pode vir nula quando todas as parcelas são nulas).
 fn inteiro(r: &PgRow, col: &str) -> i32 {
     r.try_get::<Option<i32>, _>(col).ok().flatten().unwrap_or(0)
+}
+
+/// Lê um booleano agregado (`BOOL_OR` pode vir nulo), assumindo `false` na ausência.
+fn booleano(r: &PgRow, col: &str) -> bool {
+    r.try_get::<Option<bool>, _>(col)
+        .ok()
+        .flatten()
+        .unwrap_or(false)
 }

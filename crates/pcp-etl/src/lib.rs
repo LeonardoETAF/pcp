@@ -5,13 +5,16 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 mod arquivo;
+mod bronze;
+mod complementar;
 mod erro;
 mod fonte;
 mod importacao;
 mod one;
 
 pub use arquivo::ImportadorArquivo;
+pub use bronze::{acl_estoque, acl_venda, BronzeEstoque, BronzeVenda};
 pub use erro::ErroEtl;
 pub use fonte::FonteDados;
 pub use importacao::{gravar, importar, ResumoImportacao};
-pub use one::FonteConsultaOne;
+pub use one::{FonteConsultaOne, OpcoesOne};

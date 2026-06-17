@@ -5,18 +5,21 @@ use pcp_db::{NovaVendaDia, NovoEstoqueSnapshot};
 
 use crate::erro::ErroEtl;
 
-/// Fonte de dados de entrada do PCP. Hoje implementada por `ImportadorArquivo` (CSV/dump);
-/// amanhã por um conector ao ERP "One", sem alterar o resto do sistema.
+/// Fonte de dados de entrada do PCP, **assíncrona** (CLAUDE.md §1/§8). Implementada pelo
+/// `ImportadorArquivo` (CSV/dump, backfill) e pelo `FonteConsultaOne` (consulta read-only ao
+/// ERP One, incremental). O resto do sistema só conhece este contrato — trocar a fonte não o
+/// afeta. A fonte decide internamente o que devolve (tudo no backfill; a janela no incremental).
+#[allow(async_fn_in_trait)] // futuros consumidos localmente na ingestão; não exigem `Send` no contrato
 pub trait FonteDados {
-    /// Lê todas as vendas disponíveis na fonte (contrato doc 05 §2.1).
+    /// Lê as vendas disponíveis na fonte (contrato doc 05 §2.1).
     ///
     /// # Errors
     /// [`ErroEtl`] se a leitura ou a validação do contrato falhar.
-    fn ler_vendas(&self) -> Result<Vec<NovaVendaDia>, ErroEtl>;
+    async fn ler_vendas(&self) -> Result<Vec<NovaVendaDia>, ErroEtl>;
 
-    /// Lê todos os snapshots de estoque disponíveis na fonte (contrato doc 05 §2.2).
+    /// Lê os snapshots de estoque disponíveis na fonte (contrato doc 05 §2.2).
     ///
     /// # Errors
     /// [`ErroEtl`] se a leitura ou a validação do contrato falhar.
-    fn ler_snapshots(&self) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl>;
+    async fn ler_snapshots(&self) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl>;
 }

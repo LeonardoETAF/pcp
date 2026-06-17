@@ -6,9 +6,13 @@
 //! Só ingere; o motor roda à parte (bin `processar` do pcp-engine).
 //!
 //! Uso: `cargo run -p pcp-etl --bin backfill_one` (janela via `ONE_BACKFILL_MESES`, padrão 24).
+//! Na 1ª execução faz o backfill da janela inteira; nas seguintes, o `FonteConsultaOne` lê só o
+//! incremental (marca-d'água) — então este bin serve tanto p/ carga inicial quanto p/ recarga.
 #![forbid(unsafe_code)]
 
-use chrono::{Local, Months};
+use chrono::Local;
+
+use pcp_etl::{FonteConsultaOne, OpcoesOne};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -18,33 +22,31 @@ async fn main() -> anyhow::Result<()> {
         .map_err(|_| anyhow::anyhow!("defina ONE_DATABASE_URL no ambiente/.env"))?;
     let pcp_url = std::env::var("DATABASE_URL")
         .map_err(|_| anyhow::anyhow!("defina DATABASE_URL no ambiente/.env"))?;
-    let meses: u32 = std::env::var("ONE_BACKFILL_MESES")
+    let meses: i64 = std::env::var("ONE_BACKFILL_MESES")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(24);
 
-    let hoje = Local::now().date_naive();
-    let desde = hoje
-        .checked_sub_months(Months::new(meses))
-        .ok_or_else(|| anyhow::anyhow!("janela de {meses} meses inválida"))?;
-
-    eprintln!("• Conectando ao One (somente-leitura)…");
-    let fonte = pcp_etl::FonteConsultaOne::conectar(&one_url, 2).await?;
     let pcp = pcp_db::criar_pool(&pcp_url, 5).await?;
+    let opcoes = OpcoesOne {
+        data_ref: Local::now().date_naive(),
+        backfill_dias: meses * 31, // folga sobre 24 meses (ABC usa 18m; sazonal, ano anterior)
+        janela_deslizante_dias: 15,
+    };
 
-    eprintln!("• Lendo vendas desde {desde} (pedidos não cancelados, produto acabado)…");
-    let vendas = fonte.ler_vendas(desde).await?;
-    eprintln!("  {} linhas de venda agregadas", vendas.len());
+    eprintln!("• Conectando ao One (somente-leitura) e LANDando o cru no bronze…");
+    let fonte = FonteConsultaOne::conectar(&one_url, pcp.clone(), opcoes).await?;
 
-    eprintln!("• Lendo snapshot de estoque ({hoje})…");
-    let snapshot = fonte.ler_snapshot(hoje).await?;
-    eprintln!("  {} produtos no snapshot", snapshot.len());
+    eprintln!("• Ingerindo (bronze → ACL → domínio, idempotente por dia)…");
+    let r = pcp_etl::importar(&pcp, &fonte).await?;
 
-    eprintln!("• Gravando no PCP (idempotente por dia)…");
-    let r = pcp_etl::gravar(&pcp, vendas, snapshot).await?;
+    eprintln!("• Sincronizando complementares (faturada + produção) no bronze…");
+    let desde = opcoes.data_ref - chrono::Duration::days(opcoes.backfill_dias);
+    let (faturas, producao) = fonte.sincronizar_complementares(desde).await?;
+    eprintln!("  {faturas} faturas, {producao} itens de produção");
 
     println!(
-        "Backfill concluído: vendas {} dias / {} linhas · snapshot {} dias / {} linhas",
+        "Ingestão concluída: vendas {} dias / {} linhas · snapshot {} dias / {} linhas",
         r.dias_vendas, r.linhas_vendas, r.dias_snapshot, r.linhas_snapshot
     );
     Ok(())

@@ -20,7 +20,9 @@ sqlx = { version = "0.9", default-features = false, features = [
     "postgres",
     "chrono",
 ] }
-# Binário de backfill (orquestração): lê do One e grava no PCP.
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+# Binários de orquestração (backfill e polling): leem do One, gravam e disparam o pipeline.
+pcp-engine = { path = "../pcp-engine" }
+pcp-config = { path = "../pcp-config" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 anyhow = "1"
 dotenvy = "0.15"

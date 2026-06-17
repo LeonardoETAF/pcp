@@ -64,11 +64,11 @@ impl ImportadorArquivo {
 }
 
 impl FonteDados for ImportadorArquivo {
-    fn ler_vendas(&self) -> Result<Vec<NovaVendaDia>, ErroEtl> {
+    async fn ler_vendas(&self) -> Result<Vec<NovaVendaDia>, ErroEtl> {
         ler_vendas_csv(abrir(&self.caminho_vendas)?)
     }
 
-    fn ler_snapshots(&self) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl> {
+    async fn ler_snapshots(&self) -> Result<Vec<NovoEstoqueSnapshot>, ErroEtl> {
         ler_snapshot_csv(abrir(&self.caminho_snapshot)?)
     }
 }

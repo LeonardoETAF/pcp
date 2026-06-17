@@ -27,8 +27,8 @@ pub async fn importar<F: FonteDados>(
     pool: &PgPool,
     fonte: &F,
 ) -> Result<ResumoImportacao, ErroEtl> {
-    let vendas = fonte.ler_vendas()?;
-    let snapshots = fonte.ler_snapshots()?;
+    let vendas = fonte.ler_vendas().await?;
+    let snapshots = fonte.ler_snapshots().await?;
     gravar(pool, vendas, snapshots).await
 }
 
