@@ -75,6 +75,10 @@ pub fn rotas(estado: AppState) -> Router {
         )
         .route("/pcp/admin/pipeline", get(leitura::operacao::pipeline))
         .route("/pcp/admin/saude", get(leitura::operacao::saude))
+        .route(
+            "/pcp/admin/reprocessar",
+            post(leitura::operacao::reprocessar),
+        )
         .route("/pcp/eventos", get(leitura::eventos::eventos))
         .route_layer(axum::middleware::from_fn_with_state(
             estado.clone(),

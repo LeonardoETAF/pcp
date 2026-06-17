@@ -1716,6 +1716,12 @@ input {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
 }
+.form-reprocesso {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
 
 .filtros-estoque__avancado {
   display: flex;

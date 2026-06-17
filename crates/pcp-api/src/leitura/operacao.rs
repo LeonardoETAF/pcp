@@ -4,9 +4,11 @@
 //! (§3). Somente leitura.
 
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::{Extension, Json};
 use chrono::{Local, NaiveDate};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
 use pcp_db::operacao::{self, MetricasSaude, RegistroExecucao};
 
@@ -14,6 +16,9 @@ use crate::erro::ApiError;
 use crate::estado::AppState;
 use crate::jwt::Claims;
 use crate::papel::Papel;
+
+/// Limite de segurança do intervalo de reprocesso (evita varreduras gigantes acidentais).
+const MAX_DIAS_REPROCESSO: i64 = 92;
 
 /// Quantas execuções recentes do pipeline expor no painel.
 const LIMITE_EXECUCOES: i64 = 60;
@@ -87,6 +92,51 @@ pub async fn saude(
         gerado_em: Local::now().to_rfc3339(),
         verificacoes: avaliar(&metricas, hoje),
     }))
+}
+
+/// Pedido de reprocesso de um intervalo de datas (admin).
+#[derive(Deserialize)]
+pub struct ReprocessarReq {
+    pub inicio: NaiveDate,
+    pub fim: NaiveDate,
+}
+
+/// Reprocessa o pipeline de um intervalo de datas, de forma idempotente (doc 05 §1.3). Admin-only.
+/// Dispara em segundo plano (pode demorar) e responde 202; o resultado aparece no painel de
+/// execuções e nos health checks (o motor notifica o canal SSE ao terminar cada dia).
+///
+/// # Errors
+/// [`ApiError::Proibido`] se não for admin; [`ApiError::Requisicao`] se o intervalo for inválido.
+pub async fn reprocessar(
+    State(estado): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(req): Json<ReprocessarReq>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    claims.exige(Papel::Admin)?;
+    if req.fim < req.inicio {
+        return Err(ApiError::Requisicao(
+            "data final antes da inicial".to_owned(),
+        ));
+    }
+    if (req.fim - req.inicio).num_days() > MAX_DIAS_REPROCESSO {
+        return Err(ApiError::Requisicao(format!(
+            "intervalo excede o máximo de {MAX_DIAS_REPROCESSO} dias"
+        )));
+    }
+    // Segundo plano: o reprocesso pode levar minutos; a transação de cada dia é idempotente.
+    let pool = estado.pool.clone();
+    let config = estado.config();
+    let (inicio, fim) = (req.inicio, req.fim);
+    tokio::spawn(async move {
+        match pcp_engine::reprocessar_intervalo(&pool, &config, inicio, fim).await {
+            Ok(r) => tracing::info!(dias = r.len(), %inicio, %fim, "reprocesso concluído"),
+            Err(e) => tracing::error!(erro = %e, %inicio, %fim, "reprocesso falhou"),
+        }
+    });
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(json!({ "mensagem": format!("Reprocesso de {inicio} a {fim} iniciado.") })),
+    ))
 }
 
 fn ver(nome: &str, status: &str, detalhe: String) -> VerificacaoDto {

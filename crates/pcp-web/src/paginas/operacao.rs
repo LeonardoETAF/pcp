@@ -4,7 +4,10 @@
 
 use leptos::prelude::*;
 
-use crate::api::{admin_pipeline, admin_saude, ExecucaoPipeline, RelatorioSaude, VerificacaoSaude};
+use crate::api::{
+    admin_pipeline, admin_reprocessar, admin_saude, ExecucaoPipeline, RelatorioSaude,
+    VerificacaoSaude,
+};
 use crate::contexto::Sessao;
 use crate::formato::fmt_milhar;
 
@@ -60,6 +63,8 @@ pub fn Operacao() -> impl IntoView {
                 }}
             </Suspense>
 
+            <FormReprocesso />
+
             <section class="cartao">
                 <header class="cartao__cab">
                     <h2 class="cartao__titulo">"Execuções do pipeline"</h2>
@@ -79,6 +84,73 @@ pub fn Operacao() -> impl IntoView {
                     }}
                 </Suspense>
             </section>
+        </section>
+    }
+}
+
+/// Formulário de reprocesso de intervalo (admin). Dispara `POST /pcp/admin/reprocessar`; o
+/// resultado real aparece na tabela de execuções e nos health checks. Não admin → erro da API.
+#[component]
+fn FormReprocesso() -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let inicio = RwSignal::new(String::new());
+    let fim = RwSignal::new(String::new());
+    let msg = RwSignal::new(String::new());
+
+    let enviar = move |ev: leptos::ev::SubmitEvent| {
+        ev.prevent_default();
+        let Some(token) = sessao.0.get_untracked() else {
+            return;
+        };
+        let (i, f) = (inicio.get_untracked(), fim.get_untracked());
+        if i.is_empty() || f.is_empty() {
+            msg.set("Informe a data inicial e a final.".to_owned());
+            return;
+        }
+        msg.set("Enviando…".to_owned());
+        leptos::task::spawn_local(async move {
+            match admin_reprocessar(token, i, f).await {
+                Ok(m) => msg.set(m),
+                Err(e) => msg.set(e.to_string()),
+            }
+        });
+    };
+
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Reprocessar"</h2>
+                <p class="texto-suave">
+                    "Recalcula o pipeline de um intervalo (idempotente). Exige os dados do período."
+                </p>
+            </header>
+            <form class="form-reprocesso" on:submit=enviar>
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Início"</span>
+                    <input
+                        class="input"
+                        type="date"
+                        prop:value=move || inicio.get()
+                        on:input=move |ev| inicio.set(event_target_value(&ev))
+                    />
+                </label>
+                <label class="campo-select">
+                    <span class="campo-select__rotulo">"Fim"</span>
+                    <input
+                        class="input"
+                        type="date"
+                        prop:value=move || fim.get()
+                        on:input=move |ev| fim.set(event_target_value(&ev))
+                    />
+                </label>
+                <button type="submit" class="btn btn--secundario">
+                    "Reprocessar"
+                </button>
+            </form>
+            {move || {
+                let m = msg.get();
+                (!m.is_empty()).then(|| view! { <p class="texto-suave">{m}</p> })
+            }}
         </section>
     }
 }

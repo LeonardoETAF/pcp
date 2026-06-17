@@ -657,6 +657,43 @@ pub async fn admin_saude(token: String) -> Result<RelatorioSaude, ServerFnError>
     obter_json("/pcp/admin/saude", &token).await
 }
 
+/// Dispara o reprocesso do pipeline para um intervalo (`POST /pcp/admin/reprocessar`, admin).
+/// `inicio`/`fim` em `YYYY-MM-DD`. Devolve a mensagem de confirmação (processa em segundo plano).
+///
+/// # Errors
+/// [`ServerFnError`] se a API não responder, faltar permissão ou o intervalo for inválido.
+#[server(name = AdminReprocessar, prefix = "/api")]
+pub async fn admin_reprocessar(
+    token: String,
+    inicio: String,
+    fim: String,
+) -> Result<String, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/admin/reprocessar"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "inicio": inicio, "fim": fim }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new(
+            "apenas administradores podem reprocessar",
+        ));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("intervalo inválido ou falha ao iniciar"));
+    }
+    let corpo: serde_json::Value = resposta
+        .json()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    Ok(corpo["mensagem"]
+        .as_str()
+        .unwrap_or("Reprocesso iniciado.")
+        .to_owned())
+}
+
 /// Lista os alertas do dia (`GET /pcp/alertas`) com o token do usuário (Bearer).
 ///
 /// # Errors
