@@ -11,6 +11,9 @@
 // Componentes Leptos retornam `impl IntoView` consumido pela macro `view!`; o `must_use` do
 // pedantic vira ruído em todo componente. Relaxado só este sub-lint (CLAUDE.md §5).
 #![allow(clippy::must_use_candidate)]
+// As `view!` aninhadas (layout/páginas) geram tipos profundos; o release resolve o layout
+// completo e estoura o limite padrão (128). Sobe o limite (não afeta runtime).
+#![recursion_limit = "512"]
 
 pub mod api;
 pub mod app;

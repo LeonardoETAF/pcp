@@ -1,6 +1,9 @@
 //! Binário do servidor SSR do frontend (Axum + `leptos_axum`). Serve a app e os assets de `public/`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
+// `view!` aninhadas geram tipos profundos; o release resolve o layout completo e estoura o
+// limite padrão (128). Sobe o limite (não afeta runtime).
+#![recursion_limit = "512"]
 
 #[cfg(feature = "ssr")]
 #[tokio::main]

@@ -71,3 +71,7 @@ bin-features = ["ssr"]
 bin-default-features = false
 lib-features = ["hydrate"]
 lib-default-features = false
+# Build de release da lib WASM otimizado por tamanho (ver [profile.wasm-release] no workspace).
+lib-profile-release = "wasm-release"
+# Binário SSR em opt-level 1 (evita estouro de resolução de tipos do release; servidor é I/O-bound).
+bin-profile-release = "server-release"

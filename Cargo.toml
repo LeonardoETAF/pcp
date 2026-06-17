@@ -21,3 +21,23 @@ version = "0.1.0"
 license = "UNLICENSED"
 authors = ["SuperCopo PCP"]
 publish = false
+
+# Profile otimizado por TAMANHO para o WASM do frontend (CLAUDE.md §15/§16 — desempenho percebido).
+# O `cargo-leptos` usa este profile na lib (hidratação) em release; com wasm-opt o bundle cai de
+# ~12 MB (dev) para ~1,5–2,5 MB, eliminando a lentidão de hidratação (cliques do menu respondem
+# de primeira). Ver `lib-profile-release` em crates/pcp-web/Cargo.toml.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Profile do BINÁRIO SSR do frontend. As `view!` aninhadas geram tipos profundos no streaming SSR;
+# já mitigamos com `.into_any()` no layout/sidebar (ver crates/pcp-web/src/layout.rs), mas em
+# release otimizado o rustc ainda estoura a resolução de tipos. opt-level 0 compila bem e é
+# suficiente: o servidor é I/O-bound (o cálculo vive na API/motor) e o que pesa no cliente é o
+# WASM — esse sim otimizado (wasm-release). Erasing as demais páginas permitiria subir o opt-level.
+[profile.server-release]
+inherits = "release"
+opt-level = 0

@@ -86,6 +86,10 @@ pub fn LayoutAutenticado() -> impl IntoView {
             </div>
         </Show>
     }
+    // Type-erasing (CLAUDE.md §16): colapsa o tipo profundo desta view para `AnyView`. Sem isso,
+    // o SSR em release compõe o tipo do layout com o de cada rota-filha e estoura a resolução de
+    // tipos do rustc ("queries overflow the depth limit"). Não tem custo de runtime relevante.
+    .into_any()
 }
 
 /// Sidebar escura: logo clicável (recolhe/expande), módulos do PCP e rodapé de usuário.
@@ -153,6 +157,9 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             </div>
         </aside>
     }
+    // Type-erasing: a sidebar (menus + rodapé) é a subárvore mais profunda; colapsá-la para
+    // `AnyView` mantém raso o tipo do layout e evita o estouro de resolução do SSR em release.
+    .into_any()
 }
 
 /// Ícone do diretório `public/icons` recolorido com a cor do texto (CSS mask).
