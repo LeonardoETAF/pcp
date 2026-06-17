@@ -5,8 +5,37 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
 
-use crate::api::{estoque, painel, ConsultaEstoque, Contagem, LinhaEstoque, PainelResumo};
+use crate::api::{
+    alertas, dashboard_classes, estoque, painel, AlertaResumo, ClasseResumo, ConsultaEstoque,
+    Contagem, LinhaEstoque, PainelResumo,
+};
 use crate::contexto::Sessao;
+use crate::formato::fmt_milhar;
+
+/// Cor de criticidade do KPI (doc 02 §9.2): vermelho/amarelo conforme o threshold.
+#[allow(clippy::cast_precision_loss)] // contagens pequenas: conversão exata para f64
+fn realce_criticos(criticos: i64, total: i64) -> &'static str {
+    if total == 0 {
+        return "";
+    }
+    let pct = (criticos as f64 / total as f64) * 100.0;
+    if pct > 20.0 {
+        "critico"
+    } else if pct > 10.0 {
+        "medio"
+    } else {
+        ""
+    }
+}
+
+/// Cor de criticidade da cobertura média (doc 02 §9.2): < 30 dias vermelho, < 60 amarelo.
+fn realce_cobertura(c: Option<f64>) -> &'static str {
+    match c {
+        Some(v) if v < 30.0 => "critico",
+        Some(v) if v < 60.0 => "medio",
+        _ => "",
+    }
+}
 
 fn cor_classe(classe: &str) -> &'static str {
     match classe {
@@ -27,6 +56,7 @@ fn conta_status(p: &PainelResumo, status: &str) -> i64 {
 }
 
 #[component]
+#[allow(clippy::too_many_lines)] // wiring de Resources + markup declarativo
 pub fn PaginaDashboard() -> impl IntoView {
     let sessao = expect_context::<Sessao>();
     let painel_res = Resource::new(
@@ -75,6 +105,24 @@ pub fn PaginaDashboard() -> impl IntoView {
             }
         },
     );
+    let classes_res = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => dashboard_classes(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
+    let alertas_res = Resource::new(
+        move || sessao.0.get(),
+        |t| async move {
+            match t {
+                Some(t) => alertas(t).await.unwrap_or_default(),
+                None => Vec::new(),
+            }
+        },
+    );
 
     view! {
         <div class="painel">
@@ -90,7 +138,14 @@ pub fn PaginaDashboard() -> impl IntoView {
                         })
                 }}
             </Suspense>
+            <Suspense fallback=|| view! { <p class="texto-suave">"Carregando metas…"</p> }>
+                {move || {
+                    let classes = classes_res.get().unwrap_or_default();
+                    view! { <SecaoClasses classes /> }
+                }}
+            </Suspense>
             <div class="painel__grade">
+                <AlertasRecentes recurso=alertas_res />
                 <ListaProdutos
                     titulo="A produzir"
                     sub="Maiores sugestões de produção"
@@ -113,21 +168,26 @@ fn topo(p: &PainelResumo) -> impl IntoView {
     let cobertura = p
         .cobertura_media
         .map_or_else(|| "0".to_owned(), |c| format!("{c:.1}"));
+    let criticos = conta_status(p, "critico");
     let cards = view! {
         <div class="kpis">
             <Kpi valor=p.total_produtos.to_string() rotulo="Produtos" sub="ativos no catálogo" />
             <Kpi
-                valor=conta_status(p, "critico").to_string()
+                valor=criticos.to_string()
                 rotulo="Estoque crítico"
                 sub="abaixo do limiar da classe"
-                realce="critico"
+                realce=realce_criticos(criticos, p.total_produtos)
             />
-            <Kpi valor=cobertura rotulo="Cobertura média" sub="dias (exclui sem histórico)" />
+            <Kpi
+                valor=cobertura
+                rotulo="Cobertura média"
+                sub="dias (exclui sem histórico)"
+                realce=realce_cobertura(p.cobertura_media)
+            />
             <Kpi
                 valor=p.total_sugerido.to_string()
                 rotulo="A produzir"
                 sub="soma das sugestões"
-                realce="alto"
             />
         </div>
     };
@@ -157,6 +217,158 @@ fn topo(p: &PainelResumo) -> impl IntoView {
                 <Barras dados=status />
             </section>
         </div>
+    }
+}
+
+/// Painel de metas físicas ABC (doc 02 §9.1) + cobertura média por classe (doc 03 §2).
+#[component]
+fn SecaoClasses(classes: Vec<ClasseResumo>) -> impl IntoView {
+    if classes.is_empty() {
+        return ().into_any();
+    }
+    let metas: Vec<_> = classes
+        .iter()
+        .filter(|c| c.pct_fisico_meta.is_some())
+        .cloned()
+        .collect();
+    let cobertura: Vec<_> = classes.clone();
+    view! {
+        <div class="painel__graficos">
+            <section class="cartao">
+                <header class="cartao__cab">
+                    <h2 class="cartao__titulo">"Metas de estoque físico (ABC)"</h2>
+                    <p class="texto-suave">"Participação real × meta (±3 p.p.)"</p>
+                </header>
+                <div class="metas-fisicas">
+                    {metas
+                        .into_iter()
+                        .map(|c| view! { <MetaFisica c /> })
+                        .collect_view()}
+                </div>
+            </section>
+            <section class="cartao">
+                <header class="cartao__cab">
+                    <h2 class="cartao__titulo">"Cobertura por classe"</h2>
+                    <p class="texto-suave">"Dias (exclui sem histórico)"</p>
+                </header>
+                <div class="cobertura-classes">
+                    {cobertura
+                        .into_iter()
+                        .map(|c| {
+                            let cob = c
+                                .cobertura_media
+                                .map_or_else(|| "—".to_owned(), |v| format!("{v:.1}"));
+                            view! {
+                                <div class="cob-classe">
+                                    <span class=format!("badge badge--abc-{}", c.classe.to_lowercase())>
+                                        {c.classe.clone()}
+                                    </span>
+                                    <span class="cob-classe__valor">{cob}</span>
+                                </div>
+                            }
+                        })
+                        .collect_view()}
+                </div>
+            </section>
+        </div>
+    }
+    .into_any()
+}
+
+#[component]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // pct 0..100 p/ largura da barra
+fn MetaFisica(c: ClasseResumo) -> impl IntoView {
+    let meta = c.pct_fisico_meta.unwrap_or(0);
+    let atingida = c.meta_atingida.unwrap_or(false);
+    let largura = c.pct_fisico_real.clamp(0.0, 100.0);
+    let status = if atingida {
+        "Meta atingida"
+    } else {
+        "Fora da meta"
+    };
+    let classe_status = if atingida {
+        "meta-chip meta-chip--ok"
+    } else {
+        "meta-chip meta-chip--fora"
+    };
+    view! {
+        <div class="meta-fisica">
+            <div class="meta-fisica__topo">
+                <span class=format!("badge badge--abc-{}", c.classe.to_lowercase())>
+                    {c.classe.clone()}
+                </span>
+                <span class="meta-fisica__pct">
+                    {format!("{:.1}% / meta {}%", c.pct_fisico_real, meta)}
+                </span>
+                <span class=classe_status>{status}</span>
+            </div>
+            <div class="meta-fisica__trilho">
+                <span class="meta-fisica__preenche" style=format!("width:{largura}%")></span>
+                <span class="meta-fisica__marca" style=format!("left:{meta}%")></span>
+            </div>
+        </div>
+    }
+}
+
+/// Alertas mais recentes (doc 03 §2): fila resumida, link para a Central.
+#[component]
+fn AlertasRecentes(recurso: Resource<Vec<AlertaResumo>>) -> impl IntoView {
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <div>
+                    <h2 class="cartao__titulo">"Alertas recentes"</h2>
+                    <p class="texto-suave">"Itens em alerta de produção"</p>
+                </div>
+                <A href="/alertas" attr:class="link-ver-todos">
+                    "Ver alertas"
+                </A>
+            </header>
+            <Suspense fallback=|| view! { <p class="texto-suave">"Carregando…"</p> }>
+                {move || {
+                    let itens = recurso.get().unwrap_or_default();
+                    if itens.is_empty() {
+                        view! { <p class="estado-vazio">"Nenhum alerta no momento."</p> }.into_any()
+                    } else {
+                        view! {
+                            <ul class="lista-prod">
+                                {itens
+                                    .into_iter()
+                                    .take(5)
+                                    .map(|a| {
+                                        let nome = a
+                                            .produto
+                                            .clone()
+                                            .unwrap_or_else(|| a.codigo_estoque.clone());
+                                        let href = format!("/estoque/{}", a.codigo_estoque);
+                                        view! {
+                                            <li class="lista-prod__item">
+                                                <span class=format!(
+                                                    "badge badge--prio-{}",
+                                                    a.prioridade,
+                                                )>{a.prioridade.clone()}</span>
+                                                <div class="lista-prod__nome">
+                                                    <A href=href attr:class="lista-prod__link">
+                                                        {nome}
+                                                    </A>
+                                                    <span class="lista-prod__codigo">
+                                                        {a.codigo_estoque.clone()}
+                                                    </span>
+                                                </div>
+                                                <span class="lista-prod__metrica">
+                                                    {fmt_milhar(a.qtd_sugerida)}
+                                                </span>
+                                            </li>
+                                        }
+                                    })
+                                    .collect_view()}
+                            </ul>
+                        }
+                            .into_any()
+                    }
+                }}
+            </Suspense>
+        </section>
     }
 }
 

@@ -77,6 +77,28 @@ pub async fn painel(token: String) -> Result<PainelResumo, ServerFnError> {
     obter_json("/pcp/dashboard", &token).await
 }
 
+/// Resumo por classe do dashboard executivo (`GET /pcp/dashboard/classes`): metas físicas (§9.1)
+/// e cobertura média por classe. Valores já calculados/comparados pela API (frontend burro).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClasseResumo {
+    pub classe: String,
+    pub qtd_produtos: i64,
+    pub estoque_fisico: i64,
+    pub pct_fisico_real: f64,
+    pub pct_fisico_meta: Option<u32>,
+    pub meta_atingida: Option<bool>,
+    pub cobertura_media: Option<f64>,
+}
+
+/// Resumo por classe (metas físicas + cobertura) — `GET /pcp/dashboard/classes`.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = DashboardClasses, prefix = "/api")]
+pub async fn dashboard_classes(token: String) -> Result<Vec<ClasseResumo>, ServerFnError> {
+    obter_json("/pcp/dashboard/classes", &token).await
+}
+
 /// Produtos ativos paginados (`GET /pcp/estoque`) com filtros, busca, ordenação e paginação.
 /// `reqwest::query` cuida do *url-encoding* (busca livre do usuário pode ter espaços/acentos).
 ///

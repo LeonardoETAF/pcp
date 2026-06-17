@@ -837,15 +837,94 @@ input {
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-1);
 }
-/* realces coloridos dos KPIs desativados por enquanto (cartões uniformes). */
+/* Cartões uniformes; a criticidade (doc 02 §9.2) colore só o VALOR, não o cartão. */
 .kpi__valor {
   font-size: var(--fs-xl);
   font-weight: var(--peso-forte);
 }
+.kpi--critico .kpi__valor { color: var(--semaforo-critico); }
+.kpi--medio .kpi__valor { color: var(--semaforo-alto); }
 .kpi__rotulo { font-weight: var(--peso-medio); }
 .kpi__sub {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
+}
+
+/* Painel de metas físicas ABC (doc 02 §9.1) */
+.metas-fisicas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.meta-fisica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+.meta-fisica__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+.meta-fisica__pct {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.meta-chip {
+  font-size: var(--fs-xs);
+  padding: 2px var(--e-2);
+  border-radius: 999px;
+}
+.meta-chip--ok {
+  background: rgba(18, 183, 106, 0.15);
+  color: var(--semaforo-ok);
+}
+.meta-chip--fora {
+  background: rgba(247, 144, 9, 0.15);
+  color: var(--semaforo-alto);
+}
+.meta-fisica__trilho {
+  position: relative;
+  height: 10px;
+  background: var(--superficie-2);
+  border-radius: 999px;
+}
+.meta-fisica__preenche {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--cor-primaria);
+  border-radius: 999px;
+}
+.meta-fisica__marca {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 16px;
+  background: var(--texto);
+}
+
+.cobertura-classes {
+  display: flex;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.cob-classe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-1);
+  padding: var(--e-3);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  min-width: 64px;
+}
+.cob-classe__valor {
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
 }
 
 .cartao {

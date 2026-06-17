@@ -57,6 +57,16 @@ pub struct PaginaEstoque {
     pub total: i64,
 }
 
+/// Resumo por classe para o dashboard executivo (doc 03 §2): contagem, estoque físico (soma de
+/// `qtd_estoque`) e cobertura média (exclui a sentinela 999 — §11).
+#[derive(Debug, Clone)]
+pub struct ResumoClasse {
+    pub classe: String,
+    pub qtd_produtos: i64,
+    pub estoque_fisico: i64,
+    pub cobertura_media: Option<f64>,
+}
+
 /// Distribuição por classe ABC (doc 04 §6.2 — `get_distribuicao_abc_estoque`).
 #[derive(Debug, Clone)]
 pub struct DistribuicaoClasse {
@@ -292,6 +302,32 @@ pub async fn produtos_paginado(
     .collect();
 
     Ok(PaginaEstoque { itens, total })
+}
+
+/// Resumo por classe (contagem, estoque físico, cobertura média) — dashboard executivo (§2).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn resumo_por_classe(pool: &PgPool) -> Result<Vec<ResumoClasse>, ErroDb> {
+    let linhas = sqlx::query!(
+        r#"SELECT classe                                            AS "classe!",
+                  COUNT(*)                                          AS "qtd_produtos!",
+                  COALESCE(SUM(qtd_estoque), 0)::bigint             AS "estoque_fisico!",
+                  AVG(cobertura_dias) FILTER (WHERE cobertura_dias <> $1) AS "cobertura_media?"
+           FROM pcp.produto_ativo GROUP BY classe ORDER BY classe"#,
+        COBERTURA_SEM_HISTORICO,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|r| ResumoClasse {
+            classe: r.classe,
+            qtd_produtos: r.qtd_produtos,
+            estoque_fisico: r.estoque_fisico,
+            cobertura_media: r.cobertura_media,
+        })
+        .collect())
 }
 
 /// Distribuição por classe ABC: contagem, volume e recomendado somados (doc 04 §6.2).
