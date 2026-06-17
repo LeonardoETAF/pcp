@@ -1,6 +1,6 @@
-//! Testes de integração dos repositórios — exigem um Postgres real (`DATABASE_URL`).
-//! Marcados `#[ignore]` para não quebrar o CI sem banco. Rode localmente com:
-//!   `docker compose up -d` e depois `cargo test -p pcp-db -- --ignored`.
+//! Testes de integração dos repositórios — exigem um Postgres de teste (`TEST_DATABASE_URL`,
+//! NUNCA o de desenvolvimento). Marcados `#[ignore]` para não quebrar o CI sem banco. Rode com:
+//!   `TEST_DATABASE_URL=postgres://pcp:...@localhost:5433/pcp_test cargo test -p pcp-db -- --ignored`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
@@ -9,8 +9,8 @@ use pcp_db::{aplicar_migrations, criar_pool, snapshot, vendas, NovaVendaDia, Nov
 use sqlx::PgPool;
 
 async fn pool_de_teste() -> PgPool {
-    let url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL deve estar definida para os testes de banco");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = criar_pool(&url, 5).await.expect("conexão com o Postgres");
     aplicar_migrations(&pool).await.expect("aplicar migrations");
     pool

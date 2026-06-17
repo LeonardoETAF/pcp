@@ -1,5 +1,6 @@
-//! Testes de autorização ponta a ponta (precisam de Postgres — `DATABASE_URL`). `#[ignore]`.
-//! Rode com: `docker compose up -d` e `cargo test -p pcp-api -- --ignored`.
+//! Testes de autorização ponta a ponta (precisam de um Postgres de teste — `TEST_DATABASE_URL`,
+//! NUNCA o banco de desenvolvimento). `#[ignore]`. Rode com:
+//! `TEST_DATABASE_URL=postgres://pcp:...@localhost:5433/pcp_test cargo test -p pcp-api -- --ignored`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
@@ -16,7 +17,8 @@ use pcp_db::usuarios;
 const SEGREDO: &[u8] = b"segredo-de-teste-com-mais-de-32-bytes!!";
 
 async fn estado_de_teste() -> AppState {
-    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para os testes de banco");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
     let config = std::sync::Arc::new(
@@ -42,6 +44,26 @@ async fn criar_usuario_teste(estado: &AppState, papel: &str) -> String {
         .await
         .unwrap();
     email
+}
+
+/// Apaga um usuário de teste pelo e-mail (CASCADE limpa tokens/filtros/preferências). Como a
+/// autorização é stateless (valida só o JWT), o token continua válido após a remoção — limpeza
+/// sem deixar resíduo no banco e segura entre testes paralelos (cada um remove só o que criou).
+async fn apagar_usuario(estado: &AppState, email: &str) {
+    sqlx::query("DELETE FROM pcp.usuario WHERE email = $1")
+        .bind(email)
+        .execute(&estado.pool)
+        .await
+        .expect("limpar usuário de teste");
+}
+
+/// Cria um usuário do papel, faz login (precisa do usuário no banco) e JÁ o remove, devolvendo o
+/// token — que sobrevive por ser stateless. Não fica usuário de teste no banco.
+async fn token_de(estado: &AppState, papel: &str) -> String {
+    let email = criar_usuario_teste(estado, papel).await;
+    let token = logar(estado, &email).await;
+    apagar_usuario(estado, &email).await;
+    token
 }
 
 async fn logar(estado: &AppState, email: &str) -> String {
@@ -75,9 +97,9 @@ async fn status_get(estado: &AppState, uri: &str, token: Option<&str>) -> Status
         .status()
 }
 
-async fn status_post_usuario(estado: &AppState, token: Option<&str>) -> StatusCode {
+async fn status_post_usuario(estado: &AppState, token: Option<&str>, email: &str) -> StatusCode {
     let corpo = serde_json::json!({
-        "email": format!("novo-{}@teste.local", Uuid::new_v4()),
+        "email": email,
         "senha": "senha-de-teste-123",
         "papel": "analista"
     })
@@ -97,7 +119,7 @@ async fn status_post_usuario(estado: &AppState, token: Option<&str>) -> StatusCo
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn anonimo_nao_acessa_nada_em_pcp() {
     let estado = estado_de_teste().await;
     assert_eq!(
@@ -109,7 +131,7 @@ async fn anonimo_nao_acessa_nada_em_pcp() {
         StatusCode::UNAUTHORIZED
     );
     assert_eq!(
-        status_post_usuario(&estado, None).await,
+        status_post_usuario(&estado, None, "anon@teste.local").await,
         StatusCode::UNAUTHORIZED
     );
     // token inválido também é barrado
@@ -122,12 +144,12 @@ async fn anonimo_nao_acessa_nada_em_pcp() {
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn cada_papel_acessa_o_que_deve() {
     let estado = estado_de_teste().await;
-    let analista = logar(&estado, &criar_usuario_teste(&estado, "analista").await).await;
-    let gestor = logar(&estado, &criar_usuario_teste(&estado, "gestor").await).await;
-    let admin = logar(&estado, &criar_usuario_teste(&estado, "admin").await).await;
+    let analista = token_de(&estado, "analista").await;
+    let gestor = token_de(&estado, "gestor").await;
+    let admin = token_de(&estado, "admin").await;
 
     // /pcp/me: qualquer autenticado
     assert_eq!(
@@ -157,17 +179,19 @@ async fn cada_papel_acessa_o_que_deve() {
         StatusCode::OK
     );
 
-    // POST /pcp/usuarios: somente admin
+    // POST /pcp/usuarios: somente admin. Reusa o mesmo e-mail: só o admin (CREATED) o cria.
+    let novo = format!("novo-{}@teste.local", Uuid::new_v4());
     assert_eq!(
-        status_post_usuario(&estado, Some(&analista)).await,
+        status_post_usuario(&estado, Some(&analista), &novo).await,
         StatusCode::FORBIDDEN
     );
     assert_eq!(
-        status_post_usuario(&estado, Some(&gestor)).await,
+        status_post_usuario(&estado, Some(&gestor), &novo).await,
         StatusCode::FORBIDDEN
     );
     assert_eq!(
-        status_post_usuario(&estado, Some(&admin)).await,
+        status_post_usuario(&estado, Some(&admin), &novo).await,
         StatusCode::CREATED
     );
+    apagar_usuario(&estado, &novo).await; // remove o usuário criado pela API
 }

@@ -1,5 +1,5 @@
-//! Teste de integração da sazonalidade (precisa de Postgres — `DATABASE_URL`). `#[ignore]`.
-//! Rode com: `docker compose up -d` e `cargo test -p pcp-engine -- --ignored`.
+//! Teste de integração da sazonalidade (precisa de Postgres de teste — `TEST_DATABASE_URL`, nunca
+//! o de desenvolvimento). `#[ignore]`. Rode com: `TEST_DATABASE_URL=... cargo test -p pcp-engine -- --ignored`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
@@ -10,7 +10,8 @@ use pcp_db::{sazonalidade as db, vendas, NovaVendaDia, PgPool};
 use pcp_engine::sazonalidade::{atualizar_fatores, ResultadoSazonalidade};
 
 async fn pool() -> PgPool {
-    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para os testes de banco");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
     pool
@@ -37,7 +38,7 @@ fn venda(dia: NaiveDate, qtd: i64) -> NovaVendaDia {
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn recalcula_persiste_e_respeita_o_gatilho() {
     let pool = pool().await;
 

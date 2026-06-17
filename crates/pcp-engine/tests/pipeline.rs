@@ -1,5 +1,5 @@
-//! Teste de integração do motor diário (precisa de Postgres — `DATABASE_URL`). `#[ignore]`.
-//! Rode com: `docker compose up -d` e `cargo test -p pcp-engine -- --ignored`.
+//! Teste de integração do motor diário (precisa de Postgres de teste — `TEST_DATABASE_URL`, nunca
+//! o de desenvolvimento). `#[ignore]`. Rode com: `TEST_DATABASE_URL=... cargo test -p pcp-engine -- --ignored`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
@@ -16,7 +16,8 @@ fn data_ref() -> NaiveDate {
 }
 
 async fn preparar() -> (PgPool, Config) {
-    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para os testes de banco");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
 
@@ -78,7 +79,7 @@ async fn conta(pool: &PgPool, sql: &'static str) -> i64 {
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn pipeline_completo_idempotente_e_bloqueio() {
     let (pool, config) = preparar().await;
     let dia = data_ref();

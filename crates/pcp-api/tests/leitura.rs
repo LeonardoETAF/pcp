@@ -1,7 +1,8 @@
-//! Testes de contrato dos endpoints de leitura (precisam de Postgres — `DATABASE_URL`).
-//! `#[ignore]`. Semeiam `produto_ativo`/`alerta`, conferem o formato do payload, a paginação no
-//! servidor, a exclusão da cobertura 999 das médias (§11) e o deny-by-default (§7).
-//! Rode com: `docker compose up -d` e `cargo test -p pcp-api --test leitura -- --ignored`.
+//! Testes de contrato dos endpoints de leitura (precisam de um Postgres de teste —
+//! `TEST_DATABASE_URL`, NUNCA o de desenvolvimento). `#[ignore]`. Semeiam `produto_ativo`/`alerta`,
+//! conferem o formato do payload, a paginação no servidor, a exclusão da cobertura 999 das médias
+//! (§11) e o deny-by-default (§7). Rode com:
+//! `TEST_DATABASE_URL=... cargo test -p pcp-api --test leitura -- --ignored`.
 #![forbid(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 
@@ -19,7 +20,8 @@ use pcp_db::usuarios;
 const SEGREDO: &[u8] = b"segredo-de-teste-com-mais-de-32-bytes!!";
 
 async fn estado_de_teste() -> AppState {
-    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para os testes de banco");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
     let config = std::sync::Arc::new(
@@ -98,7 +100,7 @@ async fn token_analista(estado: &AppState) -> String {
     usuarios::criar(&estado.pool, &email, &hash, "analista", Some("Teste"))
         .await
         .unwrap();
-    let corpo = serde_json::json!({ "email": email, "senha": "senha-de-teste-123" }).to_string();
+    let corpo = serde_json::json!({ "email": &email, "senha": "senha-de-teste-123" }).to_string();
     let resp = rotas(estado.clone())
         .oneshot(
             Request::builder()
@@ -113,7 +115,15 @@ async fn token_analista(estado: &AppState) -> String {
     assert_eq!(resp.status(), StatusCode::OK);
     let bytes = resp.into_body().collect().await.unwrap().to_bytes();
     let v: Value = serde_json::from_slice(&bytes).unwrap();
-    v["access_token"].as_str().unwrap().to_owned()
+    let token = v["access_token"].as_str().unwrap().to_owned();
+    // Limpeza: o token é stateless (sobrevive), então removemos já o usuário de teste (CASCADE
+    // limpa o refresh token) — nada de resíduo no banco, seguro entre testes paralelos.
+    sqlx::query("DELETE FROM pcp.usuario WHERE email = $1")
+        .bind(&email)
+        .execute(&estado.pool)
+        .await
+        .unwrap();
+    token
 }
 
 async fn get_json(estado: &AppState, uri: &str, token: &str) -> (StatusCode, Value) {
@@ -135,7 +145,7 @@ async fn get_json(estado: &AppState, uri: &str, token: &str) -> (StatusCode, Val
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn endpoints_de_leitura_entregam_o_contrato() {
     let estado = estado_de_teste().await;
     semear(&estado).await;
@@ -191,7 +201,7 @@ async fn endpoints_de_leitura_entregam_o_contrato() {
 }
 
 #[tokio::test]
-#[ignore = "precisa de Postgres (DATABASE_URL); rode com --ignored"]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
 async fn leitura_exige_autenticacao() {
     let estado = estado_de_teste().await;
     for uri in ["/pcp/dashboard", "/pcp/estoque", "/pcp/alertas", "/pcp/abc"] {
