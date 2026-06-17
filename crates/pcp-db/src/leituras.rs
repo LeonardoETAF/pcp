@@ -67,6 +67,19 @@ pub struct ResumoClasse {
     pub cobertura_media: Option<f64>,
 }
 
+/// Linha da tabela de Classificação ABC (doc 03 §6): 1 por produto, classificação MAIS RECENTE.
+#[derive(Debug, Clone)]
+pub struct LinhaAbc {
+    pub codigo_estoque: String,
+    pub produto: Option<String>,
+    pub classe: String,
+    pub volume_janela: i64,
+    pub percentual_acumulado: Option<f64>,
+    pub fator_estoque: f64,
+    pub estoque_atual: i64,
+    pub status: String,
+}
+
 /// Distribuição por classe ABC (doc 04 §6.2 — `get_distribuicao_abc_estoque`).
 #[derive(Debug, Clone)]
 pub struct DistribuicaoClasse {
@@ -326,6 +339,43 @@ pub async fn resumo_por_classe(pool: &PgPool) -> Result<Vec<ResumoClasse>, ErroD
             qtd_produtos: r.qtd_produtos,
             estoque_fisico: r.estoque_fisico,
             cobertura_media: r.cobertura_media,
+        })
+        .collect())
+}
+
+/// Tabela ABC: 1 linha por produto pela classificação MAIS RECENTE (doc 03 §6 — corrige as
+/// duplicatas históricas do legado), ordenada por volume desc (ordem de Pareto).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn classificacao_recente(pool: &PgPool) -> Result<Vec<LinhaAbc>, ErroDb> {
+    let linhas = sqlx::query!(
+        r#"SELECT c.codigo_estoque                       AS "codigo_estoque!",
+                  p.produto                              AS "produto?",
+                  c.classe                               AS "classe!",
+                  c.volume_janela                        AS "volume_janela!",
+                  c.percentual_acumulado                 AS "percentual_acumulado?",
+                  c.fator_estoque                        AS "fator_estoque!",
+                  COALESCE(p.qtd_disponivel, 0)::bigint  AS "estoque_atual!",
+                  COALESCE(p.status, 'sem_historico')    AS "status!"
+           FROM pcp.classificacao c
+           LEFT JOIN pcp.produto_ativo p ON p.codigo_estoque = c.codigo_estoque
+           WHERE c.dt_calculo = (SELECT MAX(dt_calculo) FROM pcp.classificacao)
+           ORDER BY c.volume_janela DESC, c.codigo_estoque"#,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|r| LinhaAbc {
+            codigo_estoque: r.codigo_estoque,
+            produto: r.produto,
+            classe: r.classe,
+            volume_janela: r.volume_janela,
+            percentual_acumulado: r.percentual_acumulado,
+            fator_estoque: r.fator_estoque,
+            estoque_atual: r.estoque_atual,
+            status: r.status,
         })
         .collect())
 }

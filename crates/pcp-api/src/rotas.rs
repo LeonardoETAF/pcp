@@ -7,7 +7,7 @@ use axum::Router;
 use crate::autenticacao::exigir_autenticacao;
 use crate::estado::AppState;
 use crate::leitura;
-use crate::{filtros_salvos, handlers_auth, handlers_pcp, solicitacoes};
+use crate::{ciclo_vida, filtros_salvos, handlers_auth, handlers_pcp, solicitacoes};
 
 /// Constrói o roteador completo da API.
 pub fn rotas(estado: AppState) -> Router {
@@ -41,6 +41,12 @@ pub fn rotas(estado: AppState) -> Router {
         )
         .route("/pcp/alertas", get(leitura::alertas::alertas))
         .route("/pcp/abc", get(leitura::abc::abc))
+        .route("/pcp/abc/tabela", get(leitura::abc_tabela::abc_tabela))
+        .route("/pcp/ciclo-vida", get(ciclo_vida::fila))
+        .route(
+            "/pcp/ciclo-vida/{id}/transicao",
+            post(ciclo_vida::transicionar_estado),
+        )
         .route("/pcp/eventos", get(leitura::eventos::eventos))
         .route_layer(axum::middleware::from_fn_with_state(
             estado.clone(),

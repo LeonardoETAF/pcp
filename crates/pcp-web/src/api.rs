@@ -445,6 +445,85 @@ pub async fn transicionar_solicitacao(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Linha da tabela de Classificação ABC (`GET /pcp/abc/tabela`) — 1 por produto, mais recente.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LinhaAbc {
+    pub codigo_estoque: String,
+    pub produto: Option<String>,
+    pub classe: String,
+    pub volume_janela: i64,
+    pub percentual_acumulado: Option<f64>,
+    pub fator_estoque: f64,
+    pub estoque_atual: i64,
+    pub status: String,
+}
+
+/// Sugestão de ciclo de vida / fora de linha (`/pcp/ciclo-vida`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SugestaoCicloVida {
+    pub id: String,
+    pub codigo_estoque: String,
+    pub acao_sugerida: String,
+    pub pontuacao: i16,
+    pub nivel_certeza: String,
+    pub criterios: Vec<String>,
+    pub estado: String,
+    pub data_analise: String,
+    pub aplicado_por: Option<String>,
+    pub observacoes: Option<String>,
+}
+
+/// Tabela ABC completa (`GET /pcp/abc/tabela`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = AbcTabela, prefix = "/api")]
+pub async fn abc_tabela(token: String) -> Result<Vec<LinhaAbc>, ServerFnError> {
+    obter_json("/pcp/abc/tabela", &token).await
+}
+
+/// Fila de sugestões de ciclo de vida abertas (`GET /pcp/ciclo-vida`).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ListarCicloVida, prefix = "/api")]
+pub async fn listar_ciclo_vida(token: String) -> Result<Vec<SugestaoCicloVida>, ServerFnError> {
+    obter_json("/pcp/ciclo-vida", &token).await
+}
+
+/// Transiciona o estado de uma sugestão (`POST /pcp/ciclo-vida/{id}/transicao`) — gestor+.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sem permissão ou transição inválida.
+#[server(name = TransicionarCicloVida, prefix = "/api")]
+pub async fn transicionar_ciclo_vida(
+    token: String,
+    id: String,
+    para_estado: String,
+) -> Result<SugestaoCicloVida, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/pcp/ciclo-vida/{id}/transicao"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "para_estado": para_estado }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+    }
+    if resposta.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(ServerFnError::new("apenas gestor pode aplicar"));
+    }
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("falha ao atualizar a sugestão"));
+    }
+    resposta
+        .json::<SugestaoCicloVida>()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

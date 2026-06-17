@@ -1,5 +1,6 @@
 //! Páginas do frontend (uma por feature). Login real + placeholders das telas operacionais.
 
+pub mod abc;
 pub mod alertas;
 pub mod dashboard;
 pub mod estoque;

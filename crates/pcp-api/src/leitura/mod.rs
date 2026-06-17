@@ -3,6 +3,7 @@
 //! (CLAUDE.md §3.2). Um handler por arquivo (§15).
 
 pub mod abc;
+pub mod abc_tabela;
 pub mod alertas;
 pub mod dashboard;
 pub mod dashboard_classes;

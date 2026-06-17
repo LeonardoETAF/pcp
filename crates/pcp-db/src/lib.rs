@@ -10,6 +10,7 @@ mod modelos;
 mod pool;
 
 pub mod agregacoes;
+pub mod ciclo_vida;
 pub mod derivadas;
 pub mod detalhe;
 pub mod eventos;

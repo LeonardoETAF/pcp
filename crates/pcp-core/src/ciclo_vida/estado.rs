@@ -22,6 +22,31 @@ pub struct ErroTransicao {
 }
 
 impl EstadoCicloVida {
+    /// Código canônico (estável) para persistir/expor.
+    #[must_use]
+    pub const fn codigo(self) -> &'static str {
+        match self {
+            EstadoCicloVida::Gerada => "gerada",
+            EstadoCicloVida::EmAnalise => "em_analise",
+            EstadoCicloVida::Aplicada => "aplicada",
+            EstadoCicloVida::Recusada => "recusada",
+            EstadoCicloVida::Expirada => "expirada",
+        }
+    }
+
+    /// Converte do código persistido; `None` se desconhecido.
+    #[must_use]
+    pub fn tentar_de(codigo: &str) -> Option<Self> {
+        match codigo {
+            "gerada" => Some(EstadoCicloVida::Gerada),
+            "em_analise" => Some(EstadoCicloVida::EmAnalise),
+            "aplicada" => Some(EstadoCicloVida::Aplicada),
+            "recusada" => Some(EstadoCicloVida::Recusada),
+            "expirada" => Some(EstadoCicloVida::Expirada),
+            _ => None,
+        }
+    }
+
     /// `true` para estados terminais (aplicada/recusada/expirada).
     #[must_use]
     pub fn eh_terminal(self) -> bool {

@@ -1233,6 +1233,23 @@ input {
   border: 1px solid rgba(217, 45, 32, 0.35);
 }
 
+/* ── Classificação ABC (doc 03 §6) ── */
+.abc-resumo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-5);
+  flex-wrap: wrap;
+}
+.abc-dist {
+  display: flex;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+/* Badges de nível de certeza da sugestão (doc 02 §8) */
+.badge--certeza-alta { background: var(--semaforo-critico); }
+.badge--certeza-media { background: var(--semaforo-alto); color: #1b1f24; }
+.badge--certeza-baixa { background: var(--abc-d); }
+
 /* ── Detalhe do Produto (doc 03 §4): cabeçalho, regra, métricas, gráficos ── */
 
 .prod-cab {

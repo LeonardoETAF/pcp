@@ -14,11 +14,6 @@ fn EmConstrucao(titulo: &'static str) -> impl IntoView {
 }
 
 #[component]
-pub fn ClassificacaoAbc() -> impl IntoView {
-    view! { <EmConstrucao titulo="Classificação ABC" /> }
-}
-
-#[component]
 pub fn ChatIa() -> impl IntoView {
     view! { <EmConstrucao titulo="Chat IA" /> }
 }

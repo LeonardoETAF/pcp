@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.codigo_estoque                       AS \"codigo_estoque!\",\n                  p.produto                              AS \"produto?\",\n                  c.classe                               AS \"classe!\",\n                  c.volume_janela                        AS \"volume_janela!\",\n                  c.percentual_acumulado                 AS \"percentual_acumulado?\",\n                  c.fator_estoque                        AS \"fator_estoque!\",\n                  COALESCE(p.qtd_disponivel, 0)::bigint  AS \"estoque_atual!\",\n                  COALESCE(p.status, 'sem_historico')    AS \"status!\"\n           FROM pcp.classificacao c\n           LEFT JOIN pcp.produto_ativo p ON p.codigo_estoque = c.codigo_estoque\n           WHERE c.dt_calculo = (SELECT MAX(dt_calculo) FROM pcp.classificacao)\n           ORDER BY c.volume_janela DESC, c.codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "produto?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "produto"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "classe!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "volume_janela!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "volume_janela"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "percentual_acumulado?",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "percentual_acumulado"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "fator_estoque!",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "classificacao",
+            "name": "fator_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "estoque_atual!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "status!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "b82dcdcd3b85dfaa7e3a37fcf62b0ca6b5ec5093b5f48bb879477c4c0d17405b"
+}

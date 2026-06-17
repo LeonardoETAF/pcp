@@ -1,0 +1,146 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, codigo_estoque, acao_sugerida, pontuacao, nivel_certeza,\n                  criterios, estado, data_analise, aplicado_por, data_aplicacao, observacoes\n           FROM pcp.sugestao_ciclo_vida\n           WHERE estado IN ('gerada', 'em_analise')\n           ORDER BY pontuacao DESC, codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "acao_sugerida",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "acao_sugerida"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pontuacao",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "pontuacao"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "nivel_certeza",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "nivel_certeza"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "criterios",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "criterios"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "estado",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "estado"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "data_analise",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "data_analise"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "aplicado_por",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "aplicado_por"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "data_aplicacao",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "data_aplicacao"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "observacoes",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sugestao_ciclo_vida",
+            "name": "observacoes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dae5a3856c78b901d45fa4abc751ad41dcccccdde2263d41a3a40eb4e1e8bb25"
+}
