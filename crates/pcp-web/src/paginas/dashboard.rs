@@ -249,7 +249,7 @@ fn SecaoClasses(classes: Vec<ClasseResumo>) -> impl IntoView {
             <section class="cartao">
                 <header class="cartao__cab">
                     <h2 class="cartao__titulo">"Cobertura por classe"</h2>
-                    <p class="texto-suave">"Dias (exclui sem histórico)"</p>
+                    <p class="texto-suave">"Dias"</p>
                 </header>
                 <div class="cobertura-classes">
                     {cobertura
