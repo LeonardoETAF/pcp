@@ -32,7 +32,7 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
     });
 
     Effect::new(move |_| {
-        if let Some(Ok(token)) = login.value().get() {
+        if let Some(Ok(cred)) = login.value().get() {
             // Persiste/limpa o e-mail conforme "Lembrar-me".
             if lembrar.get_untracked() {
                 crate::armazenamento::gravar(
@@ -42,8 +42,11 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
             } else {
                 crate::armazenamento::remover(crate::armazenamento::EMAIL_LEMBRADO);
             }
-            sessao.0.set(Some(token.clone()));
+            // Persiste o refresh token para restaurar a sessão após reload (§7).
+            crate::armazenamento::gravar(crate::armazenamento::REFRESH, &cred.refresh_token);
+            sessao.0.set(Some(cred.access_token.clone()));
             // Redireciona para a página inicial preferida do usuário (doc 03 §8).
+            let token = cred.access_token;
             leptos::task::spawn_local(async move {
                 let destino = obter_preferencias(token)
                     .await

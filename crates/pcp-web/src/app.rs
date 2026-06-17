@@ -6,7 +6,7 @@ use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Route, Router, Routes};
 use leptos_router::{ParamSegment, StaticSegment};
 
-use crate::contexto::{Sessao, Tema};
+use crate::contexto::{CarregandoSessao, Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::abc::ClassificacaoAbc;
 use crate::paginas::alertas::PaginaAlertas;
@@ -45,8 +45,32 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     let sessao = Sessao(RwSignal::new(None));
     let tema = Tema(RwSignal::new("claro"));
+    // Já nasce "carregando" se há refresh salvo (leitura síncrona; no-op no SSR), para o layout
+    // não redirecionar ao login antes de a restauração tentar renovar a sessão.
+    let tem_refresh = crate::armazenamento::ler(crate::armazenamento::REFRESH).is_some();
+    let carregando = CarregandoSessao(RwSignal::new(tem_refresh));
     provide_context(sessao);
     provide_context(tema);
+    provide_context(carregando);
+
+    // Restaura a sessão após reload: se há refresh token salvo, renova o access token. Roda só no
+    // cliente (no SSR `tem_refresh` é falso). Falha = refresh inválido/expirado → cai no login.
+    Effect::new(move |_| {
+        if !tem_refresh || sessao.0.get_untracked().is_some() {
+            return;
+        }
+        if let Some(refresh) = crate::armazenamento::ler(crate::armazenamento::REFRESH) {
+            leptos::task::spawn_local(async move {
+                match crate::api::renovar_sessao(refresh).await {
+                    Ok(token) => sessao.0.set(Some(token)),
+                    Err(_) => crate::armazenamento::remover(crate::armazenamento::REFRESH),
+                }
+                carregando.0.set(false);
+            });
+        } else {
+            carregando.0.set(false);
+        }
+    });
 
     view! {
         <Stylesheet id="leptos" href="/pkg/pcp-web.css" />

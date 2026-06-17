@@ -5,6 +5,10 @@
 /// Chave do e-mail lembrado na tela de login ("Lembrar-me").
 pub const EMAIL_LEMBRADO: &str = "pcp_email_lembrado";
 
+/// Chave do refresh token persistido — restaura a sessão após reload (§7: refresh token opaco,
+/// não a senha; endurecimento futuro = cookie httpOnly).
+pub const REFRESH: &str = "pcp_refresh";
+
 #[cfg(target_arch = "wasm32")]
 fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()

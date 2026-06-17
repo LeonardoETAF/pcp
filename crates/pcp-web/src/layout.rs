@@ -9,7 +9,7 @@ use leptos_router::hooks::{use_location, use_navigate};
 use leptos_router::NavigateOptions;
 
 use crate::api::perfil;
-use crate::contexto::{Sessao, Tema};
+use crate::contexto::{CarregandoSessao, Sessao, Tema};
 
 fn titulo_da_rota(path: &str) -> &'static str {
     match path {
@@ -27,12 +27,15 @@ fn titulo_da_rota(path: &str) -> &'static str {
 pub fn LayoutAutenticado() -> impl IntoView {
     let sessao = expect_context::<Sessao>();
     let tema = expect_context::<Tema>();
+    let carregando = expect_context::<CarregandoSessao>();
     let navegar = StoredValue::new(use_navigate());
     let local = use_location();
     let recolhido = RwSignal::new(false);
 
+    // Só manda ao login quando NÃO há sessão E a restauração (refresh token salvo) já terminou —
+    // assim o reload não "volta ao login" antes de tentar restaurar a sessão.
     Effect::new(move |_| {
-        if sessao.0.get().is_none() {
+        if !carregando.0.get() && sessao.0.get().is_none() {
             navegar.with_value(|n| n("/login", NavigateOptions::default()));
         }
     });
@@ -46,7 +49,7 @@ pub fn LayoutAutenticado() -> impl IntoView {
     view! {
         <Show
             when=move || sessao.0.get().is_some()
-            fallback=|| view! { <p class="estado-vazio">"Redirecionando…"</p> }
+            fallback=|| view! { <p class="estado-vazio">"Carregando…"</p> }
         >
             <div class="shell" class:shell--recolhido=move || recolhido.get()>
                 <BarraLateral recolhido />
@@ -107,6 +110,13 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
         },
     );
     let sair = move |_| {
+        // Revoga o refresh token no servidor (se houver) e limpa o que está salvo no cliente.
+        if let Some(refresh) = crate::armazenamento::ler(crate::armazenamento::REFRESH) {
+            leptos::task::spawn_local(async move {
+                let _ = crate::api::encerrar_sessao(refresh).await;
+            });
+        }
+        crate::armazenamento::remover(crate::armazenamento::REFRESH);
         sessao.0.set(None);
         navegar.with_value(|n| n("/login", NavigateOptions::default()));
     };

@@ -917,12 +917,20 @@ pub async fn alertas(token: String) -> Result<Vec<AlertaResumo>, ServerFnError> 
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
-/// Autentica na `pcp-api` (`POST /auth/login`) e devolve o `access_token`.
+/// Credenciais devolvidas pelo login: `access_token` (curto, fica em memória) + `refresh_token`
+/// (longo, persistido no cliente para restaurar a sessão após reload — ver `contexto::Sessao`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Credenciais {
+    pub access_token: String,
+    pub refresh_token: String,
+}
+
+/// Autentica na `pcp-api` (`POST /auth/login`) e devolve access + refresh token.
 ///
 /// # Errors
 /// [`ServerFnError`] se a API não responder ou as credenciais forem inválidas.
 #[server(name = Login, prefix = "/api")]
-pub async fn login(email: String, senha: String) -> Result<String, ServerFnError> {
+pub async fn login(email: String, senha: String) -> Result<Credenciais, ServerFnError> {
     let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
     let resposta = reqwest::Client::new()
         .post(format!("{base}/auth/login"))
@@ -937,8 +945,55 @@ pub async fn login(email: String, senha: String) -> Result<String, ServerFnError
         .json()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let pegar = |chave: &str| corpo[chave].as_str().map(ToOwned::to_owned);
+    match (pegar("access_token"), pegar("refresh_token")) {
+        (Some(access_token), Some(refresh_token)) => Ok(Credenciais {
+            access_token,
+            refresh_token,
+        }),
+        _ => Err(ServerFnError::new("resposta da API sem tokens")),
+    }
+}
+
+/// Renova o `access_token` a partir de um refresh token salvo (`POST /auth/refresh`). Usado para
+/// restaurar a sessão após reload. Erro = refresh inválido/expirado → o cliente cai no login.
+///
+/// # Errors
+/// [`ServerFnError`] se a API não responder ou o refresh token não for válido.
+#[server(name = Renovar, prefix = "/api")]
+pub async fn renovar_sessao(refresh_token: String) -> Result<String, ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    let resposta = reqwest::Client::new()
+        .post(format!("{base}/auth/refresh"))
+        .json(&serde_json::json!({ "refresh_token": refresh_token }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    if !resposta.status().is_success() {
+        return Err(ServerFnError::new("refresh token inválido"));
+    }
+    let corpo: serde_json::Value = resposta
+        .json()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
     corpo["access_token"]
         .as_str()
         .map(ToOwned::to_owned)
         .ok_or_else(|| ServerFnError::new("resposta da API sem access_token"))
+}
+
+/// Revoga o refresh token no servidor (`POST /auth/logout`) — chamado ao sair.
+///
+/// # Errors
+/// [`ServerFnError`] se a API não responder.
+#[server(name = Logout, prefix = "/api")]
+pub async fn encerrar_sessao(refresh_token: String) -> Result<(), ServerFnError> {
+    let base = std::env::var("PCP_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned());
+    reqwest::Client::new()
+        .post(format!("{base}/auth/logout"))
+        .json(&serde_json::json!({ "refresh_token": refresh_token }))
+        .send()
+        .await
+        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+    Ok(())
 }
