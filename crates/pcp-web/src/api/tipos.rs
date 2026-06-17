@@ -285,3 +285,31 @@ pub struct Credenciais {
     pub access_token: String,
     pub refresh_token: String,
 }
+
+/// Execução de um módulo do pipeline (`GET /pcp/admin/pipeline`) — painel de operação (doc 05 §3).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ExecucaoPipeline {
+    pub data_ref: String,
+    pub modulo: String,
+    pub status: String,
+    pub linhas_afetadas: i64,
+    pub duracao_ms: i64,
+    pub erro: Option<String>,
+    pub inicio: String,
+    pub fim: String,
+}
+
+/// Uma verificação de saúde (doc 05 §4) com veredito pronto da API: `status` ∈ ok|atencao|critico.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VerificacaoSaude {
+    pub nome: String,
+    pub status: String,
+    pub detalhe: String,
+}
+
+/// Relatório de health checks (`GET /pcp/admin/saude`) — doc 05 §4.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct RelatorioSaude {
+    pub gerado_em: String,
+    pub verificacoes: Vec<VerificacaoSaude>,
+}

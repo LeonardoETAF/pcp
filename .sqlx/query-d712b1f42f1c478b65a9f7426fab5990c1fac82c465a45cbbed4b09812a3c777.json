@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS(SELECT 1 FROM pcp.execucao_pipeline\n           WHERE data_ref = (SELECT MAX(data_ref) FROM pcp.execucao_pipeline) AND status = 'erro') AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d712b1f42f1c478b65a9f7426fab5990c1fac82c465a45cbbed4b09812a3c777"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ($1::date - MAX(dt_alerta)) AS \"dias\" FROM pcp.alerta",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dias",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "73b514250229e5ce5f2f588ada67cb8225e6a51ffa7bb623c2a6957d201d2a48"
+}

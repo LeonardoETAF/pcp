@@ -1687,6 +1687,36 @@ input {
 .badge--status-fora_de_linha,
 .badge--status-sem_historico { background: var(--abc-d); }
 
+/* Badges de saúde (health checks doc 05 §4) e grade de Operação. */
+.badge--saude-ok { background: var(--semaforo-ok); }
+.badge--saude-atencao { background: var(--semaforo-alto); color: #1b1f24; }
+.badge--saude-critico { background: var(--semaforo-critico); }
+.saude-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--e-4);
+}
+.saude-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-4);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+}
+.saude-item__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+.saude-item__nome { font-weight: var(--peso-medio); }
+.saude-item__detalhe {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+
 .filtros-estoque__avancado {
   display: flex;
   align-items: center;

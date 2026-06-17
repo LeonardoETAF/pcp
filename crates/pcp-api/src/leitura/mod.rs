@@ -11,4 +11,5 @@ pub mod estoque;
 pub mod estoque_exportacao;
 pub mod eventos;
 pub mod insights;
+pub mod operacao;
 pub mod produto;

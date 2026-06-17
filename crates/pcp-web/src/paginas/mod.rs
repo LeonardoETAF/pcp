@@ -6,5 +6,6 @@ pub mod configuracoes;
 pub mod dashboard;
 pub mod estoque;
 pub mod login;
+pub mod operacao;
 pub mod placeholders;
 pub mod produto;

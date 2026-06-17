@@ -18,6 +18,7 @@ pub mod eventos;
 pub mod expurgo;
 pub mod filtros_salvos;
 pub mod leituras;
+pub mod operacao;
 pub mod preferencias;
 pub mod refresh_tokens;
 pub mod sazonalidade;

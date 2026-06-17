@@ -639,6 +639,24 @@ async fn obter_json<T: serde::de::DeserializeOwned>(
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
+/// Execuções recentes do pipeline (`GET /pcp/admin/pipeline`, admin) — painel de operação.
+///
+/// # Errors
+/// [`ServerFnError`] se a API não responder, a sessão expirar ou faltar permissão de admin.
+#[server(name = AdminPipeline, prefix = "/api")]
+pub async fn admin_pipeline(token: String) -> Result<Vec<ExecucaoPipeline>, ServerFnError> {
+    obter_json("/pcp/admin/pipeline", &token).await
+}
+
+/// Health checks do pipeline/dados (`GET /pcp/admin/saude`, admin) — doc 05 §4.
+///
+/// # Errors
+/// [`ServerFnError`] se a API não responder, a sessão expirar ou faltar permissão de admin.
+#[server(name = AdminSaude, prefix = "/api")]
+pub async fn admin_saude(token: String) -> Result<RelatorioSaude, ServerFnError> {
+    obter_json("/pcp/admin/saude", &token).await
+}
+
 /// Lista os alertas do dia (`GET /pcp/alertas`) com o token do usuário (Bearer).
 ///
 /// # Errors

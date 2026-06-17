@@ -14,6 +14,7 @@ use crate::paginas::configuracoes::Configuracoes;
 use crate::paginas::dashboard::PaginaDashboard;
 use crate::paginas::estoque::PaginaEstoque;
 use crate::paginas::login::PaginaLogin;
+use crate::paginas::operacao::Operacao;
 use crate::paginas::placeholders::ChatIa;
 use crate::paginas::produto::DetalheProdutoPagina;
 
@@ -93,6 +94,7 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("abc") view=ClassificacaoAbc />
                         <Route path=StaticSegment("ai-chat") view=ChatIa />
                         <Route path=StaticSegment("configuracoes") view=Configuracoes />
+                        <Route path=StaticSegment("operacao") view=Operacao />
                     </ParentRoute>
                 </Routes>
             </Router>

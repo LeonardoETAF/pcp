@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT data_ref, modulo, status, linhas_afetadas, duracao_ms, erro, inicio, fim FROM pcp.execucao_pipeline ORDER BY inicio DESC LIMIT $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data_ref",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "data_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "modulo",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "modulo"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "linhas_afetadas",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "linhas_afetadas"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "duracao_ms",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "duracao_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "erro",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "erro"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "inicio",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "inicio"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "fim",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "execucao_pipeline",
+            "name": "fim"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d408f257751468840981e8eeba94ef9440aa705518d64ba039144ccea14a0437"
+}
