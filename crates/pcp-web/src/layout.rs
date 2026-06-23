@@ -144,7 +144,6 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             <nav class="menu">
                 <ItemMenu href="/dashboard" rotulo="Dashboard" icone="layout-sidebar.svg" />
                 <ItemMenu href="/estoque" rotulo="Estoque" icone="estoque-inventario.svg" />
-                <ItemMenu href="/alertas" rotulo="Alertas" icone="sino-notificacao.svg" />
                 <ItemMenu href="/abc" rotulo="Classificação ABC" icone="relatorios-kpis.svg" />
                 <ItemMenu href="/operacao" rotulo="Operação" icone="atividade.svg" />
                 <ItemMenu href="/configuracoes" rotulo="Configurações" icone="engrenagem.svg" />
