@@ -10,7 +10,9 @@ use crate::api::{
     Contagem, LinhaEstoque, PainelResumo,
 };
 use crate::contexto::Sessao;
-use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
+use crate::formato::{
+    cor_status, fmt_cobertura, fmt_dec1, fmt_milhar, nome_exibicao, rotulo_status,
+};
 
 /// Cor de criticidade do KPI (doc 02 §9.2): vermelho/amarelo conforme o threshold.
 #[allow(clippy::cast_precision_loss)] // contagens pequenas: conversão exata para f64
@@ -157,20 +159,18 @@ pub fn PaginaDashboard() -> impl IntoView {
 
 /// KPIs + gráficos (donut ABC + barras de status). Recebe o resumo já carregado.
 fn topo(p: &PainelResumo) -> impl IntoView {
-    let cobertura = p
-        .cobertura_media
-        .map_or_else(|| "0".to_owned(), |c| format!("{c:.1}"));
+    let cobertura = p.cobertura_media.map_or_else(|| "0".to_owned(), fmt_dec1);
     let criticos = conta_status(p, "critico");
     let cards = view! {
         <div class="kpis">
             <Kpi
-                valor=p.total_produtos.to_string()
+                valor=fmt_milhar(p.total_produtos)
                 rotulo="Produtos"
                 sub="Ativos no catálogo"
                 icone="estoque-inventario.svg"
             />
             <Kpi
-                valor=criticos.to_string()
+                valor=fmt_milhar(criticos)
                 rotulo="Estoque crítico"
                 sub="Abaixo do limiar da classe"
                 icone="alerta.svg"
@@ -184,7 +184,7 @@ fn topo(p: &PainelResumo) -> impl IntoView {
                 realce=realce_cobertura(p.cobertura_media)
             />
             <Kpi
-                valor=p.total_sugerido.to_string()
+                valor=fmt_milhar(p.total_sugerido)
                 rotulo="A produzir"
                 sub="Soma das sugestões"
                 icone="ordens-producao.svg"
@@ -257,7 +257,7 @@ fn SecaoClasses(classes: Vec<ClasseResumo>) -> impl IntoView {
                         .map(|c| {
                             let cob = c
                                 .cobertura_media
-                                .map_or_else(|| "—".to_owned(), |v| format!("{v:.1}"));
+                                .map_or_else(|| "—".to_owned(), fmt_dec1);
                             view! {
                                 <div class="cob-classe">
                                     <span class=format!("badge badge--abc-{}", c.classe.to_lowercase())>
@@ -281,15 +281,19 @@ fn MetaFisica(c: ClasseResumo) -> impl IntoView {
     let meta = c.pct_fisico_meta.unwrap_or(0);
     let atingida = c.meta_atingida.unwrap_or(false);
     let largura = c.pct_fisico_real.clamp(0.0, 100.0);
-    let status = if atingida {
-        "Meta atingida"
+    let sem_meta = meta == 0;
+    // Classes sem meta física (ex.: D, meta 0%) não são "fora da meta" — chip neutro (D7).
+    let (status, classe_status) = if sem_meta {
+        ("Sem meta física", "meta-chip meta-chip--neutro")
+    } else if atingida {
+        ("Meta atingida", "meta-chip meta-chip--ok")
     } else {
-        "Fora da meta"
+        ("Fora da meta", "meta-chip meta-chip--fora")
     };
-    let classe_status = if atingida {
-        "meta-chip meta-chip--ok"
+    let texto_pct = if sem_meta {
+        format!("{}% / sem meta", fmt_dec1(c.pct_fisico_real))
     } else {
-        "meta-chip meta-chip--fora"
+        format!("{}% / meta {meta}%", fmt_dec1(c.pct_fisico_real))
     };
     view! {
         <div class="meta-fisica">
@@ -297,14 +301,17 @@ fn MetaFisica(c: ClasseResumo) -> impl IntoView {
                 <span class=format!("badge badge--abc-{}", c.classe.to_lowercase())>
                     {c.classe.clone()}
                 </span>
-                <span class="meta-fisica__pct">
-                    {format!("{:.1}% / meta {}%", c.pct_fisico_real, meta)}
-                </span>
+                <span class="meta-fisica__pct">{texto_pct}</span>
                 <span class=classe_status>{status}</span>
             </div>
             <div class="meta-fisica__trilho">
                 <span class="meta-fisica__preenche" style=format!("width:{largura}%")></span>
-                <span class="meta-fisica__marca" style=format!("left:{meta}%")></span>
+                {(!sem_meta)
+                    .then(|| {
+                        view! {
+                            <span class="meta-fisica__marca" style=format!("left:{meta}%")></span>
+                        }
+                    })}
             </div>
         </div>
     }
@@ -439,11 +446,13 @@ fn Donut(dados: Vec<(String, i64, &'static str)>) -> impl IntoView {
         .iter()
         .filter(|d| d.1 > 0)
         .map(|(rot, v, cor)| {
+            let pct = (*v as f64 / total as f64) * 100.0;
             view! {
                 <li class="legenda__item">
                     <span class="legenda__cor" style=format!("background:{cor}")></span>
                     <span class="legenda__rotulo">{rot.clone()}</span>
-                    <span class="legenda__valor">{*v}</span>
+                    <span class="legenda__valor">{fmt_milhar(*v)}</span>
+                    <span class="legenda__pct">{format!("{}%", fmt_dec1(pct))}</span>
                 </li>
             }
         })
@@ -466,21 +475,31 @@ fn Donut(dados: Vec<(String, i64, &'static str)>) -> impl IntoView {
 #[component]
 #[allow(clippy::cast_precision_loss)]
 fn Barras(dados: Vec<Contagem>) -> impl IntoView {
-    let maximo = dados.iter().map(|c| c.quantidade).max().unwrap_or(1).max(1);
     if dados.is_empty() {
         return view! { <p class="estado-vazio">"Sem dados."</p> }.into_any();
     }
+    let maximo = dados.iter().map(|c| c.quantidade).max().unwrap_or(1).max(1);
+    let total: i64 = dados.iter().map(|c| c.quantidade).sum::<i64>().max(1);
     let linhas: Vec<_> = dados
         .into_iter()
         .map(|c| {
-            let pct = (c.quantidade as f64 / maximo as f64 * 100.0).round();
+            // Largura relativa ao maior grupo; % exibido é a participação no total (C6).
+            let largura = (c.quantidade as f64 / maximo as f64 * 100.0).round();
+            let pct_total = (c.quantidade as f64 / total as f64 * 100.0).round();
+            let cor = cor_status(&c.rotulo); // semáforo §12 (B)
             view! {
                 <div class="barra-linha">
-                    <span class="barra-linha__rotulo">{c.rotulo}</span>
+                    <span class="barra-linha__rotulo">{rotulo_status(&c.rotulo)}</span>
                     <span class="barra-linha__trilho">
-                        <span class="barra-linha__preenche" style=format!("width:{pct}%")></span>
+                        <span
+                            class="barra-linha__preenche"
+                            style=format!("width:{largura}%;background:{cor}")
+                        ></span>
                     </span>
-                    <span class="barra-linha__valor">{c.quantidade}</span>
+                    <span class="barra-linha__valor">
+                        {fmt_milhar(c.quantidade)}
+                        <span class="barra-linha__pct">{format!("{pct_total}%")}</span>
+                    </span>
                 </div>
             }
         })

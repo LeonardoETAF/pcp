@@ -997,6 +997,10 @@ input {
   background: rgba(247, 144, 9, 0.15);
   color: var(--semaforo-alto);
 }
+.meta-chip--neutro {
+  background: var(--superficie-2);
+  color: var(--texto-suave);
+}
 .meta-fisica__trilho {
   position: relative;
   height: 10px;
@@ -1116,7 +1120,19 @@ input {
   border-radius: 3px;
 }
 .legenda__rotulo { flex: 1; }
-.legenda__valor { font-weight: var(--peso-forte); }
+.legenda__valor {
+  font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+.legenda__pct {
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+  text-align: right;
+}
 
 .barras {
   display: flex;
@@ -1125,14 +1141,13 @@ input {
 }
 .barra-linha {
   display: grid;
-  grid-template-columns: 116px 1fr 40px;
+  grid-template-columns: 116px 1fr auto;
   align-items: center;
   gap: var(--e-3);
 }
 .barra-linha__rotulo {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
-  text-transform: capitalize;
 }
 .barra-linha__trilho {
   height: 10px;
@@ -1147,8 +1162,19 @@ input {
   border-radius: 999px;
 }
 .barra-linha__valor {
-  text-align: right;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--e-2);
   font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+.barra-linha__pct {
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  min-width: 40px;
+  text-align: right;
 }
 
 .lista-prod {
