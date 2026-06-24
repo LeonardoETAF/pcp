@@ -8,8 +8,8 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use crate::api::{
-    estoque, excluir_filtro, exportar_estoque, listar_filtros, obter_preferencias, painel,
-    salvar_filtro, ConsultaEstoque, LinhaEstoque, PainelResumo,
+    estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, LinhaEstoque,
+    PainelResumo,
 };
 use crate::contexto::Sessao;
 use crate::download;
@@ -65,21 +65,6 @@ pub fn PaginaEstoque() -> impl IntoView {
         apenas_fora_linha: apenas_fora_linha.get(),
         limite: limite.get(),
         deslocamento: deslocamento.get(),
-    };
-
-    // Aplica um filtro salvo: reescreve os sinais e volta à primeira página.
-    let aplicar_filtro = move |c: ConsultaEstoque| {
-        classe.set(c.classe);
-        status.set(c.status);
-        let termo = c.busca.unwrap_or_default();
-        busca_input.set(termo.clone());
-        busca.set(termo);
-        ordem.set(c.ordem.unwrap_or_else(|| "sugerida_desc".to_owned()));
-        cobertura_min.set(c.cobertura_min);
-        cobertura_max.set(c.cobertura_max);
-        apenas_sugestao.set(c.apenas_sugestao);
-        apenas_fora_linha.set(c.apenas_fora_linha);
-        deslocamento.set(0);
     };
 
     // Exporta o filtro atual inteiro (CSV/JSON) e dispara o download no cliente (§12).
@@ -154,7 +139,6 @@ pub fn PaginaEstoque() -> impl IntoView {
                 busca
                 busca_input
                 ordem
-                limite
                 cobertura_min
                 cobertura_max
                 apenas_sugestao
@@ -162,8 +146,6 @@ pub fn PaginaEstoque() -> impl IntoView {
                 resetar
                 exportar
             />
-
-            <FiltrosSalvos consulta_atual aplicar=aplicar_filtro />
 
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }
@@ -201,7 +183,6 @@ pub fn PaginaEstoque() -> impl IntoView {
 /// KPIs do estoque (métricas reais do painel — frontend burro, §3). Sem dimensão financeira
 /// (custo/preço adiados — §6) nem "giro" (não calculado pelo motor): só o que a API já entrega.
 fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
-    let classes_ativas = p.por_classe.iter().filter(|c| c.quantidade > 0).count();
     let abaixo: i64 = p
         .por_status
         .iter()
@@ -222,50 +203,32 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
                 icone="estoque-inventario.svg"
                 valor=fmt_milhar(p.total_produtos)
                 rotulo="Produtos ativos"
-                sub=format!("em {classes_ativas} classes ABC")
             />
             <KpiEstoque
                 icone="alerta.svg"
                 valor=fmt_milhar(abaixo)
                 rotulo="Abaixo do recomendado"
-                sub="requer produção".to_owned()
-                sub_alerta=true
             />
-            <KpiEstoque
-                icone="relogio.svg"
-                valor=cobertura
-                rotulo="Cobertura média"
-                sub="dias — nível de serviço".to_owned()
-            />
+            <KpiEstoque icone="relogio.svg" valor=cobertura rotulo="Cobertura média" />
             <KpiEstoque
                 icone="ordens-producao.svg"
                 valor=fmt_milhar(p.total_sugerido)
                 rotulo="A produzir"
-                sub="soma das sugestões (un)".to_owned()
             />
         </div>
     }
 }
 
 #[component]
-fn KpiEstoque(
-    icone: &'static str,
-    valor: String,
-    rotulo: &'static str,
-    sub: String,
-    #[prop(optional)] sub_alerta: bool,
-) -> impl IntoView {
+fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl IntoView {
     let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
     view! {
-        <div class="kpi">
+        <div class="kpi kpi--icone">
             <span class="kpi__chip">
                 <span class="icone-mask" style=estilo></span>
             </span>
             <span class="kpi__valor">{valor}</span>
             <span class="kpi__rotulo">{rotulo}</span>
-            <span class="kpi__sub" class:kpi__sub--alerta=sub_alerta>
-                {sub}
-            </span>
         </div>
     }
 }
@@ -347,7 +310,6 @@ fn Filtros(
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
     ordem: RwSignal<String>,
-    limite: RwSignal<i64>,
     cobertura_min: RwSignal<Option<f64>>,
     cobertura_max: RwSignal<Option<f64>>,
     apenas_sugestao: RwSignal<bool>,
@@ -364,109 +326,85 @@ fn Filtros(
     let estilo_export =
         "-webkit-mask-image:url(/icons/exportar.svg);mask-image:url(/icons/exportar.svg)";
     view! {
-        <div class="estoque-toolbar">
-            <form
-                class="estoque-toolbar__busca"
-                on:submit=move |ev| {
-                    ev.prevent_default();
-                    aplicar_busca();
-                }
-            >
-                <input
-                    class="input"
-                    placeholder="Buscar item, código, SKU…"
-                    prop:value=move || busca_input.get()
-                    on:input=move |ev| busca_input.set(event_target_value(&ev))
-                />
-                <button type="submit" class="btn btn--secundario">
-                    "Buscar"
-                </button>
-            </form>
+        <div class="estoque-filtros">
+            <div class="estoque-filtros__linha">
+                <form
+                    class="estoque-filtros__busca"
+                    on:submit=move |ev| {
+                        ev.prevent_default();
+                        aplicar_busca();
+                    }
+                >
+                    <input
+                        class="input"
+                        placeholder="Buscar item, código, SKU…"
+                        prop:value=move || busca_input.get()
+                        on:input=move |ev| busca_input.set(event_target_value(&ev))
+                    />
+                    <button type="submit" class="btn btn--escuro">
+                        "Buscar"
+                    </button>
+                </form>
 
-            <div class="estoque-toolbar__acoes">
-                <label class="campo-select">
-                    <span class="campo-select__rotulo">"Ordenar"</span>
-                    <select
-                        class="select"
-                        on:change=move |ev| {
-                            ordem.set(event_target_value(&ev));
-                            resetar();
-                        }
-                        prop:value=move || ordem.get()
-                    >
-                        <option value="sugerida_desc">"Sugestão (maior)"</option>
-                        <option value="cobertura_asc">"Cobertura (menor)"</option>
-                        <option value="cobertura_desc">"Cobertura (maior)"</option>
-                        <option value="disponivel_desc">"Disponível (maior)"</option>
-                        <option value="disponivel_asc">"Disponível (menor)"</option>
-                        <option value="recomendada_desc">"Recomendada (maior)"</option>
-                        <option value="produto_asc">"Produto (A–Z)"</option>
-                        <option value="produto_desc">"Produto (Z–A)"</option>
-                        <option value="classe_asc">"Classe (A→N)"</option>
-                    </select>
-                </label>
-                <label class="campo-select">
-                    <span class="campo-select__rotulo">"Status"</span>
-                    <select
-                        class="select"
-                        on:change=move |ev| {
-                            let v = event_target_value(&ev);
-                            status.set((!v.is_empty()).then_some(v));
-                            resetar();
-                        }
-                        prop:value=move || status.get().unwrap_or_default()
-                    >
-                        <option value="">"Todos"</option>
-                        <option value="critico">"Crítico"</option>
-                        <option value="sem_estoque">"Sem estoque"</option>
-                        <option value="estoque_baixo">"Estoque baixo"</option>
-                        <option value="baixo">"Baixo"</option>
-                        <option value="adequado">"Adequado"</option>
-                        <option value="alto">"Alto"</option>
-                        <option value="excessivo">"Excessivo"</option>
-                        <option value="sem_historico">"Sem histórico"</option>
-                        <option value="fora_de_linha">"Fora de linha"</option>
-                    </select>
-                </label>
-                <label class="campo-select">
-                    <span class="campo-select__rotulo">"Por página"</span>
-                    <select
-                        class="select"
-                        on:change=move |ev| {
-                            if let Ok(v) = event_target_value(&ev).parse::<i64>() {
-                                limite.set(v);
-                                resetar();
-                            }
-                        }
-                        prop:value=move || limite.get().to_string()
-                    >
-                        <option value="50">"50"</option>
-                        <option value="100">"100"</option>
-                        <option value="500">"500"</option>
-                        <option value="1000">"1000"</option>
-                    </select>
-                </label>
-                <div class="exportar-grupo" role="group" aria-label="Exportar filtro completo">
-                    <span class="icone-mask exportar-grupo__icone" style=estilo_export></span>
-                    <button
-                        type="button"
-                        class="btn btn--secundario btn--sm"
-                        on:click=move |_| exportar("csv")
-                    >
-                        "CSV"
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn--secundario btn--sm"
-                        on:click=move |_| exportar("json")
-                    >
-                        "JSON"
-                    </button>
-                </div>
+                <span class="toolbar-sep"></span>
+
+                <select
+                    class="select"
+                    aria-label="Ordenar"
+                    on:change=move |ev| {
+                        ordem.set(event_target_value(&ev));
+                        resetar();
+                    }
+                    prop:value=move || ordem.get()
+                >
+                    <option value="sugerida_desc">"Sugestão (maior)"</option>
+                    <option value="cobertura_asc">"Cobertura (menor)"</option>
+                    <option value="cobertura_desc">"Cobertura (maior)"</option>
+                    <option value="disponivel_desc">"Disponível (maior)"</option>
+                    <option value="disponivel_asc">"Disponível (menor)"</option>
+                    <option value="recomendada_desc">"Recomendada (maior)"</option>
+                    <option value="produto_asc">"Produto (A–Z)"</option>
+                    <option value="produto_desc">"Produto (Z–A)"</option>
+                    <option value="classe_asc">"Classe (A→N)"</option>
+                </select>
+                <select
+                    class="select"
+                    aria-label="Status"
+                    on:change=move |ev| {
+                        let v = event_target_value(&ev);
+                        status.set((!v.is_empty()).then_some(v));
+                        resetar();
+                    }
+                    prop:value=move || status.get().unwrap_or_default()
+                >
+                    <option value="">"Todos"</option>
+                    <option value="critico">"Crítico"</option>
+                    <option value="sem_estoque">"Sem estoque"</option>
+                    <option value="estoque_baixo">"Estoque baixo"</option>
+                    <option value="baixo">"Baixo"</option>
+                    <option value="adequado">"Adequado"</option>
+                    <option value="alto">"Alto"</option>
+                    <option value="excessivo">"Excessivo"</option>
+                    <option value="sem_historico">"Sem histórico"</option>
+                    <option value="fora_de_linha">"Fora de linha"</option>
+                </select>
+
+                <details class="export-menu">
+                    <summary class="export-menu__btn" aria-label="Exportar filtro completo">
+                        <span class="icone-mask" style=estilo_export></span>
+                    </summary>
+                    <div class="export-menu__lista">
+                        <button type="button" on:click=move |_| exportar("csv")>
+                            "Exportar CSV"
+                        </button>
+                        <button type="button" on:click=move |_| exportar("json")>
+                            "Exportar JSON"
+                        </button>
+                    </div>
+                </details>
             </div>
-        </div>
 
-        <div class="filtros-estoque__avancado">
+            <div class="estoque-filtros__avancado">
                 <div class="faixa">
                     <span class="campo-select__rotulo">"Cobertura (dias)"</span>
                     <input
@@ -520,122 +458,6 @@ fn Filtros(
                     <span>"Apenas fora de linha"</span>
                 </label>
             </div>
-    }
-}
-
-/// Filtros salvos do usuário (doc 03 §3.2): aplica (clique no nome), salva o filtro atual com um
-/// nome e exclui. Persistência por usuário no backend; o filtro em si é JSON opaco da consulta.
-#[component]
-fn FiltrosSalvos(
-    consulta_atual: impl Fn() -> ConsultaEstoque + Copy + 'static,
-    aplicar: impl Fn(ConsultaEstoque) + Copy + Send + Sync + 'static,
-) -> impl IntoView {
-    let sessao = expect_context::<Sessao>();
-    let recarregar = RwSignal::new(0_u32);
-    let nome = RwSignal::new(String::new());
-
-    let lista = Resource::new(
-        move || (sessao.0.get(), recarregar.get()),
-        |(token, _)| async move {
-            match token {
-                Some(t) => listar_filtros(t).await.unwrap_or_default(),
-                None => Vec::new(),
-            }
-        },
-    );
-
-    let salvar = move || {
-        let Some(token) = sessao.0.get_untracked() else {
-            return;
-        };
-        let n = nome.get_untracked().trim().to_owned();
-        if n.is_empty() {
-            return;
-        }
-        let Ok(filtro) = serde_json::to_value(untrack(consulta_atual)) else {
-            return;
-        };
-        leptos::task::spawn_local(async move {
-            match salvar_filtro(token, n, filtro).await {
-                Ok(_) => {
-                    nome.set(String::new());
-                    recarregar.update(|x| *x += 1);
-                }
-                Err(e) => leptos::logging::error!("salvar filtro: {e}"),
-            }
-        });
-    };
-
-    view! {
-        <div class="filtros-salvos">
-            <span class="campo-select__rotulo">"Filtros salvos"</span>
-            <Suspense fallback=|| ()>
-                {move || {
-                    lista
-                        .get()
-                        .map(|itens| {
-                            itens
-                                .into_iter()
-                                .map(|f| {
-                                    let filtro = f.filtro.clone();
-                                    let id = f.id.clone();
-                                    view! {
-                                        <span class="chip-salvo">
-                                            <button
-                                                type="button"
-                                                class="chip"
-                                                on:click=move |_| {
-                                                    if let Ok(c) = serde_json::from_value::<
-                                                        ConsultaEstoque,
-                                                    >(filtro.clone()) {
-                                                        aplicar(c);
-                                                    }
-                                                }
-                                            >
-                                                {f.nome.clone()}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="chip-salvo__x"
-                                                aria-label="Excluir filtro"
-                                                on:click=move |_| {
-                                                    let Some(token) = sessao.0.get_untracked() else {
-                                                        return;
-                                                    };
-                                                    let id = id.clone();
-                                                    leptos::task::spawn_local(async move {
-                                                        if excluir_filtro(token, id).await.is_ok() {
-                                                            recarregar.update(|x| *x += 1);
-                                                        }
-                                                    });
-                                                }
-                                            >
-                                                "✕"
-                                            </button>
-                                        </span>
-                                    }
-                                })
-                                .collect_view()
-                        })
-                }}
-            </Suspense>
-            <form
-                class="filtros-salvos__novo"
-                on:submit=move |ev| {
-                    ev.prevent_default();
-                    salvar();
-                }
-            >
-                <input
-                    class="input input--nome"
-                    placeholder="Nome do filtro"
-                    prop:value=move || nome.get()
-                    on:input=move |ev| nome.set(event_target_value(&ev))
-                />
-                <button type="submit" class="btn btn--secundario btn--sm">
-                    "Salvar"
-                </button>
-            </form>
         </div>
     }
 }
@@ -688,13 +510,16 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
         &i.codigo_estoque,
     );
     let href = format!("/estoque/{}", i.codigo_estoque);
-    let classe_abc = format!("badge badge--abc-{}", i.classe.to_lowercase());
-    let classe_status = format!("badge badge--status-{}", i.status);
+    let classe_abc = format!(
+        "badge badge--circulo badge--abc-{}",
+        i.classe.to_lowercase()
+    );
+    let cor_st = cor_status(&i.status);
     // Barra de nível: preenchimento = disponível / recomendado (0–100%), cor pelo status.
     // O alvo (recomendado) vai no rótulo; nada é recalculado aqui — só visualização (§3).
     let alvo = i.estoque_total_recomendado.max(1);
     let pct = ((i.qtd_disponivel as f64 / alvo as f64) * 100.0).clamp(0.0, 100.0);
-    let estilo_barra = format!("width:{pct:.0}%;background:{}", cor_status(&i.status));
+    let estilo_barra = format!("width:{pct:.0}%;background:{cor_st}");
     let recomendada = i.estoque_total_recomendado;
     view! {
         <tr>
@@ -734,8 +559,10 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                     "—".to_owned()
                 }}
             </td>
-            <td>
-                <span class=classe_status>{rotulo_status(&i.status)}</span>
+            <td class="tabela__status">
+                <span class="status-texto" style=format!("color:{cor_st}")>
+                    {rotulo_status(&i.status)}
+                </span>
             </td>
         </tr>
     }

@@ -160,6 +160,14 @@ input {
 .btn--secundario:hover {
   background: var(--superficie-2);
 }
+/* Ação primária "ink" (preto editorial do mockup) — usada no botão Buscar do estoque. */
+.btn--escuro {
+  background: #1b1814;
+  color: #fff;
+}
+.btn--escuro:hover {
+  background: #322c25;
+}
 
 .campo {
   display: flex;
@@ -193,6 +201,16 @@ input {
   font-size: var(--fs-xs);
   font-weight: var(--peso-medio);
   color: var(--texto-inverso);
+}
+/* Badge circular (classe ABC na tabela de estoque, igual ao mockup). */
+.badge--circulo {
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-forte);
 }
 .badge--abc-a { background: var(--abc-a); }
 .badge--abc-b { background: var(--abc-b); }
@@ -897,6 +915,39 @@ input {
   color: var(--texto-suave);
 }
 .kpi__sub--alerta { color: var(--semaforo-critico); }
+
+/* KPI com ícone (chip cinza). Estoque: chip no topo (coluna). ABC: chip à esquerda (linha). */
+.kpi--icone .kpi__chip,
+.kpi--linha .kpi__chip {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background: var(--superficie-2);
+  color: var(--texto-suave);
+}
+.kpi--icone .kpi__chip .icone-mask,
+.kpi--linha .kpi__chip .icone-mask {
+  width: 22px;
+  height: 22px;
+}
+/* KPI horizontal (ABC): ícone à esquerda, número + rótulo à direita. */
+.kpi--linha {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--e-4);
+  min-height: auto;
+}
+.kpi--linha .kpi__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.kpi--linha .kpi__valor { margin-top: 0; }
 
 /* Card de destaque ("A produzir"): escuro, igual ao mockup. */
 .kpi--hero {
@@ -1635,14 +1686,14 @@ input {
 }
 .grafico {
   width: 100%;
-  height: 160px;
+  height: 240px;
   display: block;
 }
 .graf__barra {
-  fill: var(--cor-primaria);
+  fill: #e08a6f;
 }
 .graf__linha {
-  stroke: var(--cor-primaria);
+  stroke: #1b1814;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
@@ -1898,7 +1949,7 @@ input {
   flex-wrap: wrap;
 }
 
-.filtros-estoque__avancado {
+.estoque-filtros__avancado {
   display: flex;
   align-items: center;
   gap: var(--e-5);
@@ -1983,8 +2034,6 @@ input {
   display: flex;
   gap: var(--e-2);
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--borda);
-  padding-bottom: var(--e-3);
 }
 .aba {
   display: inline-flex;
@@ -2002,8 +2051,8 @@ input {
 }
 .aba:hover { background: var(--superficie-2); }
 .aba--ativa {
-  background: var(--cor-primaria);
-  color: var(--cor-primaria-contraste);
+  background: #1b1814;
+  color: #fff;
 }
 .aba__contagem {
   font-size: var(--fs-xs);
@@ -2015,57 +2064,158 @@ input {
 }
 .aba--ativa .aba__contagem {
   background: rgb(255 255 255 / 0.2);
-  color: var(--cor-primaria-contraste);
+  color: #fff;
 }
-
-/* Toolbar: busca (cresce) + ações (selects + exportar) à direita. */
-.estoque-toolbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--e-4);
-  flex-wrap: wrap;
+/* Bolinha colorida por classe (§12) à esquerda da letra, na aba do ABC. */
+.aba__pt {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
-.estoque-toolbar__busca {
-  display: flex;
-  gap: var(--e-2);
-  flex: 1;
-  min-width: 260px;
-  max-width: 420px;
-}
-.estoque-toolbar__busca .input { flex: 1; }
-.estoque-toolbar__acoes {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--e-3);
-  flex-wrap: wrap;
-}
-.exportar-grupo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-2);
-}
-.exportar-grupo__icone {
-  width: 16px;
-  height: 16px;
-  color: var(--texto-suave);
-}
-
-/* Cartão da tabela: moldura única com rodapé interno (paginação). */
-.tabela-cartao {
+/* Botão de ação só-ícone (exportar do ABC; igual ao do mockup). */
+.btn-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  flex-shrink: 0;
   border: 1px solid var(--borda);
   border-radius: var(--raio-md);
   background: var(--superficie);
-  overflow: hidden;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.btn-icone:hover { background: var(--superficie-2); }
+.btn-icone .icone-mask { width: 18px; height: 18px; }
+
+/* Filtros do estoque: um cartão com a linha de busca/ações + a linha avançada (mockup). */
+.estoque-filtros {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
+  padding: var(--e-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+.estoque-filtros__linha {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.estoque-filtros__busca {
+  display: flex;
+  gap: var(--e-2);
+  flex: 1;
+  min-width: 280px;
+}
+.estoque-filtros__busca .input { flex: 1; }
+/* Separador vertical entre Buscar e os selects. */
+.toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  min-height: 24px;
+  background: var(--borda);
+}
+.estoque-filtros .select { min-width: 150px; }
+
+/* Exportar: só um ícone (como no mockup); abre um menu CSV/JSON ao clicar. */
+.export-menu {
+  position: relative;
+}
+.export-menu__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  cursor: pointer;
+  list-style: none;
+}
+.export-menu__btn::-webkit-details-marker { display: none; }
+.export-menu__btn .icone-mask { width: 18px; height: 18px; }
+.export-menu[open] .export-menu__btn { background: var(--superficie-2); }
+.export-menu__lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: var(--e-1);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-1);
+}
+.export-menu__lista button {
+  text-align: left;
+  padding: var(--e-2) var(--e-3);
+  border: 0;
+  background: transparent;
+  border-radius: var(--raio-sm);
+  color: var(--texto);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.export-menu__lista button:hover { background: var(--superficie-2); }
+
+/* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
+.tabela-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
 }
 .tabela-cartao .tabela-rolavel {
   border: 0;
   border-radius: 0;
   background: transparent;
+  overflow-x: auto;
+}
+.tabela-cartao .tabela {
+  border-collapse: separate;
+  border-spacing: 0 var(--e-3);
+}
+/* Cabeçalho sem cartão; só rótulos alinhados às colunas. */
+.tabela-cartao .tabela thead th {
+  border-bottom: 0;
+  padding: 0 var(--e-4) var(--e-1);
+}
+/* Cada linha de corpo vira um cartão branco com cantos arredondados e sombra leve. */
+.tabela-cartao .tabela tbody tr { background: var(--superficie); }
+.tabela-cartao .tabela tbody tr:hover { background: var(--superficie); }
+.tabela-cartao .tabela tbody td {
+  border-top: 1px solid var(--borda);
+  border-bottom: 1px solid var(--borda);
+  padding: var(--e-4);
+}
+.tabela-cartao .tabela tbody td:first-child {
+  border-left: 1px solid var(--borda);
+  border-top-left-radius: var(--raio-lg);
+  border-bottom-left-radius: var(--raio-lg);
+}
+.tabela-cartao .tabela tbody td:last-child {
+  border-right: 1px solid var(--borda);
+  border-top-right-radius: var(--raio-lg);
+  border-bottom-right-radius: var(--raio-lg);
 }
 .tabela-cartao .paginacao {
-  padding: var(--e-3) var(--e-4);
-  border-top: 1px solid var(--borda);
+  padding: var(--e-3) var(--e-2);
+}
+
+/* Status como texto colorido (semáforo §12), à direita — em vez de pílula. */
+.tabela__status { text-align: right; }
+.status-texto {
+  font-weight: var(--peso-medio);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
 }
 
 /* Barra de nível de estoque (disponível × recomendado). */
@@ -2086,6 +2236,7 @@ input {
 .nivel__preenche {
   display: block;
   height: 100%;
+  min-width: 8px;
   border-radius: 999px;
 }
 .nivel__ref {
