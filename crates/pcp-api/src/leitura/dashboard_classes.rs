@@ -22,6 +22,8 @@ pub struct ClasseDto {
     pub pct_fisico_meta: Option<u32>,
     pub meta_atingida: Option<bool>,
     pub cobertura_media: Option<f64>,
+    /// Meta de cobertura da classe em dias (config §11) — base do anel de cobertura do dashboard.
+    pub cobertura_meta_dias: u32,
 }
 
 /// Resumo por classe com metas físicas e cobertura (autenticado — qualquer papel lê).
@@ -48,6 +50,7 @@ fn dto(r: ResumoClasse, total_fisico: i64, config: &pcp_config::Config) -> Class
     };
     let meta = meta_fisica(config, &r.classe);
     let atingida = meta.map(|m| (pct_real - f64::from(m)).abs() <= TOLERANCIA_META_PP);
+    let cobertura_meta_dias = meta_cobertura(config, &r.classe);
     ClasseDto {
         classe: r.classe,
         qtd_produtos: r.qtd_produtos,
@@ -56,6 +59,7 @@ fn dto(r: ResumoClasse, total_fisico: i64, config: &pcp_config::Config) -> Class
         pct_fisico_meta: meta,
         meta_atingida: atingida,
         cobertura_media: r.cobertura_media.map(|c| (c * 10.0).round() / 10.0),
+        cobertura_meta_dias,
     }
 }
 
@@ -68,5 +72,19 @@ fn meta_fisica(c: &pcp_config::Config, classe: &str) -> Option<u32> {
         "C" => Some(m.c),
         "D" => Some(m.d),
         _ => None,
+    }
+}
+
+/// Meta de cobertura (dias) da classe (config §11). `default` para classes sem meta própria.
+fn meta_cobertura(c: &pcp_config::Config, classe: &str) -> u32 {
+    let m = &c.metas_cobertura_dias;
+    match classe {
+        "A" => m.a,
+        "B" => m.b,
+        "C" => m.c,
+        "D" => m.d,
+        "F" => m.f,
+        "N" => m.n,
+        _ => m.default,
     }
 }

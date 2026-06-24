@@ -67,6 +67,14 @@ pub struct ResumoClasse {
     pub cobertura_media: Option<f64>,
 }
 
+/// Total de vendas de um mês (série mensal do dashboard, doc 03 §2). Dado REAL de `vendas_dia`.
+#[derive(Debug, Clone)]
+pub struct VendaMes {
+    pub ano: i32,
+    pub mes: i32,
+    pub total: i64,
+}
+
 /// Linha da tabela de Classificação ABC (doc 03 §6): 1 por produto, classificação MAIS RECENTE.
 #[derive(Debug, Clone)]
 pub struct LinhaAbc {
@@ -341,6 +349,36 @@ pub async fn resumo_por_classe(pool: &PgPool) -> Result<Vec<ResumoClasse>, ErroD
             cobertura_media: r.cobertura_media,
         })
         .collect())
+}
+
+/// Série mensal de vendas (soma de `qtd_vendida` por mês) — últimos `meses` meses, em ordem
+/// cronológica. Dado real de `pcp.vendas_dia` (doc 03 §2). Usado no gráfico de barras do dashboard.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn vendas_mensais(pool: &PgPool, meses: i64) -> Result<Vec<VendaMes>, ErroDb> {
+    // Pega os N meses mais recentes (DESC) e reordena em ordem cronológica no Rust.
+    let mut linhas = sqlx::query!(
+        r#"SELECT EXTRACT(YEAR  FROM dt_ref)::int  AS "ano!",
+                  EXTRACT(MONTH FROM dt_ref)::int  AS "mes!",
+                  COALESCE(SUM(qtd_vendida), 0)::bigint AS "total!"
+           FROM pcp.vendas_dia
+           GROUP BY 1, 2
+           ORDER BY 1 DESC, 2 DESC
+           LIMIT $1"#,
+        meses,
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|r| VendaMes {
+        ano: r.ano,
+        mes: r.mes,
+        total: r.total,
+    })
+    .collect::<Vec<_>>();
+    linhas.reverse(); // cronológico (mais antigo → mais recente)
+    Ok(linhas)
 }
 
 /// Tabela ABC: 1 linha por produto pela classificação MAIS RECENTE (doc 03 §6 — corrige as

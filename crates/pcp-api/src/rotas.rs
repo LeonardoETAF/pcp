@@ -42,6 +42,10 @@ pub fn rotas(estado: AppState) -> Router {
             "/pcp/dashboard/classes",
             get(leitura::dashboard_classes::classes),
         )
+        .route(
+            "/pcp/dashboard/vendas-mensais",
+            get(leitura::dashboard::vendas_mensais),
+        )
         .route("/pcp/estoque", get(leitura::estoque::estoque))
         .route(
             "/pcp/estoque/exportar",

@@ -27,6 +27,21 @@ pub fn fmt_dec1(v: f64) -> String {
     format!("{v:.1}").replace('.', ",")
 }
 
+/// Número compacto pt-BR para KPIs grandes (§12): `10_230_601` → `10,2 mi`; `12_400` → `12,4 mil`;
+/// abaixo de mil mostra o inteiro com separador de milhar.
+#[must_use]
+#[allow(clippy::cast_precision_loss)] // KPIs: magnitude pequena o bastante p/ f64 exato
+pub fn fmt_compacto(n: i64) -> String {
+    let abs = n.unsigned_abs();
+    if abs >= 1_000_000 {
+        format!("{} mi", fmt_dec1(n as f64 / 1_000_000.0))
+    } else if abs >= 10_000 {
+        format!("{} mil", fmt_dec1(n as f64 / 1_000.0))
+    } else {
+        fmt_milhar(n)
+    }
+}
+
 /// Cobertura: sentinela 999 vira "Sem histórico" (§12); senão 1 casa decimal pt-BR.
 #[must_use]
 pub fn fmt_cobertura(c: f64) -> String {

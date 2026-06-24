@@ -3,7 +3,9 @@
 //! repassa credenciais e devolve o token; nenhuma regra de negócio aqui (CLAUDE.md §3/§7).
 
 use leptos::prelude::*;
-use serde::Deserialize; // structs locais de desserialização dentro de server fns (ex.: `perfil`)
+// Só o build SSR usa o derive nas structs locais das server fns (ex.: `perfil`); no WASM seria ocioso.
+#[cfg(feature = "ssr")]
+use serde::Deserialize;
 
 mod tipos;
 pub use tipos::*;
@@ -24,6 +26,15 @@ pub async fn painel(token: String) -> Result<PainelResumo, ServerFnError> {
 #[server(name = DashboardClasses, prefix = "/api")]
 pub async fn dashboard_classes(token: String) -> Result<Vec<ClasseResumo>, ServerFnError> {
     obter_json("/pcp/dashboard/classes", &token).await
+}
+
+/// Série mensal de vendas (dado real) — `GET /pcp/dashboard/vendas-mensais`.
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = VendasMensais, prefix = "/api")]
+pub async fn vendas_mensais(token: String) -> Result<Vec<VendaMes>, ServerFnError> {
+    obter_json("/pcp/dashboard/vendas-mensais", &token).await
 }
 
 /// Produtos ativos paginados (`GET /pcp/estoque`) com filtros, busca, ordenação e paginação.

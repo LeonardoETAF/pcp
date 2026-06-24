@@ -77,6 +77,16 @@ pub struct ClasseResumo {
     pub pct_fisico_meta: Option<u32>,
     pub meta_atingida: Option<bool>,
     pub cobertura_media: Option<f64>,
+    /// Meta de cobertura da classe em dias (config §11) — base do anel de cobertura.
+    pub cobertura_meta_dias: u32,
+}
+
+/// Total de vendas de um mês (série do dashboard, dado real de `vendas_dia`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VendaMes {
+    pub ano: i32,
+    pub mes: i32,
+    pub total: i64,
 }
 
 /// Filtro salvo do usuário (`/pcp/estoque/filtros`). `filtro` é o JSON opaco de [`ConsultaEstoque`].

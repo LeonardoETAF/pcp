@@ -14,11 +14,11 @@
   --cor-apoio: #660066;
   --cor-primaria-contraste: #ffffff;
 
-  /* Neutros / superfícies */
-  --fundo: #f6f7f9;
+  /* Neutros / superfícies (fundo creme editorial; cartões brancos) */
+  --fundo: #f4f1ea;
   --superficie: #ffffff;
-  --superficie-2: #f0f2f5;
-  --borda: #e2e6ea;
+  --superficie-2: #efece4;
+  --borda: #e6e1d6;
   --texto: #1b1f24;
   --texto-suave: #5b6470;
   --texto-inverso: #ffffff;
@@ -866,38 +866,86 @@ input {
 .kpi {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--e-1);
   padding: var(--e-5);
   background: var(--superficie);
   border: 1px solid var(--borda);
   border-radius: var(--raio-lg);
   box-shadow: var(--sombra-1);
+  min-height: 132px;
 }
-/* Ícone do KPI: sem fundo, generoso (estilo editorial), alinhado à esquerda do card. */
-.kpi__chip {
-  display: inline-grid;
-  place-items: center;
-  align-self: flex-start;
-  margin-bottom: var(--e-3);
-  color: var(--texto);
+/* Rótulo em caixa-alta no topo (estilo editorial do mockup). */
+.kpi__rotulo {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  font-weight: var(--peso-medio);
 }
-.kpi__chip .icone-mask {
-  width: 38px;
-  height: 38px;
-}
-/* Cartões uniformes; a criticidade (doc 02 §9.2) colore só o VALOR, não o cartão. */
+/* Número grande; a criticidade (doc 02 §9.2) colore só o VALOR. */
 .kpi__valor {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-2xl, 2rem);
+  line-height: 1.05;
   font-weight: var(--peso-forte);
+  font-variant-numeric: tabular-nums;
+  margin-top: auto;
 }
 .kpi--critico .kpi__valor { color: var(--semaforo-critico); }
 .kpi--medio .kpi__valor { color: var(--semaforo-alto); }
-.kpi__rotulo { font-weight: var(--peso-medio); }
 .kpi__sub {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
 }
 .kpi__sub--alerta { color: var(--semaforo-critico); }
+
+/* Card de destaque ("A produzir"): escuro, igual ao mockup. */
+.kpi--hero {
+  background: #1b1814;
+  border-color: #1b1814;
+}
+.kpi--hero .kpi__rotulo { color: rgba(255, 255, 255, 0.6); }
+.kpi--hero .kpi__valor { color: #fff; }
+.kpi--hero .kpi__sub { color: rgba(255, 255, 255, 0.6); }
+
+/* Card de cobertura com gauge semicircular: tudo centralizado. */
+.kpi--gauge {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0;
+}
+.kpi__rotulo--gauge {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--fs-sm);
+  color: var(--texto);
+  font-weight: var(--peso-medio);
+}
+.gauge__svg {
+  width: 132px;
+  height: 80px;
+}
+.gauge__fundo {
+  stroke: var(--superficie-2);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.gauge__arco {
+  stroke: var(--semaforo-ok);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.gauge__arco--critico { stroke: var(--semaforo-critico); }
+.gauge__arco--medio { stroke: var(--semaforo-alto); }
+.gauge__num {
+  text-anchor: middle;
+  font-size: 22px;
+  font-weight: var(--peso-forte);
+  fill: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+.gauge__num--critico { fill: var(--semaforo-critico); }
+.gauge__num--medio { fill: var(--semaforo-alto); }
 
 /* Base do dashboard: tabela "A produzir" (larga) + coluna lateral de listas (mockup). */
 .painel__base {
@@ -970,19 +1018,16 @@ input {
 }
 .meta-fisica {
   display: flex;
-  flex-direction: column;
-  gap: var(--e-2);
-}
-.meta-fisica__topo {
-  display: flex;
   align-items: center;
   gap: var(--e-3);
 }
 .meta-fisica__pct {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
-  margin-right: auto;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 124px;
+  text-align: right;
 }
 .meta-chip {
   font-size: var(--fs-xs);
@@ -1003,6 +1048,7 @@ input {
 }
 .meta-fisica__trilho {
   position: relative;
+  flex: 1;
   height: 10px;
   background: var(--superficie-2);
   border-radius: 999px;
@@ -1134,6 +1180,95 @@ input {
   text-align: right;
 }
 
+/* Donut do dashboard: SVG em cima, legenda em grade (mockup). */
+.donut--coluna {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-4);
+}
+.legenda--grade {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--e-3) var(--e-5);
+  width: 100%;
+}
+.legenda--grade .legenda__item { flex: 0 0 auto; }
+.legenda--grade .legenda__rotulo { flex: 0 0 auto; }
+
+/* Linha 3 assimétrica: Distribuição ABC (estreita) + Estoque crítico (larga). */
+.painel__graficos--abc {
+  grid-template-columns: minmax(280px, 360px) 1fr;
+}
+@media (max-width: 980px) {
+  .painel__graficos--abc { grid-template-columns: 1fr; }
+}
+
+/* Gráfico de vendas por mês (barras verticais; última destacada). */
+.grafico-mes {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--e-3);
+  height: 168px;
+  padding-top: var(--e-4);
+}
+.barra-mes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e-2);
+  flex: 1;
+  height: 100%;
+}
+.barra-mes__valor {
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+.barra-mes__col {
+  width: 100%;
+  max-width: 56px;
+  background: var(--superficie-2);
+  border-radius: var(--raio-md) var(--raio-md) 0 0;
+  min-height: 4px;
+  transition: height var(--transicao);
+}
+.barra-mes--destaque .barra-mes__col { background: #1b1814; }
+.barra-mes__mes {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+
+/* Anéis de cobertura por classe (cor fixa por classe — §12). */
+.rings {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e-3);
+  flex-wrap: wrap;
+}
+.ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-2);
+}
+.ring__svg { width: 72px; height: 72px; }
+.ring__trilho { stroke: var(--superficie-2); }
+.ring__num {
+  text-anchor: middle;
+  font-size: 15px;
+  font-weight: var(--peso-forte);
+  fill: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+.ring__classe {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  font-weight: var(--peso-medio);
+}
+
 .barras {
   display: flex;
   flex-direction: column;
@@ -1150,16 +1285,30 @@ input {
   color: var(--texto-suave);
 }
 .barra-linha__trilho {
-  height: 10px;
+  height: 6px;
   border-radius: 999px;
   background: var(--superficie-2);
-  overflow: hidden;
+  overflow: visible;
 }
 .barra-linha__preenche {
+  position: relative;
   display: block;
   height: 100%;
   background: var(--texto-suave);
   border-radius: 999px;
+}
+/* Knob no fim do preenchimento (estilo "slider" do mockup); herda a cor do semáforo. */
+.barra-linha__preenche::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: inherit;
+  box-shadow: 0 0 0 3px var(--superficie);
 }
 .barra-linha__valor {
   display: flex;
