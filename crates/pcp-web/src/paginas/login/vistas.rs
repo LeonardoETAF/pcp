@@ -10,9 +10,11 @@ use super::Vista;
 use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
 
-/// Mensagem exibida PELO SISTEMA quando o e-mail está fora do formato (nada de balão do navegador).
+// Mensagens exibidas PELO SISTEMA (nada de balão do navegador), uma por situação de cada campo.
+const MSG_EMAIL_VAZIO: &str = "Informe seu e-mail.";
 const MSG_EMAIL_INVALIDO: &str =
     "Informe um e-mail válido, com @ e domínio (ex.: nome@empresa.com.br).";
+const MSG_SENHA_VAZIA: &str = "Informe sua senha.";
 
 /// Valida o e-mail NO SISTEMA (sem depender do navegador): exige parte local, `@`, domínio com
 /// ponto e TLD alfabético de 2+ letras, sem espaços. Não exige literalmente `.com` — isso barraria
@@ -80,11 +82,26 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
         }
     });
     let tem_erro = move || matches!(login.value().get(), Some(Err(_)));
-    // Validação do sistema (não do navegador). A mensagem só aparece DEPOIS de tentar entrar —
-    // nunca enquanto o usuário digita; ao voltar a digitar, o aviso some.
+    // Validação do sistema (não do navegador). As mensagens só aparecem DEPOIS de tentar entrar —
+    // nunca enquanto o usuário digita; ao voltar a digitar, os avisos somem. Cada campo tem a sua.
+    let senha = RwSignal::new(String::new());
     let tentou = RwSignal::new(false);
-    let email_ok = move || email_valido(&email.get());
-    let email_ruim = move || tentou.get() && !email_ok();
+    let erro_email = move || {
+        if !tentou.get() {
+            return None;
+        }
+        let e = email.get();
+        if e.trim().is_empty() {
+            Some(MSG_EMAIL_VAZIO)
+        } else if email_valido(&e) {
+            None
+        } else {
+            Some(MSG_EMAIL_INVALIDO)
+        }
+    };
+    // A senha não é aparada: espaços podem fazer parte dela.
+    let erro_senha = move || (tentou.get() && senha.get().is_empty()).then_some(MSG_SENHA_VAZIA);
+    let email_ruim = move || erro_email().is_some();
 
     view! {
         <div class="vista">
@@ -117,12 +134,8 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                         />
                     </div>
                     {move || {
-                        email_ruim()
-                            .then(|| {
-                                view! {
-                                    <p class="campo-auth__erro" role="alert">{MSG_EMAIL_INVALIDO}</p>
-                                }
-                            })
+                        erro_email()
+                            .map(|m| view! { <p class="campo-auth__erro" role="alert">{m}</p> })
                     }}
                 </div>
                 <div class="campo-auth">
@@ -136,10 +149,17 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                         </span>
                         <input
                             class="input-auth input-auth--olho"
+                            class:input-auth--invalido=move || erro_senha().is_some()
                             type=move || if mostrar_senha.get() { "text" } else { "password" }
                             name="senha"
                             placeholder="Sua senha"
                             autocomplete="current-password"
+                            aria-invalid=move || erro_senha().map(|_| "true")
+                            prop:value=move || senha.get()
+                            on:input=move |ev| {
+                                senha.set(event_target_value(&ev));
+                                tentou.set(false);
+                            }
                         />
                         <button
                             class="input-wrap__olho"
@@ -162,6 +182,10 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                             ></span>
                         </button>
                     </div>
+                    {move || {
+                        erro_senha()
+                            .map(|m| view! { <p class="campo-auth__erro" role="alert">{m}</p> })
+                    }}
                 </div>
                 // "Lembrar" à esquerda e "Esqueci a senha" à direita, abaixo do campo de senha.
                 <div class="lembrar-linha">
@@ -193,7 +217,9 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     disabled=move || login.pending().get()
                     on:click=move |ev| {
                         tentou.set(true);
-                        if !email_valido(&email.get_untracked()) {
+                        let email_ok = email_valido(&email.get_untracked());
+                        let senha_ok = !senha.get_untracked().is_empty();
+                        if !email_ok || !senha_ok {
                             ev.prevent_default();
                         }
                     }
@@ -217,7 +243,20 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
     let email = RwSignal::new(String::new());
     // Mesma regra do login: o aviso só surge ao tentar enviar, não enquanto digita.
     let tentou = RwSignal::new(false);
-    let email_ruim = move || tentou.get() && !email_valido(&email.get());
+    let erro_email = move || {
+        if !tentou.get() {
+            return None;
+        }
+        let e = email.get();
+        if e.trim().is_empty() {
+            Some(MSG_EMAIL_VAZIO)
+        } else if email_valido(&e) {
+            None
+        } else {
+            Some(MSG_EMAIL_INVALIDO)
+        }
+    };
+    let email_ruim = move || erro_email().is_some();
     view! {
         <div class="vista">
             <BotaoVoltar vista />
@@ -256,12 +295,8 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                         />
                     </div>
                     {move || {
-                        email_ruim()
-                            .then(|| {
-                                view! {
-                                    <p class="campo-auth__erro" role="alert">{MSG_EMAIL_INVALIDO}</p>
-                                }
-                            })
+                        erro_email()
+                            .map(|m| view! { <p class="campo-auth__erro" role="alert">{m}</p> })
                     }}
                 </div>
                 <button class="btn-auth" type="submit">
