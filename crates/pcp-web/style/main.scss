@@ -321,7 +321,7 @@ input {
   border-radius: var(--raio-md);
   background: var(--auth-escuro-2);
 }
-.feature__icone svg {
+.feature__icone .icone-mask {
   width: 22px;
   height: 22px;
 }
@@ -389,7 +389,7 @@ input {
   color: var(--auth-muted);
   pointer-events: none;
 }
-.input-wrap__icone svg {
+.input-wrap__icone .icone-mask {
   width: 18px;
   height: 18px;
 }
@@ -598,7 +598,7 @@ input {
   color: var(--auth-muted);
   cursor: pointer;
 }
-.voltar svg {
+.voltar .icone-mask {
   width: 18px;
   height: 18px;
 }
@@ -630,7 +630,7 @@ input {
   background: var(--auth-claro);
   color: var(--auth-texto);
 }
-.card-info__icone svg {
+.card-info__icone .icone-mask {
   width: 20px;
   height: 20px;
 }

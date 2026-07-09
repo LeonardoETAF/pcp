@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use leptos_router::NavigateOptions;
 
-use super::Vista;
+use super::{Icone, Vista};
 use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
 
@@ -113,10 +113,7 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     <label class="campo-auth__rotulo">"E-mail"</label>
                     <div class="input-wrap">
                         <span class="input-wrap__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="5" width="18" height="14" rx="2" />
-                                <path d="m3 7 9 6 9-6" />
-                            </svg>
+                            <Icone arquivo="email.svg" />
                         </span>
                         <input
                             class="input-auth"
@@ -142,10 +139,7 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     <label class="campo-auth__rotulo">"Senha"</label>
                     <div class="input-wrap">
                         <span class="input-wrap__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="4" y="10" width="16" height="10" rx="2" />
-                                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                            </svg>
+                            <Icone arquivo="seguranca.svg" />
                         </span>
                         <input
                             class="input-auth input-auth--olho"
@@ -275,10 +269,7 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                     <label class="campo-auth__rotulo">"E-mail"</label>
                     <div class="input-wrap">
                         <span class="input-wrap__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="5" width="18" height="14" rx="2" />
-                                <path d="m3 7 9 6 9-6" />
-                            </svg>
+                            <Icone arquivo="email.svg" />
                         </span>
                         <input
                             class="input-auth"
@@ -320,10 +311,7 @@ pub fn VistaContato(vista: RwSignal<Vista>) -> impl IntoView {
             <div class="cards-info">
                 <div class="card-info">
                     <span class="card-info__icone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                            <path d="m3 7 9 6 9-6" />
-                        </svg>
+                        <Icone arquivo="email.svg" />
                     </span>
                     <div>
                         <p class="card-info__rotulo">"E-mail"</p>
@@ -332,9 +320,7 @@ pub fn VistaContato(vista: RwSignal<Vista>) -> impl IntoView {
                 </div>
                 <div class="card-info">
                     <span class="card-info__icone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />
-                        </svg>
+                        <Icone arquivo="telefone.svg" />
                     </span>
                     <div>
                         <p class="card-info__rotulo">"Telefone"</p>
@@ -343,10 +329,7 @@ pub fn VistaContato(vista: RwSignal<Vista>) -> impl IntoView {
                 </div>
                 <div class="card-info">
                     <span class="card-info__icone">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 7v5l3 2" />
-                        </svg>
+                        <Icone arquivo="relogio.svg" />
                     </span>
                     <div>
                         <p class="card-info__rotulo">"Atendimento"</p>
@@ -374,9 +357,7 @@ pub fn VistaContato(vista: RwSignal<Vista>) -> impl IntoView {
 fn BotaoVoltar(vista: RwSignal<Vista>) -> impl IntoView {
     view! {
         <button class="voltar" type="button" on:click=move |_| vista.set(Vista::Login)>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m15 18-6-6 6-6" />
-            </svg>
+            <Icone arquivo="seta-esquerda.svg" />
             "Voltar ao login"
         </button>
     }

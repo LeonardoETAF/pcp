@@ -17,6 +17,15 @@ pub enum Vista {
     Contato,
 }
 
+/// Ícone do diretório `public/icons`, recolorido pela cor do texto (CSS mask). Nenhum SVG é
+/// embutido no código: todo ícone da tela de login sai de um arquivo do projeto.
+#[component]
+pub fn Icone(arquivo: &'static str) -> impl IntoView {
+    let estilo =
+        format!("-webkit-mask-image:url(/icons/{arquivo});mask-image:url(/icons/{arquivo})");
+    view! { <span class="icone-mask" style=estilo></span> }
+}
+
 #[component]
 pub fn PaginaLogin() -> impl IntoView {
     let vista = RwSignal::new(Vista::Login);

@@ -1,7 +1,10 @@
-//! Painel esquerdo (marca): logo, headline, features e rodapé. Estático. Ícones inline (herdam
-//! `currentColor` = branco sobre o fundo escuro).
+//! Painel esquerdo (marca): logo, headline, features e rodapé. Estático. Os ícones vêm SEMPRE do
+//! diretório `public/icons` (nenhum SVG embutido no código) e são recoloridos via CSS mask, então
+//! herdam `currentColor` (= branco sobre o fundo escuro).
 
 use leptos::prelude::*;
+
+use super::Icone;
 
 #[component]
 pub fn PainelMarca() -> impl IntoView {
@@ -23,31 +26,19 @@ pub fn PainelMarca() -> impl IntoView {
                 <ul class="marca__features">
                     <li class="feature">
                         <span class="feature__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="6" y="4" width="12" height="17" rx="2" />
-                                <path d="M9 4h6v3H9z" />
-                                <path d="m9 13 2 2 4-4" />
-                            </svg>
+                            <Icone arquivo="apontamento.svg" />
                         </span>
                         <span>"Pedidos de produção e apontamento"</span>
                     </li>
                     <li class="feature">
                         <span class="feature__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 6h9" />
-                                <path d="M4 12h6" />
-                                <path d="M4 18h13" />
-                                <path d="M13 6v0M10 12v0M17 18v0" />
-                            </svg>
+                            <Icone arquivo="lista.svg" />
                         </span>
                         <span>"Planejamento e cronograma"</span>
                     </li>
                     <li class="feature">
                         <span class="feature__icone">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 8 12 3 3 8l9 5 9-5Z" />
-                                <path d="M3 8v8l9 5 9-5V8" />
-                            </svg>
+                            <Icone arquivo="inventory.svg" />
                         </span>
                         <span>"Estoque e inventário em tempo real"</span>
                     </li>
