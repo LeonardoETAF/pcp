@@ -83,16 +83,7 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     </div>
                 </div>
                 <div class="campo-auth">
-                    <div class="campo-auth__linha">
-                        <label class="campo-auth__rotulo">"Senha"</label>
-                        <button
-                            class="link-suave"
-                            type="button"
-                            on:click=move |_| vista.set(Vista::Recuperar)
-                        >
-                            "Esqueci a senha"
-                        </button>
-                    </div>
+                    <label class="campo-auth__rotulo">"Senha"</label>
                     <div class="input-wrap">
                         <span class="input-wrap__icone">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -129,14 +120,24 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                         </button>
                     </div>
                 </div>
-                <label class="lembrar">
-                    <input
-                        type="checkbox"
-                        prop:checked=move || lembrar.get()
-                        on:change=move |ev| lembrar.set(event_target_checked(&ev))
-                    />
-                    <span>"Lembrar-me"</span>
-                </label>
+                // "Lembrar" à esquerda e "Esqueci a senha" à direita, abaixo do campo de senha.
+                <div class="lembrar-linha">
+                    <label class="lembrar">
+                        <input
+                            type="checkbox"
+                            prop:checked=move || lembrar.get()
+                            on:change=move |ev| lembrar.set(event_target_checked(&ev))
+                        />
+                        <span>"Lembrar"</span>
+                    </label>
+                    <button
+                        class="link-suave"
+                        type="button"
+                        on:click=move |_| vista.set(Vista::Recuperar)
+                    >
+                        "Esqueci a senha"
+                    </button>
+                </div>
                 {move || {
                     tem_erro()
                         .then(|| view! { <p class="form-auth__erro" role="alert">"Credenciais inválidas."</p> })

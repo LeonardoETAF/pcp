@@ -371,11 +371,6 @@ input {
   flex-direction: column;
   gap: var(--e-2);
 }
-.campo-auth__linha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .campo-auth__rotulo {
   font-size: var(--fs-sm);
   font-weight: var(--peso-forte);
@@ -452,6 +447,13 @@ input {
 }
 
 /* Lembrar / links / botão */
+/* Linha abaixo da senha: "Lembrar" à esquerda, "Esqueci a senha" à direita. */
+.lembrar-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+}
 .lembrar {
   display: flex;
   align-items: center;
