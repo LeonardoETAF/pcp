@@ -277,6 +277,11 @@ input {
   width: min(220px, 46vw);
   height: auto;
   margin-bottom: var(--e-3);
+  /* A arte é um SVG de 512px desenhado para 220px: nessa redução os traços finos e os pontilhados
+     ficam duros e mostram as emendas. Um desfoque sub-pixel arredonda as bordas sem borrar a
+     figura, e a opacidade a empurra para o fundo — ela é apoio do texto, não o assunto. */
+  opacity: 0.72;
+  filter: blur(0.35px);
 }
 .estado-vazio__titulo {
   font-size: var(--fs-lg);
