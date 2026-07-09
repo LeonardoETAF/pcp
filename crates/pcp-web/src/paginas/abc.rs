@@ -11,6 +11,7 @@ use crate::api::{
     abc_distribuicao, abc_tabela, listar_ciclo_vida, perfil, transicionar_ciclo_vida,
     DistribuicaoAbc, LinhaAbc, SugestaoCicloVida,
 };
+use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::download;
@@ -48,7 +49,13 @@ pub fn ClassificacaoAbc() -> impl IntoView {
                     let linhas = tabela.get().unwrap_or_default();
                     let distribuicao = distribuicao.get().unwrap_or_default();
                     if linhas.is_empty() {
-                        view! { <p class="estado-vazio">"Sem classificação disponível."</p> }
+                        view! {
+                            <EstadoVazio
+                                arte="empty-sales.svg"
+                                titulo="Sem classificação disponível"
+                                descricao="A curva ABC aparece depois que o motor processar o primeiro dia."
+                            />
+                        }
                             .into_any()
                     } else {
                         view! { <ConteudoAbc linhas distribuicao busca /> }.into_any()
@@ -557,7 +564,14 @@ fn ForaDeLinha() -> impl IntoView {
                 {move || {
                     let itens = fila.get().unwrap_or_default();
                     if itens.is_empty() {
-                        view! { <p class="estado-vazio">"Nenhuma sugestão aberta."</p> }.into_any()
+                        view! {
+                            <EstadoVazio
+                                arte="empty-orders.svg"
+                                titulo="Nenhuma sugestão aberta"
+                                descricao="Sugestões de entrada e saída de linha aparecem aqui."
+                            />
+                        }
+                            .into_any()
                     } else {
                         view! {
                             <ul class="solic-lista">

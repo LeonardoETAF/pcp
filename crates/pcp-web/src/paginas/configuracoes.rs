@@ -12,6 +12,7 @@ use crate::api::{
     obter_config, obter_preferencias, override_sazonalidade, perfil, salvar_config,
     salvar_preferencias, EntradaAuditoriaConfig, UsuarioConta,
 };
+use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 
@@ -611,7 +612,14 @@ fn AuditoriaConfig() -> impl IntoView {
                 {move || {
                     let itens: Vec<EntradaAuditoriaConfig> = trilha.get().unwrap_or_default();
                     if itens.is_empty() {
-                        view! { <p class="estado-vazio">"Nenhuma mudança registrada."</p> }.into_any()
+                        view! {
+                            <EstadoVazio
+                                arte="empty-movements.svg"
+                                titulo="Nenhuma mudança registrada"
+                                descricao="Toda edição de configuração é auditada e listada aqui."
+                            />
+                        }
+                            .into_any()
                     } else {
                         view! {
                             <ul class="solic-lista">

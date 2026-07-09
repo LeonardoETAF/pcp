@@ -265,6 +265,29 @@ input {
   text-align: center;
   color: var(--texto-suave);
 }
+/* Variante ilustrada (§16), para o vazio que ocupa a área principal da tela. Dentro de cards
+   pequenos a ilustração não cabe: ali fica só o texto. */
+.estado-vazio--ilustrado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-2);
+}
+.estado-vazio__arte {
+  width: min(220px, 46vw);
+  height: auto;
+  margin-bottom: var(--e-3);
+}
+.estado-vazio__titulo {
+  font-size: var(--fs-lg);
+  font-weight: var(--peso-forte);
+  color: var(--texto);
+}
+.estado-vazio__texto {
+  max-width: 44ch;
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
 
 /* ---------- Tela de login (split-screen: marca escura + painel claro) ---------- */
 .auth {
@@ -917,28 +940,33 @@ input {
   gap: var(--e-2);
   margin-bottom: var(--e-5);
 }
+/* Mesmo desenho dos itens de menu: sem borda, fundo só no hover, e a pílula clara quando a rota
+   está ativa (`aria-current`, posto pelo <A> do router). */
 .icone-btn {
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 0;
   border-radius: var(--raio-md);
   background: transparent;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.66);
   cursor: pointer;
   text-decoration: none;
   transition: background var(--transicao), color var(--transicao);
 }
 .icone-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.icone-btn[aria-current="page"] {
+  background: #2c2824;
   color: #fff;
 }
 /* Sobre o fundo escuro da sidebar o anel de foco do sistema (cor do texto) sumiria: aqui ele é
    branco. Mesmo desenho — realce só na borda, sem mudar o tamanho da caixa. */
 .icone-btn:focus-visible {
   outline: none;
-  border-color: #fff;
   box-shadow: 0 0 0 1px #fff;
 }
 .conteudo {
@@ -1957,8 +1985,6 @@ input {
   top: calc(100% + 6px);
   left: 0;
   min-width: 100%;
-  max-height: 288px;
-  overflow-y: auto;
   padding: var(--e-1);
   background: var(--superficie);
   border: var(--cartao-borda);

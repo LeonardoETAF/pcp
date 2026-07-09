@@ -11,6 +11,7 @@ use crate::api::{
     transicionar_solicitacao, AlertaInteligente, DetalheProduto, Insights, MetricasProduto, Ponto,
     Recomendacao, RegraClasse, Solicitacao,
 };
+use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
@@ -395,7 +396,10 @@ fn CentroComando(codigo: String, recomendacao: Recomendacao) -> impl IntoView {
                         .map(|itens| {
                             if itens.is_empty() {
                                 view! {
-                                    <p class="estado-vazio">"Nenhuma solicitação para este produto."</p>
+                                    <EstadoVazio
+                                        arte="empty-orders.svg"
+                                        titulo="Nenhuma solicitação para este produto"
+                                    />
                                 }
                                     .into_any()
                             } else {

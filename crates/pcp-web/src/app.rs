@@ -6,6 +6,7 @@ use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::components::{ParentRoute, Route, Router, Routes};
 use leptos_router::{ParamSegment, StaticSegment};
 
+use crate::componentes::EstadoVazio;
 use crate::contexto::{CarregandoSessao, Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::abc::ClassificacaoAbc;
@@ -79,7 +80,13 @@ pub fn App() -> impl IntoView {
         <div class="app-raiz" data-tema=move || tema.0.get()>
             <Router>
                 <Routes fallback=|| {
-                    view! { <p class="estado-vazio">"Página não encontrada."</p> }
+                    view! {
+                        <EstadoVazio
+                            arte="empty-search.svg"
+                            titulo="Página não encontrada"
+                            descricao="O endereço não existe ou foi movido."
+                        />
+                    }
                 }>
                     <Route path=StaticSegment("login") view=PaginaLogin />
                     <ParentRoute path=StaticSegment("") view=LayoutAutenticado>

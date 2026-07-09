@@ -11,7 +11,7 @@ use crate::api::{
     estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, LinhaEstoque,
     PainelResumo,
 };
-use crate::componentes::{Icone, Seletor};
+use crate::componentes::{EstadoVazio, Icone, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
@@ -139,7 +139,11 @@ pub fn PaginaEstoque() -> impl IntoView {
                             }
                             Ok(pag) if pag.itens.is_empty() => {
                                 view! {
-                                    <p class="estado-vazio">"Nenhum produto para os filtros atuais."</p>
+                                    <EstadoVazio
+                                        arte="empty-search.svg"
+                                        titulo="Nenhum produto para os filtros atuais"
+                                        descricao="Ajuste a busca, a classe ou o status para ver resultados."
+                                    />
                                 }
                                     .into_any()
                             }

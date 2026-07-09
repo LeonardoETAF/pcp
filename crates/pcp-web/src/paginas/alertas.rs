@@ -8,6 +8,7 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use crate::api::{alertas, AlertaResumo};
+use crate::componentes::EstadoVazio;
 use crate::contexto::Sessao;
 
 /// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10).
@@ -136,7 +137,13 @@ fn corpo(
         {move || {
             let itens = filtradas();
             if itens.is_empty() {
-                view! { <p class="estado-vazio">"Nenhum alerta para os filtros atuais."</p> }
+                view! {
+                    <EstadoVazio
+                        arte="empty-orders.svg"
+                        titulo="Nenhum alerta para os filtros atuais"
+                        descricao="Nada exige atenção agora — ou os filtros estão restritos demais."
+                    />
+                }
                     .into_any()
             } else {
                 view! {

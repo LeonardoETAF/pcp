@@ -8,6 +8,7 @@ use crate::api::{
     admin_pipeline, admin_reprocessar, admin_saude, ExecucaoPipeline, RelatorioSaude,
     VerificacaoSaude,
 };
+use crate::componentes::EstadoVazio;
 use crate::contexto::Sessao;
 use crate::formato::fmt_milhar;
 
@@ -69,7 +70,13 @@ pub fn Operacao() -> impl IntoView {
                     {move || {
                         let execs = pipeline.get().unwrap_or_default();
                         if execs.is_empty() {
-                            view! { <p class="estado-vazio">"Nenhuma execução registrada."</p> }
+                            view! {
+                                <EstadoVazio
+                                    arte="empty-movements.svg"
+                                    titulo="Nenhuma execução registrada"
+                                    descricao="As execuções do pipeline aparecem aqui assim que a primeira rodar."
+                                />
+                            }
                                 .into_any()
                         } else {
                             view! { <TabelaExecucoes execs /> }.into_any()
