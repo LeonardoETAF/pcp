@@ -2265,13 +2265,17 @@ input {
   flex-direction: column;
   gap: var(--e-3);
 }
-/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA. */
+/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA.
+   O `overflow-x` cria uma caixa de rolagem, que RECORTA tudo que passa das bordas — inclusive a
+   sombra das linhas, deixando as quinas com aparência serrilhada. O respiro interno dá lugar à
+   sombra dentro da área rolável; a lista fica alguns pixels mais estreita, e é o que se quer. */
 .tabela-cartao .tabela-rolavel {
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow-x: auto;
+  padding: var(--e-2);
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
