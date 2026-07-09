@@ -69,6 +69,10 @@
   --raio-md: 10px;
   --raio-lg: 16px;
   --sombra-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  /* Superfície de cartão (§16): fonte única da borda, do raio e da sombra de TODO card. */
+  --cartao-borda: 1px solid var(--borda);
+  --cartao-raio: var(--raio-lg);
+  --cartao-sombra: var(--sombra-1);
   --sombra-2: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
   --sombra-3: 0 12px 24px rgba(16, 24, 40, 0.12);
 
@@ -122,11 +126,27 @@ input {
 }
 
 /* ---------- Componentes base ---------- */
-.card {
+/* ---------- Design system: superfície de cartão (§16) ----------
+   Fonte ÚNICA da borda, do raio e da sombra de todo card do sistema — os 4 KPIs, os cartões de
+   painel, a toolbar de filtros, os health checks, as linhas de alerta/solicitação etc. Um card
+   novo entra nesta lista; nunca redeclara borda/raio/sombra por conta própria. */
+.card,
+.kpi,
+.cartao,
+.carta-resumo,
+.metrica-card,
+.saude-item,
+.estoque-filtros,
+.cob-classe,
+.linha-alerta,
+.tabela-rolavel,
+.solic-item {
   background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-1);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
+}
+.card {
   padding: var(--e-5);
 }
 
@@ -925,10 +945,6 @@ input {
   flex-direction: column;
   gap: var(--e-1);
   padding: var(--e-5);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-1);
   min-height: 132px;
 }
 /* Rótulo em caixa-alta no topo (estilo editorial do mockup). */
@@ -1170,8 +1186,6 @@ input {
   align-items: center;
   gap: var(--e-1);
   padding: var(--e-3);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
   min-width: 64px;
 }
 .cob-classe__valor {
@@ -1180,10 +1194,6 @@ input {
 }
 
 .cartao {
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-1);
   padding: var(--e-5);
 }
 .cartao__cab {
@@ -1492,10 +1502,8 @@ input {
   flex-direction: column;
   gap: var(--e-1);
   padding: var(--e-4) var(--e-5);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
+  /* Faixa de destaque à esquerda (a cor é sobrescrita por variante). */
   border-left: 4px solid var(--borda);
-  border-radius: var(--raio-md);
 }
 .carta-resumo--critico { border-left-color: var(--semaforo-critico); }
 .carta-resumo--alto { border-left-color: var(--semaforo-alto); }
@@ -1553,9 +1561,6 @@ input {
   gap: var(--e-4);
   flex-wrap: wrap;
   padding: var(--e-4) var(--e-5);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
 }
 .linha-alerta__principal {
   display: flex;
@@ -1704,9 +1709,6 @@ input {
   flex-direction: column;
   gap: var(--e-1);
   padding: var(--e-4);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
 }
 .metrica-card__rotulo {
   font-size: var(--fs-xs);
@@ -1797,9 +1799,6 @@ input {
   align-items: center;
   gap: var(--e-4);
   padding: var(--e-3) var(--e-4);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  background: var(--superficie);
   flex-wrap: wrap;
 }
 .solic-item__dados {
@@ -1892,11 +1891,9 @@ input {
   text-decoration: none;
 }
 
+/* Borda/raio/sombra vêm da superfície de cartão do design system (ver topo do arquivo). */
 .tabela-rolavel {
   overflow-x: auto;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  background: var(--superficie);
 }
 .tabela {
   width: 100%;
@@ -1997,10 +1994,6 @@ input {
   flex-direction: column;
   gap: var(--e-3);
   padding: var(--e-5);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-1);
   overflow: hidden;
 }
 .saude-item::before {
@@ -2189,10 +2182,6 @@ input {
 
 /* Filtros do estoque: um cartão com a linha de busca/ações + a linha avançada (mockup). */
 .estoque-filtros {
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-lg);
-  box-shadow: var(--sombra-1);
   padding: var(--e-4);
   display: flex;
   flex-direction: column;
@@ -2271,10 +2260,12 @@ input {
   flex-direction: column;
   gap: var(--e-3);
 }
+/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA. */
 .tabela-cartao .tabela-rolavel {
   border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
   overflow-x: auto;
 }
 .tabela-cartao .tabela {
@@ -2286,23 +2277,27 @@ input {
   border-bottom: 0;
   padding: 0 var(--e-4) var(--e-1);
 }
-/* Cada linha de corpo vira um cartão branco com cantos arredondados e sombra leve. */
-.tabela-cartao .tabela tbody tr { background: var(--superficie); }
+/* Cada linha de corpo é um card: mesma superfície do design system (borda nas células, pois
+   `border` em <tr> não pinta; a sombra funciona porque a tabela usa border-collapse: separate). */
+.tabela-cartao .tabela tbody tr {
+  background: var(--superficie);
+  box-shadow: var(--cartao-sombra);
+}
 .tabela-cartao .tabela tbody tr:hover { background: var(--superficie); }
 .tabela-cartao .tabela tbody td {
-  border-top: 1px solid var(--borda);
-  border-bottom: 1px solid var(--borda);
+  border-top: var(--cartao-borda);
+  border-bottom: var(--cartao-borda);
   padding: var(--e-4);
 }
 .tabela-cartao .tabela tbody td:first-child {
-  border-left: 1px solid var(--borda);
-  border-top-left-radius: var(--raio-lg);
-  border-bottom-left-radius: var(--raio-lg);
+  border-left: var(--cartao-borda);
+  border-top-left-radius: var(--cartao-raio);
+  border-bottom-left-radius: var(--cartao-raio);
 }
 .tabela-cartao .tabela tbody td:last-child {
-  border-right: 1px solid var(--borda);
-  border-top-right-radius: var(--raio-lg);
-  border-bottom-right-radius: var(--raio-lg);
+  border-right: var(--cartao-borda);
+  border-top-right-radius: var(--cartao-raio);
+  border-bottom-right-radius: var(--cartao-raio);
 }
 .tabela-cartao .paginacao {
   padding: var(--e-3) var(--e-2);
