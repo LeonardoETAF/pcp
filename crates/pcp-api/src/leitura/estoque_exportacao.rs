@@ -75,7 +75,7 @@ pub async fn exportar(
 fn montar_csv(linhas: &[LinhaEstoque]) -> String {
     const CABECALHO: &str = "Código;SKU;Produto;Configuração;Classe;Estoque;Reserva;Disponível;\
         Média diária;Cobertura (dias);Estoque mínimo;Recomendada;Volume (janela);Status;\
-        Produzir;Fora de linha";
+        Produzir;Fora de Linha";
     let mut saida = String::from('\u{FEFF}'); // BOM para o Excel reconhecer UTF-8
     saida.push_str(CABECALHO);
     saida.push_str("\r\n");

@@ -85,7 +85,7 @@ pub fn nome_exibicao(produto: Option<&str>, configuracao: Option<&str>, codigo: 
 pub fn rotulo_status(codigo: &str) -> &'static str {
     match codigo {
         "sem_estoque" => "Sem estoque",
-        "fora_de_linha" => "Fora de linha",
+        "fora_de_linha" => "Fora de Linha",
         "sem_historico" => "Sem histórico",
         "critico" => "Crítico",
         "estoque_baixo" => "Estoque baixo",

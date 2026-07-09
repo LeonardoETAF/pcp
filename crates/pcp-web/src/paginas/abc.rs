@@ -277,7 +277,7 @@ fn ConteudoAbc(
                     <option value="alto">"Alto"</option>
                     <option value="excessivo">"Excessivo"</option>
                     <option value="sem_historico">"Sem histórico"</option>
-                    <option value="fora_de_linha">"Fora de linha"</option>
+                    <option value="fora_de_linha">"Fora de Linha"</option>
                 </select>
                 <button
                     type="button"
@@ -551,7 +551,7 @@ fn ForaDeLinha() -> impl IntoView {
         <section class="cartao">
             <header class="cartao__cab">
                 <div>
-                    <h2 class="cartao__titulo">"Fora de linha — fila de sugestões"</h2>
+                    <h2 class="cartao__titulo">"Fora de Linha — fila de sugestões"</h2>
                     <p class="texto-suave">"Ciclo de vida do produto; aprovação pelo gestor."</p>
                 </div>
             </header>

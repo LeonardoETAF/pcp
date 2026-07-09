@@ -386,7 +386,7 @@ fn Filtros(
                     <option value="alto">"Alto"</option>
                     <option value="excessivo">"Excessivo"</option>
                     <option value="sem_historico">"Sem histórico"</option>
-                    <option value="fora_de_linha">"Fora de linha"</option>
+                    <option value="fora_de_linha">"Fora de Linha"</option>
                 </select>
 
                 <details class="export-menu">
