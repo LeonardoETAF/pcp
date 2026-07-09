@@ -402,6 +402,10 @@ input {
   color: var(--auth-texto);
   transition: border-color var(--transicao), box-shadow var(--transicao);
 }
+/* E-mail fora do formato (exige @ e domínio com ponto). Só realça depois de o usuário digitar. */
+.input-auth:invalid:not(:placeholder-shown) {
+  border-color: var(--semaforo-critico);
+}
 .input-auth--solo {
   padding-left: 1rem;
 }

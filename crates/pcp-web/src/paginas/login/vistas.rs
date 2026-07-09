@@ -10,6 +10,13 @@ use super::Vista;
 use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
 
+/// Formato exigido no campo de e-mail: parte local, `@`, domínio e um ponto seguido do TLD
+/// (ex.: `nome@empresa.com.br`). `type="email"` sozinho aceitaria `nome@empresa`, sem ponto.
+/// Não exigimos literalmente `.com`: isso barraria domínios válidos como `supercopo.local`.
+const PADRAO_EMAIL: &str = r"[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}";
+/// Mensagem do navegador quando o e-mail não bate com [`PADRAO_EMAIL`].
+const TITULO_EMAIL: &str = "Informe um e-mail válido, com @ e domínio (ex.: nome@empresa.com.br).";
+
 /// Vista de entrada (login real via server function).
 #[component]
 #[allow(clippy::too_many_lines)] // view declarativa do formulário de login
@@ -77,6 +84,9 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                             name="email"
                             placeholder="voce@empresa.com.br"
                             autocomplete="username"
+                            required
+                            pattern=PADRAO_EMAIL
+                            title=TITULO_EMAIL
                             prop:value=move || email.get()
                             on:input=move |ev| email.set(event_target_value(&ev))
                         />
@@ -179,6 +189,9 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                             type="email"
                             placeholder="voce@empresa.com.br"
                             autocomplete="username"
+                            required
+                            pattern=PADRAO_EMAIL
+                            title=TITULO_EMAIL
                         />
                     </div>
                 </div>
