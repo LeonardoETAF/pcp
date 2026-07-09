@@ -516,29 +516,56 @@ input {
 }
 
 /* Configurações (doc 03 §8) — editor de constantes */
+/* Seções de config empilhadas (cards full-width); campos em 2 colunas dentro de cada card. */
 .config-grade {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--e-4);
-}
-.config-campos {
   display: flex;
   flex-direction: column;
-  gap: var(--e-2);
+  gap: var(--e-4);
+}
+/* Cabeçalho da seção: ponto colorido + nome + contagem de parâmetros (mockup). */
+.config-secao__cab {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-3);
+  margin-bottom: var(--e-4);
+}
+.config-secao__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-primaria);
+  align-self: center;
+}
+.config-secao__nome {
+  font-size: var(--fs-lg);
+  font-weight: var(--peso-forte);
+}
+.config-secao__contagem {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+.config-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e-3) var(--e-4);
 }
 .config-campo {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e-3);
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 .config-campo__rotulo {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--texto-suave);
-  font-variant-numeric: tabular-nums;
 }
-.config-campo .input--num {
-  width: 120px;
+.config-campo .input {
+  width: 100%;
+}
+@media (max-width: 720px) {
+  .config-campos { grid-template-columns: 1fr; }
 }
 .vista__rodape {
   margin-top: var(--e-5);
@@ -1914,33 +1941,79 @@ input {
 .badge--status-sem_historico { background: var(--abc-d); }
 
 /* Badges de saúde (health checks doc 05 §4) e grade de Operação. */
-.badge--saude-ok { background: var(--semaforo-ok); }
-.badge--saude-atencao { background: var(--semaforo-alto); color: #1b1f24; }
-.badge--saude-critico { background: var(--semaforo-critico); }
+/* Badges de saúde "soft" (fundo claro + texto colorido) — health checks e execuções. */
+.badge--saude-ok {
+  background: rgba(18, 183, 106, 0.15);
+  color: var(--semaforo-ok);
+}
+.badge--saude-atencao {
+  background: rgba(247, 144, 9, 0.15);
+  color: var(--semaforo-alto);
+}
+.badge--saude-critico {
+  background: rgba(217, 45, 32, 0.12);
+  color: var(--semaforo-critico);
+}
 .saude-grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--e-4);
 }
+@media (max-width: 1100px) {
+  .saude-grade { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .saude-grade { grid-template-columns: 1fr; }
+}
+/* Card de health check: borda superior colorida por status + chip de ícone tonalizado. */
 .saude-item {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-4);
+  gap: var(--e-3);
+  padding: var(--e-5);
   background: var(--superficie);
   border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
+  overflow: hidden;
 }
+.saude-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--saude-cor, var(--abc-d));
+}
+.saude-item--ok { --saude-cor: var(--semaforo-ok); }
+.saude-item--atencao { --saude-cor: var(--semaforo-alto); }
+.saude-item--critico { --saude-cor: var(--semaforo-critico); }
 .saude-item__topo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--e-2);
+  gap: var(--e-3);
 }
-.saude-item__nome { font-weight: var(--peso-medio); }
+.saude-item__chip {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--raio-md);
+  background: color-mix(in srgb, var(--saude-cor) 14%, transparent);
+  color: var(--saude-cor);
+}
+.saude-item__chip .icone-mask { width: 20px; height: 20px; }
+.saude-item__nome { font-weight: var(--peso-forte); }
 .saude-item__detalhe {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
+}
+.saude-item .badge {
+  align-self: flex-start;
+  margin-top: auto;
 }
 .form-reprocesso {
   display: flex;

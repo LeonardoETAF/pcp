@@ -522,10 +522,15 @@ fn EditorConfig(config: Value, eh_gestor: bool, recarregar: RwSignal<u32>) -> im
             {secoes
                 .into_iter()
                 .map(|(secao, campos)| {
+                    let n = campos.len();
                     view! {
                         <section class="cartao">
-                            <header class="cartao__cab">
-                                <h2 class="cartao__titulo">{secao}</h2>
+                            <header class="config-secao__cab">
+                                <span class="config-secao__dot"></span>
+                                <h2 class="config-secao__nome">{secao}</h2>
+                                <span class="config-secao__contagem">
+                                    {format!("{n} parâmetros")}
+                                </span>
                             </header>
                             <div class="config-campos">
                                 {campos
@@ -568,30 +573,14 @@ fn campo(
     let p1 = path.to_owned();
     let valor = move || edits.get().get(&p1).cloned().unwrap_or_default();
     let p2 = path.to_owned();
-    let eh_bool = orig.is_boolean();
-    let eh_num = orig.is_number();
-    let entrada = if eh_bool {
-        let p = path.to_owned();
-        view! {
+    // Número → input numérico; booleano e texto → campo de texto (booleano edita "true"/"false",
+    // como no mockup; `reconstruir` reconverte ao tipo certo da folha).
+    let tipo = if orig.is_number() { "number" } else { "text" };
+    view! {
+        <label class="config-campo">
+            <span class="config-campo__rotulo">{rotulo}</span>
             <input
-                type="checkbox"
-                class="switch"
-                prop:disabled=!eh_gestor
-                prop:checked=move || edits.get().get(&p2).is_some_and(|s| s == "true")
-                on:change=move |ev| {
-                    let v = if event_target_checked(&ev) { "true" } else { "false" };
-                    edits.update(|m| {
-                        m.insert(p.clone(), v.to_owned());
-                    });
-                }
-            />
-        }
-        .into_any()
-    } else {
-        let tipo = if eh_num { "number" } else { "text" };
-        view! {
-            <input
-                class="input input--num"
+                class="input"
                 type=tipo
                 prop:disabled=!eh_gestor
                 prop:value=valor
@@ -602,13 +591,6 @@ fn campo(
                     });
                 }
             />
-        }
-        .into_any()
-    };
-    view! {
-        <label class="config-campo">
-            <span class="config-campo__rotulo">{rotulo}</span>
-            {entrada}
         </label>
     }
 }

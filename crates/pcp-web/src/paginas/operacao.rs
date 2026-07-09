@@ -161,20 +161,42 @@ fn secao_saude(r: &RelatorioSaude) -> impl IntoView {
     view! { <div class="saude-grade">{cartoes}</div> }
 }
 
+/// Ícone do card de saúde: crítico/atenção → alerta; OK → ícone próprio da verificação (nome).
+fn icone_saude(nome: &str, status: &str) -> &'static str {
+    if status != "ok" {
+        return "alerta.svg";
+    }
+    if nome.starts_with("Duração") || nome.starts_with("Snapshot") {
+        "relogio.svg"
+    } else if nome.starts_with("Geração de alertas") {
+        "sino-notificacao.svg"
+    } else if nome.starts_with("CV") || nome.starts_with("Última execução") {
+        "atividade.svg"
+    } else {
+        "confirmar.svg"
+    }
+}
+
 fn verificacao(v: VerificacaoSaude) -> impl IntoView {
-    let classe = format!("badge badge--saude-{}", v.status);
+    let classe = format!("saude-item saude-item--{}", v.status);
+    let badge = format!("badge badge--saude-{}", v.status);
     let rotulo = match v.status.as_str() {
         "ok" => "OK",
         "atencao" => "Atenção",
         _ => "Crítico",
     };
+    let icone = icone_saude(&v.nome, &v.status);
+    let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
     view! {
-        <div class="saude-item">
+        <div class=classe>
             <div class="saude-item__topo">
+                <span class="saude-item__chip">
+                    <span class="icone-mask" style=estilo></span>
+                </span>
                 <span class="saude-item__nome">{v.nome}</span>
-                <span class=classe>{rotulo}</span>
             </div>
             <p class="saude-item__detalhe">{v.detalhe}</p>
+            <span class=badge>{rotulo}</span>
         </div>
     }
 }
@@ -182,22 +204,24 @@ fn verificacao(v: VerificacaoSaude) -> impl IntoView {
 #[component]
 fn TabelaExecucoes(execs: Vec<ExecucaoPipeline>) -> impl IntoView {
     view! {
-        <div class="tabela-rolavel">
-            <table class="tabela">
-                <thead>
-                    <tr>
-                        <th>"Data ref."</th>
-                        <th>"Módulo"</th>
-                        <th>"Status"</th>
-                        <th class="tabela__num">"Linhas"</th>
-                        <th class="tabela__num">"Duração"</th>
-                        <th>"Erro"</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {execs.into_iter().map(linha_execucao).collect_view()}
-                </tbody>
-            </table>
+        <div class="tabela-cartao">
+            <div class="tabela-rolavel">
+                <table class="tabela">
+                    <thead>
+                        <tr>
+                            <th>"Data ref."</th>
+                            <th>"Módulo"</th>
+                            <th>"Status"</th>
+                            <th class="tabela__num">"Linhas"</th>
+                            <th class="tabela__num">"Duração"</th>
+                            <th>"Erro"</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {execs.into_iter().map(linha_execucao).collect_view()}
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
 }
