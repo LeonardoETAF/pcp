@@ -12,6 +12,7 @@ use crate::api::{
     obter_config, obter_preferencias, override_sazonalidade, perfil, salvar_config,
     salvar_preferencias, EntradaAuditoriaConfig, UsuarioConta,
 };
+use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 
 #[component]
@@ -101,36 +102,33 @@ fn Preferencias() -> impl IntoView {
                 <p class="texto-suave">"Página inicial e tamanho de página."</p>
             </header>
             <div class="solic-form">
-                <label class="campo-select">
+                <div class="campo-select">
                     <span class="campo-select__rotulo">"Página inicial"</span>
-                    <select
-                        class="select"
-                        prop:value=move || pagina.get()
-                        on:change=move |ev| pagina.set(event_target_value(&ev))
-                    >
-                        <option value="dashboard">"Dashboard"</option>
-                        <option value="estoque">"Estoque"</option>
-                        <option value="alertas">"Alertas"</option>
-                        <option value="abc">"Classificação ABC"</option>
-                    </select>
-                </label>
-                <label class="campo-select">
+                    <Seletor
+                        rotulo="Página inicial"
+                        opcoes=vec![
+                            ("dashboard", "Dashboard"),
+                            ("estoque", "Estoque"),
+                            ("alertas", "Alertas"),
+                            ("abc", "Classificação ABC"),
+                        ]
+                        valor=Signal::derive(move || pagina.get())
+                        ao_escolher=move |v| pagina.set(v)
+                    />
+                </div>
+                <div class="campo-select">
                     <span class="campo-select__rotulo">"Tamanho de página"</span>
-                    <select
-                        class="select"
-                        prop:value=move || tamanho.get().to_string()
-                        on:change=move |ev| {
-                            if let Ok(v) = event_target_value(&ev).parse::<i32>() {
-                                tamanho.set(v);
+                    <Seletor
+                        rotulo="Tamanho de página"
+                        opcoes=vec![("50", "50"), ("100", "100"), ("500", "500"), ("1000", "1000")]
+                        valor=Signal::derive(move || tamanho.get().to_string())
+                        ao_escolher=move |v: String| {
+                            if let Ok(n) = v.parse::<i32>() {
+                                tamanho.set(n);
                             }
                         }
-                    >
-                        <option value="50">"50"</option>
-                        <option value="100">"100"</option>
-                        <option value="500">"500"</option>
-                        <option value="1000">"1000"</option>
-                    </select>
-                </label>
+                    />
+                </div>
                 <button type="button" class="btn btn--primario" on:click=salvar>
                     "Salvar"
                 </button>
@@ -383,15 +381,16 @@ fn Usuarios() -> impl IntoView {
                         prop:value=move || n_nome.get()
                         on:input=move |ev| n_nome.set(event_target_value(&ev))
                     />
-                    <select
-                        class="select"
-                        prop:value=move || n_papel.get()
-                        on:change=move |ev| n_papel.set(event_target_value(&ev))
-                    >
-                        <option value="analista">"Analista"</option>
-                        <option value="gestor">"Gestor"</option>
-                        <option value="admin">"Admin"</option>
-                    </select>
+                    <Seletor
+                        rotulo="Papel do novo usuário"
+                        opcoes=vec![
+                            ("analista", "Analista"),
+                            ("gestor", "Gestor"),
+                            ("admin", "Admin"),
+                        ]
+                        valor=Signal::derive(move || n_papel.get())
+                        ao_escolher=move |v| n_papel.set(v)
+                    />
                     <button type="button" class="btn btn--primario" on:click=criar>
                         "Criar"
                     </button>
@@ -437,15 +436,16 @@ fn LinhaUsuario(u: UsuarioConta, recarregar: RwSignal<u32>) -> impl IntoView {
                 <span class="texto-suave">{u.nome.clone().unwrap_or_default()}</span>
             </div>
             <div class="solic-item__acoes">
-                <select
-                    class="select"
-                    prop:value=move || papel.get()
-                    on:change=move |ev| papel.set(event_target_value(&ev))
-                >
-                    <option value="analista">"Analista"</option>
-                    <option value="gestor">"Gestor"</option>
-                    <option value="admin">"Admin"</option>
-                </select>
+                <Seletor
+                    rotulo="Papel"
+                    opcoes=vec![
+                        ("analista", "Analista"),
+                        ("gestor", "Gestor"),
+                        ("admin", "Admin"),
+                    ]
+                    valor=Signal::derive(move || papel.get())
+                    ao_escolher=move |v| papel.set(v)
+                />
                 <label class="switch">
                     <input
                         type="checkbox"

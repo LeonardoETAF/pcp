@@ -11,6 +11,7 @@ use crate::api::{
     abc_distribuicao, abc_tabela, listar_ciclo_vida, perfil, transicionar_ciclo_vida,
     DistribuicaoAbc, LinhaAbc, SugestaoCicloVida,
 };
+use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::download;
 use crate::formato::{fmt_milhar, rotulo_status};
@@ -242,38 +243,39 @@ fn ConteudoAbc(
                         on:input=move |ev| busca.set(event_target_value(&ev))
                     />
                 </div>
-                <select
-                    class="select"
-                    aria-label="Ordenar"
-                    on:change=move |ev| ordem.set(event_target_value(&ev))
-                    prop:value=move || ordem.get()
-                >
-                    <option value="volume_desc">"Volume (maior)"</option>
-                    <option value="volume_asc">"Volume (menor)"</option>
-                    <option value="estoque_desc">"Estoque (maior)"</option>
-                    <option value="estoque_asc">"Estoque (menor)"</option>
-                    <option value="produto_asc">"Produto (A–Z)"</option>
-                </select>
-                <select
-                    class="select"
-                    aria-label="Status"
-                    on:change=move |ev| {
-                        let v = event_target_value(&ev);
+                <Seletor
+                    icone="ordenar.svg"
+                    rotulo="Ordenar"
+                    opcoes=vec![
+                        ("volume_desc", "Volume (maior)"),
+                        ("volume_asc", "Volume (menor)"),
+                        ("estoque_desc", "Estoque (maior)"),
+                        ("estoque_asc", "Estoque (menor)"),
+                        ("produto_asc", "Produto (A–Z)"),
+                    ]
+                    valor=Signal::derive(move || ordem.get())
+                    ao_escolher=move |v| ordem.set(v)
+                />
+                <Seletor
+                    icone="filtro.svg"
+                    rotulo="Status"
+                    opcoes=vec![
+                        ("", "Todos os status"),
+                        ("critico", "Crítico"),
+                        ("sem_estoque", "Sem estoque"),
+                        ("estoque_baixo", "Estoque baixo"),
+                        ("baixo", "Baixo"),
+                        ("adequado", "Adequado"),
+                        ("alto", "Alto"),
+                        ("excessivo", "Excessivo"),
+                        ("sem_historico", "Sem histórico"),
+                        ("fora_de_linha", "Fora de Linha"),
+                    ]
+                    valor=Signal::derive(move || status_filtro.get().unwrap_or_default())
+                    ao_escolher=move |v: String| {
                         status_filtro.set((!v.is_empty()).then_some(v));
                     }
-                    prop:value=move || status_filtro.get().unwrap_or_default()
-                >
-                    <option value="">"Todos os status"</option>
-                    <option value="critico">"Crítico"</option>
-                    <option value="sem_estoque">"Sem estoque"</option>
-                    <option value="estoque_baixo">"Estoque baixo"</option>
-                    <option value="baixo">"Baixo"</option>
-                    <option value="adequado">"Adequado"</option>
-                    <option value="alto">"Alto"</option>
-                    <option value="excessivo">"Excessivo"</option>
-                    <option value="sem_historico">"Sem histórico"</option>
-                    <option value="fora_de_linha">"Fora de Linha"</option>
-                </select>
+                />
                 <button
                     type="button"
                     class="btn-icone"

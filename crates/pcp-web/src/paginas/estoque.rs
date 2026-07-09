@@ -11,6 +11,7 @@ use crate::api::{
     estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, LinhaEstoque,
     PainelResumo,
 };
+use crate::componentes::{Icone, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
@@ -201,11 +202,10 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
 /// KPI horizontal: ícone ao lado do texto (o card fica mais baixo que na versão em coluna).
 #[component]
 fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl IntoView {
-    let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
     view! {
         <div class="kpi kpi--linha">
             <span class="kpi__chip">
-                <span class="icone-mask" style=estilo></span>
+                <Icone arquivo=icone />
             </span>
             <div class="kpi__corpo">
                 <span class="kpi__valor">{valor}</span>
@@ -220,7 +220,7 @@ fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl 
 fn abas_classe(
     p: &PainelResumo,
     classe: RwSignal<Option<String>>,
-    resetar: impl Fn() + Copy + 'static,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
     let mut presentes: Vec<(String, i64)> = p
         .por_classe
@@ -262,7 +262,7 @@ fn AbaClasse(
     rotulo: String,
     valor: Option<String>,
     contagem: i64,
-    resetar: impl Fn() + Copy + 'static,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
     let alvo = valor.clone();
     let ativo = Memo::new(move |_| classe.get() == valor);
@@ -283,11 +283,6 @@ fn AbaClasse(
     }
 }
 
-/// Ícone de máscara CSS a partir de um arquivo de `public/icons`.
-fn mascara(arquivo: &str) -> String {
-    format!("-webkit-mask-image:url(/icons/{arquivo});mask-image:url(/icons/{arquivo})")
-}
-
 /// Primeira linha do card de filtros: busca, ordenação, status e exportação.
 #[component]
 fn Filtros(
@@ -295,8 +290,8 @@ fn Filtros(
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
     ordem: RwSignal<String>,
-    resetar: impl Fn() + Copy + 'static,
-    exportar: impl Fn() + Copy + 'static,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
+    exportar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
     let aplicar_busca = move || {
         busca.set(busca_input.get());
@@ -313,7 +308,7 @@ fn Filtros(
             >
                 <span class="campo-icone campo-icone--cresce">
                     <span class="campo-icone__icone" aria-hidden="true">
-                        <span class="icone-mask" style=mascara("busca.svg")></span>
+                        <Icone arquivo="busca.svg" />
                     </span>
                     <input
                         class="input input--compacto input--com-icone"
@@ -329,56 +324,47 @@ fn Filtros(
 
             <span class="toolbar-sep"></span>
 
-            <span class="campo-icone">
-                <span class="campo-icone__icone" aria-hidden="true">
-                    <span class="icone-mask" style=mascara("ordenar.svg")></span>
-                </span>
-                <select
-                    class="select select--com-icone"
-                    aria-label="Ordenar"
-                    on:change=move |ev| {
-                        ordem.set(event_target_value(&ev));
-                        resetar();
-                    }
-                    prop:value=move || ordem.get()
-                >
-                    <option value="sugerida_desc">"Sugestão (maior)"</option>
-                    <option value="cobertura_asc">"Cobertura (menor)"</option>
-                    <option value="cobertura_desc">"Cobertura (maior)"</option>
-                    <option value="disponivel_desc">"Disponível (maior)"</option>
-                    <option value="disponivel_asc">"Disponível (menor)"</option>
-                    <option value="recomendada_desc">"Recomendada (maior)"</option>
-                    <option value="produto_asc">"Produto (A–Z)"</option>
-                    <option value="produto_desc">"Produto (Z–A)"</option>
-                    <option value="classe_asc">"Classe (A→N)"</option>
-                </select>
-            </span>
-            <span class="campo-icone">
-                <span class="campo-icone__icone" aria-hidden="true">
-                    <span class="icone-mask" style=mascara("filtro.svg")></span>
-                </span>
-                <select
-                    class="select select--com-icone"
-                    aria-label="Status"
-                    on:change=move |ev| {
-                        let v = event_target_value(&ev);
-                        status.set((!v.is_empty()).then_some(v));
-                        resetar();
-                    }
-                    prop:value=move || status.get().unwrap_or_default()
-                >
-                    <option value="">"Todos"</option>
-                    <option value="critico">"Crítico"</option>
-                    <option value="sem_estoque">"Sem estoque"</option>
-                    <option value="estoque_baixo">"Estoque baixo"</option>
-                    <option value="baixo">"Baixo"</option>
-                    <option value="adequado">"Adequado"</option>
-                    <option value="alto">"Alto"</option>
-                    <option value="excessivo">"Excessivo"</option>
-                    <option value="sem_historico">"Sem histórico"</option>
-                    <option value="fora_de_linha">"Fora de Linha"</option>
-                </select>
-            </span>
+            <Seletor
+                icone="ordenar.svg"
+                rotulo="Ordenar"
+                opcoes=vec![
+                    ("sugerida_desc", "Sugestão"),
+                    ("cobertura_asc", "Cobertura +"),
+                    ("cobertura_desc", "Cobertura -"),
+                    ("disponivel_desc", "Disponível +"),
+                    ("disponivel_asc", "Disponível -"),
+                    ("recomendada_desc", "Recomendada"),
+                    ("produto_asc", "Ordenado A - Z"),
+                    ("produto_desc", "Ordenado Z - A"),
+                    ("classe_asc", "Classe"),
+                ]
+                valor=Signal::derive(move || ordem.get())
+                ao_escolher=move |v| {
+                    ordem.set(v);
+                    resetar();
+                }
+            />
+            <Seletor
+                icone="filtro.svg"
+                rotulo="Status"
+                opcoes=vec![
+                    ("", "Todos"),
+                    ("critico", "Crítico"),
+                    ("sem_estoque", "Sem estoque"),
+                    ("estoque_baixo", "Estoque baixo"),
+                    ("baixo", "Baixo"),
+                    ("adequado", "Adequado"),
+                    ("alto", "Alto"),
+                    ("excessivo", "Excessivo"),
+                    ("sem_historico", "Sem histórico"),
+                    ("fora_de_linha", "Fora de Linha"),
+                ]
+                valor=Signal::derive(move || status.get().unwrap_or_default())
+                ao_escolher=move |v: String| {
+                    status.set((!v.is_empty()).then_some(v));
+                    resetar();
+                }
+            />
 
             // Exportação: CSV UTF-8 com BOM, do filtro completo (§12). Só um formato, sem menu.
             <button
@@ -388,7 +374,7 @@ fn Filtros(
                 title="Exportar CSV"
                 on:click=move |_| exportar()
             >
-                <span class="icone-mask" style=mascara("exportar.svg")></span>
+                <Icone arquivo="exportar.svg" />
             </button>
         </div>
     }

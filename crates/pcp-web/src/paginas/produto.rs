@@ -11,6 +11,7 @@ use crate::api::{
     transicionar_solicitacao, AlertaInteligente, DetalheProduto, Insights, MetricasProduto, Ponto,
     Recomendacao, RegraClasse, Solicitacao,
 };
+use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
 
@@ -353,18 +354,15 @@ fn CentroComando(codigo: String, recomendacao: Recomendacao) -> impl IntoView {
                         on:input=move |ev| qtd.set(event_target_value(&ev))
                     />
                 </label>
-                <label class="campo-select">
+                <div class="campo-select">
                     <span class="campo-select__rotulo">"Prioridade"</span>
-                    <select
-                        class="select"
-                        prop:value=move || prioridade.get()
-                        on:change=move |ev| prioridade.set(event_target_value(&ev))
-                    >
-                        <option value="alta">"Alta"</option>
-                        <option value="media">"Média"</option>
-                        <option value="baixa">"Baixa"</option>
-                    </select>
-                </label>
+                    <Seletor
+                        rotulo="Prioridade"
+                        opcoes=vec![("alta", "Alta"), ("media", "Média"), ("baixa", "Baixa")]
+                        valor=Signal::derive(move || prioridade.get())
+                        ao_escolher=move |v| prioridade.set(v)
+                    />
+                </div>
                 <label class="campo-select solic-form__just">
                     <span class="campo-select__rotulo">"Justificativa"</span>
                     <input
