@@ -73,6 +73,11 @@
   --cartao-borda: 1px solid var(--borda);
   --cartao-raio: var(--raio-lg);
   --cartao-sombra: var(--sombra-1);
+  /* Mesma sombra, como filtro. Necessária nas linhas-cartão da tabela: o <tr> é retangular e
+     ignora border-radius, então um box-shadow nele vazaria nas quinas. `drop-shadow` segue o
+     contorno real (já arredondado pelas células), e não a caixa. */
+  --cartao-sombra-filtro: drop-shadow(0 1px 2px rgba(16, 24, 40, 0.06))
+    drop-shadow(0 1px 3px rgba(16, 24, 40, 0.1));
   --sombra-2: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
   --sombra-3: 0 12px 24px rgba(16, 24, 40, 0.12);
 
@@ -2277,13 +2282,16 @@ input {
   border-bottom: 0;
   padding: 0 var(--e-4) var(--e-1);
 }
-/* Cada linha de corpo é um card. O fundo e a borda vão nas CÉLULAS, não no <tr>: a caixa do <tr>
-   é retangular e ignora o border-radius (que vive na 1ª e na última <td>), então um fundo ou uma
-   sombra nele vazam nos cantos e formam "pontas". Por isso a linha fica transparente e sem sombra. */
+/* Cada linha de corpo é um card, com a mesma superfície dos demais (borda + raio + sombra).
+   O fundo e a borda vão nas CÉLULAS: a caixa do <tr> é retangular e ignora o border-radius (que
+   vive na 1ª e na última <td>), então pintar fundo nele vazaria nos cantos ("pontas").
+   A sombra vai no <tr>, mas por `filter: drop-shadow` — que segue o contorno real já arredondado
+   pelas células — e nunca por `box-shadow`, que voltaria a usar a caixa retangular. */
 .tabela-cartao .tabela tbody tr,
 .tabela-cartao .tabela tbody tr:hover {
   background: transparent;
   box-shadow: none;
+  filter: var(--cartao-sombra-filtro);
 }
 .tabela-cartao .tabela tbody td {
   background: var(--superficie);
