@@ -466,7 +466,7 @@ fn Filtros(
 fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
     view! {
         <div class="tabela-rolavel">
-            <table class="tabela">
+            <table class="tabela tabela--centro">
                 <thead>
                     <tr>
                         <th>"Código"</th>

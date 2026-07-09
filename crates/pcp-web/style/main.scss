@@ -1934,11 +1934,21 @@ input {
   font-size: var(--fs-xs);
   color: var(--texto-suave);
 }
-/* Variante centralizada: cabeçalho e valores alinhados ao centro, em coluna (dashboard "A produzir").
-   O badge é inline-flex (nível inline), então text-align:center no <td> já o centraliza. */
+/* Variante centralizada: cabeçalho e valores alinhados ao centro, em coluna (dashboard "A produzir"
+   e Gestão de Estoque). O badge é inline-flex, então `text-align:center` no <td> já o centraliza. */
 .tabela--centro th,
 .tabela--centro td {
   text-align: center;
+}
+/* Conteúdos em flex ignoram o `text-align` do <td>: precisam centrar pelo eixo cruzado. */
+.tabela--centro .tabela__produto-link,
+.tabela--centro .tabela__disp,
+.tabela--centro .nivel {
+  align-items: center;
+}
+/* A barra de nível tem largura fixa; sem isto ela encosta à esquerda da coluna. */
+.tabela--centro .nivel__trilho {
+  margin-inline: auto;
 }
 
 /* Badges de status (semáforo — §12) */
