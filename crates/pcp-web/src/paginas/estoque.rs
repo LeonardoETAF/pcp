@@ -108,9 +108,6 @@ pub fn PaginaEstoque() -> impl IntoView {
         <section class="pagina">
             <header class="pagina__cab">
                 <h1 class="pagina__titulo">"Gestão de Estoque"</h1>
-                <p class="texto-suave">
-                    "Produtos ativos — situação, cobertura e o que produzir."
-                </p>
             </header>
 
             <Suspense fallback=|| {

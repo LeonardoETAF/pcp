@@ -44,7 +44,6 @@ pub fn ClassificacaoAbc() -> impl IntoView {
         <section class="pagina">
             <header class="pagina__cab">
                 <h1 class="pagina__titulo">"Classificação ABC"</h1>
-                <p class="texto-suave">"Curva de Pareto e consulta da classificação mais recente."</p>
             </header>
 
             <Suspense fallback=|| view! { <p class="texto-suave">"Carregando classificação…"</p> }>

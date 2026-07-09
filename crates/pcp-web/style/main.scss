@@ -726,7 +726,7 @@ input {
   justify-content: center;
   align-items: center;
   padding: var(--e-2);
-  margin-bottom: var(--e-5);
+  margin-bottom: var(--e-3);
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -824,6 +824,15 @@ input {
 .shell--recolhido .barra__divisor {
   display: block;
 }
+/* Recolhida, a barra tem 76px: dois botões de 40px lado a lado não cabem. Empilha, e mantém o
+   ícone pequeno (o aumento geral do `.icone-mask` recolhido estouraria o botão). */
+.shell--recolhido .barra__acoes {
+  flex-direction: column;
+}
+.shell--recolhido .barra__acoes .icone-mask {
+  width: 20px;
+  height: 20px;
+}
 .usuario {
   margin-top: auto;
   display: flex;
@@ -884,43 +893,31 @@ input {
   min-width: 0;
   background: var(--fundo);
 }
-.topbar {
+/* Ações (tema e alertas) logo abaixo da logo, dentro da sidebar escura: as cores são fixas, como
+   as do resto da barra, e não seguem o tema do conteúdo. */
+.barra__acoes {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--e-4);
-  padding: var(--e-4) var(--gutter-x);
-  background: var(--superficie);
-  border-bottom: 1px solid var(--borda);
-}
-.topbar__titulo {
-  font-size: var(--fs-lg);
-  font-weight: var(--peso-forte);
-}
-.topbar__acoes {
-  display: flex;
-  align-items: center;
+  justify-content: center;
   gap: var(--e-2);
+  margin-bottom: var(--e-5);
 }
 .icone-btn {
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 1px solid var(--borda);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--raio-md);
-  background: var(--superficie);
-  color: var(--texto);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--transicao);
+  transition: background var(--transicao), color var(--transicao);
 }
 .icone-btn:hover {
-  background: var(--superficie-2);
-}
-.icone-btn svg {
-  width: 20px;
-  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 .conteudo {
   padding: var(--gutter-y) var(--gutter-x);

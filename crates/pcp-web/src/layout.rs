@@ -1,36 +1,22 @@
 //! Shell autenticado (padrão do mockup): sidebar escura recolhível (logo centralizada clicável,
-//! seção do módulo, item ativo em pílula, rodapé de usuário) e topbar (título da rota + tema +
-//! notificações). Ícones do diretório `public/icons` recoloridos via CSS mask (herdam a cor).
+//! ações de tema e alertas logo abaixo dela, seção do módulo, item ativo em pílula, rodapé de
+//! usuário) e a área de conteúdo, sem topbar — o título já vive no cabeçalho de cada página.
+//! Ícones do diretório `public/icons` recoloridos via CSS mask (herdam a cor).
 //! Só os módulos do PCP (CLAUDE.md §0). Frontend burro (§3).
 
 use leptos::prelude::*;
 use leptos_router::components::{Outlet, A};
-use leptos_router::hooks::{use_location, use_navigate};
+use leptos_router::hooks::use_navigate;
 use leptos_router::NavigateOptions;
 
 use crate::api::perfil;
 use crate::contexto::{CarregandoSessao, Sessao, Tema};
 
-fn titulo_da_rota(path: &str) -> &'static str {
-    match path {
-        "/estoque" => "Gestão de Estoque",
-        "/alertas" => "Central de Alertas",
-        "/abc" => "Classificação ABC",
-        "/ai-chat" => "Chat IA",
-        "/configuracoes" => "Configurações",
-        "/operacao" => "Operação",
-        p if p.starts_with("/estoque/") => "Detalhe do Produto",
-        _ => "Dashboard",
-    }
-}
-
 #[component]
 pub fn LayoutAutenticado() -> impl IntoView {
     let sessao = expect_context::<Sessao>();
-    let tema = expect_context::<Tema>();
     let carregando = expect_context::<CarregandoSessao>();
     let navegar = StoredValue::new(use_navigate());
-    let local = use_location();
     let recolhido = RwSignal::new(false);
 
     // Só manda ao login quando NÃO há sessão E a restauração (refresh token salvo) já terminou —
@@ -41,12 +27,6 @@ pub fn LayoutAutenticado() -> impl IntoView {
         }
     });
 
-    let alternar_tema = move |_| {
-        tema.0
-            .update(|t| *t = if *t == "escuro" { "claro" } else { "escuro" });
-    };
-    let titulo = move || titulo_da_rota(&local.pathname.get());
-
     view! {
         <Show
             when=move || sessao.0.get().is_some()
@@ -55,34 +35,6 @@ pub fn LayoutAutenticado() -> impl IntoView {
             <div class="shell" class:shell--recolhido=move || recolhido.get()>
                 <BarraLateral recolhido />
                 <div class="conteudo-area">
-                    <header class="topbar">
-                        <h1 class="topbar__titulo">{titulo}</h1>
-                        <div class="topbar__acoes">
-                            <button
-                                class="icone-btn"
-                                type="button"
-                                aria-label="Alternar tema"
-                                on:click=alternar_tema
-                            >
-                                <span
-                                    class="icone-mask"
-                                    style=move || {
-                                        let arq = if tema.0.get() == "escuro" {
-                                            "modo-claro.svg"
-                                        } else {
-                                            "modo-escuro.svg"
-                                        };
-                                        format!(
-                                            "-webkit-mask-image:url(/icons/{arq});mask-image:url(/icons/{arq})",
-                                        )
-                                    }
-                                ></span>
-                            </button>
-                            <A href="/alertas" attr:class="icone-btn" attr:aria-label="Alertas">
-                                <Icone arquivo="notificacao.svg" />
-                            </A>
-                        </div>
-                    </header>
                     <main class="conteudo">
                         <Outlet />
                     </main>
@@ -100,6 +52,7 @@ pub fn LayoutAutenticado() -> impl IntoView {
 #[component]
 fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
     let sessao = expect_context::<Sessao>();
+    let tema = expect_context::<Tema>();
     let navegar = StoredValue::new(use_navigate());
     let papel = Resource::new(
         move || sessao.0.get(),
@@ -121,6 +74,19 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
         sessao.0.set(None);
         navegar.with_value(|n| n("/login", NavigateOptions::default()));
     };
+    let alternar_tema = move |_| {
+        tema.0
+            .update(|t| *t = if *t == "escuro" { "claro" } else { "escuro" });
+    };
+    // O ícone mostra o tema para o qual o botão alterna, não o tema atual.
+    let icone_tema = move || {
+        let arq = if tema.0.get() == "escuro" {
+            "modo-claro.svg"
+        } else {
+            "modo-escuro.svg"
+        };
+        format!("-webkit-mask-image:url(/icons/{arq});mask-image:url(/icons/{arq})")
+    };
     let logo_src = move || {
         if recolhido.get() {
             "/images/simbolo-branco.svg"
@@ -139,6 +105,25 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             >
                 <img class="barra__logo" src=logo_src alt="SuperCopo" />
             </button>
+            <div class="barra__acoes">
+                <button
+                    class="icone-btn"
+                    type="button"
+                    aria-label="Alternar tema"
+                    title="Alternar tema"
+                    on:click=alternar_tema
+                >
+                    <span class="icone-mask" style=icone_tema></span>
+                </button>
+                <A
+                    href="/alertas"
+                    attr:class="icone-btn"
+                    attr:aria-label="Alertas"
+                    attr:title="Alertas"
+                >
+                    <Icone arquivo="notificacao.svg" />
+                </A>
+            </div>
             <p class="barra__secao">"PCP"</p>
             <div class="barra__divisor"></div>
             <nav class="menu">

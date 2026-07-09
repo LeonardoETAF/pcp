@@ -38,9 +38,6 @@ pub fn Operacao() -> impl IntoView {
         <section class="pagina">
             <header class="pagina__cab">
                 <h1 class="pagina__titulo">"Operação"</h1>
-                <p class="texto-suave">
-                    "Saúde do pipeline e dados (doc 05 §4) e execuções recentes."
-                </p>
             </header>
 
             <Suspense fallback=|| {

@@ -42,9 +42,6 @@ pub fn Configuracoes() -> impl IntoView {
         <section class="pagina">
             <header class="pagina__cab">
                 <h1 class="pagina__titulo">"Configurações"</h1>
-                <p class="texto-suave">
-                    "Constantes de negócio (doc 02 §11). Edição restrita ao gestor; toda mudança é auditada."
-                </p>
             </header>
             <Suspense fallback=|| view! { <p class="texto-suave">"Carregando configuração…"</p> }>
                 {move || {
