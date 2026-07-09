@@ -1936,8 +1936,11 @@ input {
 }
 /* Variante centralizada: cabeçalho e valores alinhados ao centro, em coluna (dashboard "A produzir"
    e Gestão de Estoque). O badge é inline-flex, então `text-align:center` no <td> já o centraliza. */
-.tabela--centro th,
-.tabela--centro td {
+/* `thead th`/`tbody td` (e não só `th`/`td`): `.tabela thead th` define text-align:left com
+   especificidade (0,1,2) e venceria um `.tabela--centro th` (0,1,1). Empatando em (0,1,2), esta
+   regra ganha por vir depois — sem isso o cabeçalho fica à esquerda e o valor no centro. */
+.tabela--centro thead th,
+.tabela--centro tbody td {
   text-align: center;
 }
 /* Conteúdos em flex ignoram o `text-align` do <td>: precisam centrar pelo eixo cruzado. */
