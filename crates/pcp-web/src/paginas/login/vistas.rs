@@ -80,9 +80,11 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
         }
     });
     let tem_erro = move || matches!(login.value().get(), Some(Err(_)));
-    // Validação do sistema (não do navegador): só acusa depois que o usuário digitou algo.
+    // Validação do sistema (não do navegador). A mensagem só aparece DEPOIS de tentar entrar —
+    // nunca enquanto o usuário digita; ao voltar a digitar, o aviso some.
+    let tentou = RwSignal::new(false);
     let email_ok = move || email_valido(&email.get());
-    let email_ruim = move || !email.get().is_empty() && !email_ok();
+    let email_ruim = move || tentou.get() && !email_ok();
 
     view! {
         <div class="vista">
@@ -108,7 +110,10 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                             autocomplete="username"
                             aria-invalid=move || email_ruim().then_some("true")
                             prop:value=move || email.get()
-                            on:input=move |ev| email.set(event_target_value(&ev))
+                            on:input=move |ev| {
+                                email.set(event_target_value(&ev));
+                                tentou.set(false);
+                            }
                         />
                     </div>
                     {move || {
@@ -180,12 +185,18 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     tem_erro()
                         .then(|| view! { <p class="form-auth__erro" role="alert">"Credenciais inválidas."</p> })
                 }}
-                // Atributo (não `prop:`): assim o botão já vai desabilitado no HTML do SSR,
-                // antes da hidratação — o bloqueio não depende de JS ter carregado.
+                // O bloqueio é no CLIQUE (o submit é a ação padrão dele). Não dá para interceptar
+                // pelo `on:submit` do ActionForm: o handler dele é registrado antes e já despacha.
                 <button
                     class="btn-auth"
                     type="submit"
-                    disabled=move || login.pending().get() || !email_ok()
+                    disabled=move || login.pending().get()
+                    on:click=move |ev| {
+                        tentou.set(true);
+                        if !email_valido(&email.get_untracked()) {
+                            ev.prevent_default();
+                        }
+                    }
                 >
                     {move || if login.pending().get() { "Entrando…" } else { "Entrar" }}
                 </button>
@@ -204,15 +215,23 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
 #[component]
 pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
     let email = RwSignal::new(String::new());
-    let email_ok = move || email_valido(&email.get());
-    let email_ruim = move || !email.get().is_empty() && !email_ok();
+    // Mesma regra do login: o aviso só surge ao tentar enviar, não enquanto digita.
+    let tentou = RwSignal::new(false);
+    let email_ruim = move || tentou.get() && !email_valido(&email.get());
     view! {
         <div class="vista">
             <BotaoVoltar vista />
             <h1 class="vista__titulo">"Recuperar senha"</h1>
             <p class="vista__sub">"Informe seu e-mail e enviaremos um link para redefinir."</p>
             // `novalidate`: sem balões nativos — a mensagem é do sistema.
-            <form class="form-auth" novalidate on:submit=move |ev| ev.prevent_default()>
+            <form
+                class="form-auth"
+                novalidate
+                on:submit=move |ev| {
+                    ev.prevent_default();
+                    tentou.set(true);
+                }
+            >
                 <div class="campo-auth">
                     <label class="campo-auth__rotulo">"E-mail"</label>
                     <div class="input-wrap">
@@ -230,7 +249,10 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                             autocomplete="username"
                             aria-invalid=move || email_ruim().then_some("true")
                             prop:value=move || email.get()
-                            on:input=move |ev| email.set(event_target_value(&ev))
+                            on:input=move |ev| {
+                                email.set(event_target_value(&ev));
+                                tentou.set(false);
+                            }
                         />
                     </div>
                     {move || {
@@ -242,7 +264,7 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                             })
                     }}
                 </div>
-                <button class="btn-auth" type="submit" disabled=move || !email_ok()>
+                <button class="btn-auth" type="submit">
                     "Enviar link de redefinição"
                 </button>
             </form>
