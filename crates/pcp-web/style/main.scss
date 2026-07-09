@@ -2277,14 +2277,16 @@ input {
   border-bottom: 0;
   padding: 0 var(--e-4) var(--e-1);
 }
-/* Cada linha de corpo é um card: mesma superfície do design system (borda nas células, pois
-   `border` em <tr> não pinta; a sombra funciona porque a tabela usa border-collapse: separate). */
-.tabela-cartao .tabela tbody tr {
-  background: var(--superficie);
-  box-shadow: var(--cartao-sombra);
+/* Cada linha de corpo é um card. O fundo e a borda vão nas CÉLULAS, não no <tr>: a caixa do <tr>
+   é retangular e ignora o border-radius (que vive na 1ª e na última <td>), então um fundo ou uma
+   sombra nele vazam nos cantos e formam "pontas". Por isso a linha fica transparente e sem sombra. */
+.tabela-cartao .tabela tbody tr,
+.tabela-cartao .tabela tbody tr:hover {
+  background: transparent;
+  box-shadow: none;
 }
-.tabela-cartao .tabela tbody tr:hover { background: var(--superficie); }
 .tabela-cartao .tabela tbody td {
+  background: var(--superficie);
   border-top: var(--cartao-borda);
   border-bottom: var(--cartao-borda);
   padding: var(--e-4);
