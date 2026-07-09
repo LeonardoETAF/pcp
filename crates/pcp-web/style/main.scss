@@ -402,9 +402,15 @@ input {
   color: var(--auth-texto);
   transition: border-color var(--transicao), box-shadow var(--transicao);
 }
-/* E-mail fora do formato (exige @ e domínio com ponto). Só realça depois de o usuário digitar. */
-.input-auth:invalid:not(:placeholder-shown) {
+/* Estado inválido controlado pelo SISTEMA (classe aplicada pelo componente), nunca por `:invalid`
+   do navegador — assim a validação e a mensagem são nossas (sem balão nativo). */
+.input-auth--invalido {
   border-color: var(--semaforo-critico);
+}
+.campo-auth__erro {
+  margin-top: 6px;
+  font-size: var(--fs-sm);
+  color: var(--semaforo-critico);
 }
 .input-auth--solo {
   padding-left: 1rem;

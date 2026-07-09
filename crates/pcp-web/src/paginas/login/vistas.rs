@@ -10,12 +10,29 @@ use super::Vista;
 use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
 
-/// Formato exigido no campo de e-mail: parte local, `@`, domínio e um ponto seguido do TLD
-/// (ex.: `nome@empresa.com.br`). `type="email"` sozinho aceitaria `nome@empresa`, sem ponto.
-/// Não exigimos literalmente `.com`: isso barraria domínios válidos como `supercopo.local`.
-const PADRAO_EMAIL: &str = r"[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}";
-/// Mensagem do navegador quando o e-mail não bate com [`PADRAO_EMAIL`].
-const TITULO_EMAIL: &str = "Informe um e-mail válido, com @ e domínio (ex.: nome@empresa.com.br).";
+/// Mensagem exibida PELO SISTEMA quando o e-mail está fora do formato (nada de balão do navegador).
+const MSG_EMAIL_INVALIDO: &str =
+    "Informe um e-mail válido, com @ e domínio (ex.: nome@empresa.com.br).";
+
+/// Valida o e-mail NO SISTEMA (sem depender do navegador): exige parte local, `@`, domínio com
+/// ponto e TLD alfabético de 2+ letras, sem espaços. Não exige literalmente `.com` — isso barraria
+/// domínios válidos como `supercopo.local` (o admin do projeto) ou `.com.br`.
+fn email_valido(e: &str) -> bool {
+    let e = e.trim();
+    if e.is_empty() || e.chars().any(char::is_whitespace) {
+        return false;
+    }
+    let Some((local, dominio)) = e.split_once('@') else {
+        return false;
+    };
+    if local.is_empty() || dominio.contains('@') {
+        return false;
+    }
+    let Some((host, tld)) = dominio.rsplit_once('.') else {
+        return false;
+    };
+    !host.is_empty() && tld.len() >= 2 && tld.chars().all(|c| c.is_ascii_alphabetic())
+}
 
 /// Vista de entrada (login real via server function).
 #[component]
@@ -63,12 +80,16 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
         }
     });
     let tem_erro = move || matches!(login.value().get(), Some(Err(_)));
+    // Validação do sistema (não do navegador): só acusa depois que o usuário digitou algo.
+    let email_ok = move || email_valido(&email.get());
+    let email_ruim = move || !email.get().is_empty() && !email_ok();
 
     view! {
         <div class="vista">
             <h1 class="vista__titulo vista__titulo--centro">"Bem-vindo"</h1>
             <p class="vista__sub vista__sub--centro">"Entre com suas credenciais."</p>
-            <ActionForm action=login attr:class="form-auth">
+            // `novalidate`: desliga os balões nativos — as mensagens são renderizadas pelo sistema.
+            <ActionForm action=login attr:class="form-auth" attr:novalidate=true>
                 <div class="campo-auth">
                     <label class="campo-auth__rotulo">"E-mail"</label>
                     <div class="input-wrap">
@@ -80,17 +101,24 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                         </span>
                         <input
                             class="input-auth"
+                            class:input-auth--invalido=email_ruim
                             type="email"
                             name="email"
                             placeholder="voce@empresa.com.br"
                             autocomplete="username"
-                            required
-                            pattern=PADRAO_EMAIL
-                            title=TITULO_EMAIL
+                            aria-invalid=move || email_ruim().then_some("true")
                             prop:value=move || email.get()
                             on:input=move |ev| email.set(event_target_value(&ev))
                         />
                     </div>
+                    {move || {
+                        email_ruim()
+                            .then(|| {
+                                view! {
+                                    <p class="campo-auth__erro" role="alert">{MSG_EMAIL_INVALIDO}</p>
+                                }
+                            })
+                    }}
                 </div>
                 <div class="campo-auth">
                     <label class="campo-auth__rotulo">"Senha"</label>
@@ -152,7 +180,13 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     tem_erro()
                         .then(|| view! { <p class="form-auth__erro" role="alert">"Credenciais inválidas."</p> })
                 }}
-                <button class="btn-auth" type="submit" prop:disabled=move || login.pending().get()>
+                // Atributo (não `prop:`): assim o botão já vai desabilitado no HTML do SSR,
+                // antes da hidratação — o bloqueio não depende de JS ter carregado.
+                <button
+                    class="btn-auth"
+                    type="submit"
+                    disabled=move || login.pending().get() || !email_ok()
+                >
                     {move || if login.pending().get() { "Entrando…" } else { "Entrar" }}
                 </button>
             </ActionForm>
@@ -169,12 +203,16 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
 /// Vista de recuperação de senha (UI; backend de e-mail ainda não implementado).
 #[component]
 pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
+    let email = RwSignal::new(String::new());
+    let email_ok = move || email_valido(&email.get());
+    let email_ruim = move || !email.get().is_empty() && !email_ok();
     view! {
         <div class="vista">
             <BotaoVoltar vista />
             <h1 class="vista__titulo">"Recuperar senha"</h1>
             <p class="vista__sub">"Informe seu e-mail e enviaremos um link para redefinir."</p>
-            <form class="form-auth" on:submit=move |ev| ev.prevent_default()>
+            // `novalidate`: sem balões nativos — a mensagem é do sistema.
+            <form class="form-auth" novalidate on:submit=move |ev| ev.prevent_default()>
                 <div class="campo-auth">
                     <label class="campo-auth__rotulo">"E-mail"</label>
                     <div class="input-wrap">
@@ -186,16 +224,25 @@ pub fn VistaRecuperar(vista: RwSignal<Vista>) -> impl IntoView {
                         </span>
                         <input
                             class="input-auth"
+                            class:input-auth--invalido=email_ruim
                             type="email"
                             placeholder="voce@empresa.com.br"
                             autocomplete="username"
-                            required
-                            pattern=PADRAO_EMAIL
-                            title=TITULO_EMAIL
+                            aria-invalid=move || email_ruim().then_some("true")
+                            prop:value=move || email.get()
+                            on:input=move |ev| email.set(event_target_value(&ev))
                         />
                     </div>
+                    {move || {
+                        email_ruim()
+                            .then(|| {
+                                view! {
+                                    <p class="campo-auth__erro" role="alert">{MSG_EMAIL_INVALIDO}</p>
+                                }
+                            })
+                    }}
                 </div>
-                <button class="btn-auth" type="submit">
+                <button class="btn-auth" type="submit" disabled=move || !email_ok()>
                     "Enviar link de redefinição"
                 </button>
             </form>
@@ -253,7 +300,7 @@ pub fn VistaContato(vista: RwSignal<Vista>) -> impl IntoView {
             <div class="divisor">
                 <span>"ou envie uma solicitação"</span>
             </div>
-            <form class="form-auth" on:submit=move |ev| ev.prevent_default()>
+            <form class="form-auth" novalidate on:submit=move |ev| ev.prevent_default()>
                 <input class="input-auth input-auth--solo" placeholder="Seu nome" />
                 <input class="input-auth input-auth--solo" type="email" placeholder="Seu e-mail" />
                 <textarea class="textarea-auth" placeholder="Descreva o que você precisa…"></textarea>
