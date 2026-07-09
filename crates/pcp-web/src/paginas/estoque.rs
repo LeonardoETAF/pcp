@@ -200,7 +200,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
     view! {
         <div class="kpis">
             <KpiEstoque
-                icone="estoque-inventario.svg"
+                icone="inventory.svg"
                 valor=fmt_milhar(p.total_produtos)
                 rotulo="Produtos ativos"
             />
@@ -211,7 +211,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
             />
             <KpiEstoque icone="relogio.svg" valor=cobertura rotulo="Cobertura média" />
             <KpiEstoque
-                icone="ordens-producao.svg"
+                icone="orders.svg"
                 valor=fmt_milhar(p.total_sugerido)
                 rotulo="A produzir"
             />

@@ -185,7 +185,7 @@ fn ConteudoAbc(
     view! {
         <div class="kpis">
             <KpiAbc
-                icone="estoque-inventario.svg"
+                icone="inventory.svg"
                 valor=fmt_milhar(total)
                 rotulo="Produtos classificados".to_owned()
             />
@@ -193,7 +193,7 @@ fn ConteudoAbc(
                 .map(|(c, q)| {
                     view! {
                         <KpiAbc
-                            icone="relatorios-kpis.svg"
+                            icone="grafico-barras-h.svg"
                             valor=fmt_milhar(q)
                             rotulo=format!("Classe {c} — maior grupo")
                         />

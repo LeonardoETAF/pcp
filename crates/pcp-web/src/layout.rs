@@ -79,7 +79,7 @@ pub fn LayoutAutenticado() -> impl IntoView {
                                 ></span>
                             </button>
                             <A href="/alertas" attr:class="icone-btn" attr:aria-label="Alertas">
-                                <Icone arquivo="sino-notificacao.svg" />
+                                <Icone arquivo="notificacao.svg" />
                             </A>
                         </div>
                     </header>
@@ -142,11 +142,11 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
             <p class="barra__secao">"PCP"</p>
             <div class="barra__divisor"></div>
             <nav class="menu">
-                <ItemMenu href="/dashboard" rotulo="Dashboard" icone="layout-sidebar.svg" />
-                <ItemMenu href="/estoque" rotulo="Estoque" icone="estoque-inventario.svg" />
-                <ItemMenu href="/abc" rotulo="Classificação ABC" icone="relatorios-kpis.svg" />
+                <ItemMenu href="/dashboard" rotulo="Dashboard" icone="dashboard.svg" />
+                <ItemMenu href="/estoque" rotulo="Estoque" icone="inventory.svg" />
+                <ItemMenu href="/abc" rotulo="Classificação ABC" icone="grafico-barras-h.svg" />
                 <ItemMenu href="/operacao" rotulo="Operação" icone="atividade.svg" />
-                <ItemMenu href="/configuracoes" rotulo="Configurações" icone="engrenagem.svg" />
+                <ItemMenu href="/configuracoes" rotulo="Configurações" icone="settings.svg" />
             </nav>
             <div class="usuario">
                 <span class="usuario__avatar">
@@ -163,7 +163,7 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
                     aria-label="Sair"
                     title="Sair"
                 >
-                    <Icone arquivo="sair.svg" />
+                    <Icone arquivo="logout.svg" />
                 </button>
             </div>
         </aside>

@@ -169,7 +169,7 @@ fn icone_saude(nome: &str, status: &str) -> &'static str {
     if nome.starts_with("Duração") || nome.starts_with("Snapshot") {
         "relogio.svg"
     } else if nome.starts_with("Geração de alertas") {
-        "sino-notificacao.svg"
+        "notificacao.svg"
     } else if nome.starts_with("CV") || nome.starts_with("Última execução") {
         "atividade.svg"
     } else {
