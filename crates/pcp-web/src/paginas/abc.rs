@@ -42,10 +42,6 @@ pub fn ClassificacaoAbc() -> impl IntoView {
 
     view! {
         <section class="pagina">
-            <header class="pagina__cab">
-                <h1 class="pagina__titulo">"Classificação ABC"</h1>
-            </header>
-
             <Suspense fallback=|| view! { <p class="texto-suave">"Carregando classificação…"</p> }>
                 {move || {
                     let linhas = tabela.get().unwrap_or_default();

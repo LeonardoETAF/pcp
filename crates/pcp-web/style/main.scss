@@ -78,6 +78,9 @@
      contorno real (já arredondado pelas células), e não a caixa. */
   --cartao-sombra-filtro: drop-shadow(0 1px 2px rgba(16, 24, 40, 0.06))
     drop-shadow(0 1px 3px rgba(16, 24, 40, 0.1));
+  /* Realce de seleção/foco do sistema (§16): engrossa a borda sem mudar o tamanho da caixa —
+     o mesmo desenho do botão de classe ativo. Nunca `outline`, que não acompanha o raio. */
+  --foco-anel: 0 0 0 1px var(--texto);
   --sombra-2: 0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
   --sombra-3: 0 12px 24px rgba(16, 24, 40, 0.12);
 
@@ -125,9 +128,16 @@ input {
   font: inherit;
   color: inherit;
 }
+/* Foco padrão do sistema: realce discreto na borda, na cor do texto — nunca o laranja da marca.
+   O `outline` acompanha o `border-radius`, então serve a links e itens de menu, que não têm borda
+   própria. Controles com borda (input, select, botões) usam o `--foco-anel`, mais adiante. */
 :focus-visible {
-  outline: 2px solid var(--cor-primaria);
+  outline: 1px solid var(--texto);
   outline-offset: 2px;
+}
+/* A sidebar tem fundo escuro fixo: ali o anel na cor do texto sumiria. */
+.barra :focus-visible {
+  outline-color: #fff;
 }
 
 /* ---------- Componentes base ---------- */
@@ -142,7 +152,6 @@ input {
 .metrica-card,
 .saude-item,
 .estoque-filtros,
-.abas-cartao,
 .cob-classe,
 .linha-alerta,
 .tabela-rolavel,
@@ -213,10 +222,16 @@ input {
   border-radius: var(--raio-md);
   transition: border-color var(--transicao), box-shadow var(--transicao);
 }
-.input:focus-visible {
-  border-color: var(--cor-primaria);
+/* Foco padrão de TODO controle do sistema: só a borda se destaca. Um bloco só, para não haver
+   duas linguagens de foco convivendo. O login tem paleta própria e mantém o seu. */
+.input:focus-visible,
+.select:focus-visible,
+.btn:focus-visible,
+.btn-icone:focus-visible,
+.aba-classe:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
+  border-color: var(--texto);
+  box-shadow: var(--foco-anel);
 }
 
 .badge {
@@ -918,6 +933,13 @@ input {
 .icone-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
+}
+/* Sobre o fundo escuro da sidebar o anel de foco do sistema (cor do texto) sumiria: aqui ele é
+   branco. Mesmo desenho — realce só na borda, sem mudar o tamanho da caixa. */
+.icone-btn:focus-visible {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 1px #fff;
 }
 .conteudo {
   padding: var(--gutter-y) var(--gutter-x);
@@ -1876,17 +1898,15 @@ input {
 }
 .select {
   padding: var(--e-2) var(--e-3);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-sm);
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
   background: var(--superficie);
   color: var(--texto);
   font-size: var(--fs-sm);
   cursor: pointer;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
 }
-.select:focus-visible {
-  outline: 2px solid var(--cor-primaria);
-  outline-offset: 1px;
-}
+.select:hover { border-color: var(--texto-suave); }
 
 .btn--sm {
   padding: var(--e-1) var(--e-3);
@@ -2145,16 +2165,10 @@ input {
   background: rgb(255 255 255 / 0.2);
   color: #fff;
 }
-/* Filtro de classe do Estoque: card próprio, abaixo da busca. Cada classe é um botão retangular
-   de cantos arredondados, com a contagem sob o rótulo. Selecionado destaca só a BORDA — sem
-   preenchimento —, e o realce vem de `box-shadow`, não de `border-width`, para o botão não mudar
-   de tamanho e empurrar a linha ao ser escolhido. */
-.abas-cartao {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--e-3);
-  padding: var(--e-3);
-}
+/* Filtro de classe do Estoque, na segunda linha do card de filtros. Cada classe é um botão
+   retangular de cantos arredondados, com a contagem sob o rótulo. Selecionado destaca só a
+   BORDA — sem preenchimento — com o mesmo `--foco-anel` do resto do sistema, e não com
+   `border-width`, para o botão não mudar de tamanho e empurrar a linha. */
 .aba-classe {
   display: flex;
   flex-direction: column;
@@ -2176,7 +2190,7 @@ input {
 }
 .aba-classe--ativa {
   border-color: var(--texto);
-  box-shadow: 0 0 0 1px var(--texto);
+  box-shadow: var(--foco-anel);
   color: var(--texto);
 }
 .aba-classe__rotulo {
@@ -2215,15 +2229,25 @@ input {
 .btn-icone:hover { background: var(--superficie-2); }
 .btn-icone .icone-mask { width: 18px; height: 18px; }
 
-/* Filtros do estoque: um cartão com a linha de busca/ações + a linha avançada (mockup). */
+/* Filtros do estoque: UM cartão só — a busca/ações em cima, as classes embaixo, separadas por
+   um filete. São o mesmo filtro, aplicado em duas linhas. */
 .estoque-filtros {
-  padding: var(--e-3);
+  display: flex;
+  flex-direction: column;
 }
 .estoque-filtros__linha {
   display: flex;
   align-items: center;
   gap: var(--e-3);
   flex-wrap: wrap;
+  padding: var(--e-3);
+}
+.estoque-filtros__classes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+  padding: var(--e-3);
+  border-top: var(--cartao-borda);
 }
 .estoque-filtros__busca {
   display: flex;
@@ -2232,14 +2256,17 @@ input {
   flex: 1;
   min-width: 280px;
 }
-/* Campo de busca com a lupa dentro: o ícone é decorativo e não pode roubar o clique do input. */
-.busca-campo {
+/* Campo (input ou select) com ícone dentro. O ícone é decorativo: `pointer-events: none` o impede
+   de roubar o clique do controle que ele decora. */
+.campo-icone {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+}
+.campo-icone--cresce {
   flex: 1;
 }
-.busca-campo__icone {
+.campo-icone__icone {
   position: absolute;
   left: var(--e-3);
   display: grid;
@@ -2247,20 +2274,26 @@ input {
   color: var(--texto-suave);
   pointer-events: none;
 }
-.busca-campo__icone .icone-mask {
+.campo-icone__icone .icone-mask {
   width: 16px;
   height: 16px;
 }
-/* Mesma altura dos selects e do botão Buscar (padding vertical --e-2 + fs-sm). */
-.input--busca {
-  flex: 1;
-  padding: var(--e-2) var(--e-3) var(--e-2) 2.25rem;
-  border-radius: var(--raio-sm);
+/* Compacto = mesma altura dos selects e do botão Buscar (padding --e-2 + fs-sm). */
+.input--compacto {
+  padding: var(--e-2) var(--e-3);
   font-size: var(--fs-sm);
 }
+.input--com-icone,
+.select--com-icone {
+  padding-left: 2.25rem;
+}
+.select--com-icone {
+  width: 100%;
+  min-width: 170px;
+}
+.estoque-filtros__busca .input { flex: 1; }
 .estoque-filtros__busca .btn--sm {
   padding: var(--e-2) var(--e-4);
-  border-radius: var(--raio-sm);
 }
 /* Separador vertical entre Buscar e os selects. */
 .toolbar-sep {
@@ -2269,52 +2302,6 @@ input {
   min-height: 24px;
   background: var(--borda);
 }
-.estoque-filtros .select { min-width: 150px; }
-
-/* Exportar: só um ícone (como no mockup); abre um menu CSV/JSON ao clicar. */
-.export-menu {
-  position: relative;
-}
-.export-menu__btn {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 38px;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  background: var(--superficie);
-  color: var(--texto-suave);
-  cursor: pointer;
-  list-style: none;
-}
-.export-menu__btn::-webkit-details-marker { display: none; }
-.export-menu__btn .icone-mask { width: 18px; height: 18px; }
-.export-menu[open] .export-menu__btn { background: var(--superficie-2); }
-.export-menu__lista {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  min-width: 160px;
-  padding: var(--e-1);
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-md);
-  box-shadow: var(--sombra-1);
-}
-.export-menu__lista button {
-  text-align: left;
-  padding: var(--e-2) var(--e-3);
-  border: 0;
-  background: transparent;
-  border-radius: var(--raio-sm);
-  color: var(--texto);
-  font-size: var(--fs-sm);
-  cursor: pointer;
-}
-.export-menu__lista button:hover { background: var(--superficie-2); }
 
 /* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
 .tabela-cartao {

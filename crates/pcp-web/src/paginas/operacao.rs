@@ -36,10 +36,6 @@ pub fn Operacao() -> impl IntoView {
 
     view! {
         <section class="pagina">
-            <header class="pagina__cab">
-                <h1 class="pagina__titulo">"Operação"</h1>
-            </header>
-
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando saúde…"</p> }
             }>

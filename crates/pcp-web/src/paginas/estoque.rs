@@ -65,20 +65,16 @@ pub fn PaginaEstoque() -> impl IntoView {
         deslocamento: deslocamento.get(),
     };
 
-    // Exporta o filtro atual inteiro (CSV/JSON) e dispara o download no cliente (§12).
-    let exportar = move |formato: &'static str| {
+    // Exporta o filtro atual inteiro e dispara o download no cliente (§12). A API também serve
+    // JSON, mas a tela oferece só o CSV (UTF-8 com BOM), que é o que o Excel BR abre direto.
+    let exportar = move || {
         let Some(token) = sessao.0.get_untracked() else {
             return;
         };
         let consulta = untrack(consulta_atual);
-        let nome = if formato == "json" {
-            "estoque.json"
-        } else {
-            "estoque.csv"
-        };
         leptos::task::spawn_local(async move {
-            match exportar_estoque(token, consulta, formato.to_owned()).await {
-                Ok(conteudo) => download::baixar(nome, &conteudo),
+            match exportar_estoque(token, consulta, "csv".to_owned()).await {
+                Ok(conteudo) => download::baixar("estoque.csv", &conteudo),
                 Err(e) => leptos::logging::error!("exportação falhou: {e}"),
             }
         });
@@ -106,10 +102,6 @@ pub fn PaginaEstoque() -> impl IntoView {
 
     view! {
         <section class="pagina">
-            <header class="pagina__cab">
-                <h1 class="pagina__titulo">"Gestão de Estoque"</h1>
-            </header>
-
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando resumo…"</p> }
             }>
@@ -121,18 +113,18 @@ pub fn PaginaEstoque() -> impl IntoView {
                 }}
             </Suspense>
 
-            <Filtros status busca busca_input ordem resetar exportar />
-
-            // As abas de classe ficam ABAIXO da busca: são o último filtro aplicado, e o card
-            // separado deixa claro que refinam o resultado da barra acima.
-            <Suspense fallback=|| ()>
-                {move || {
-                    painel_res.get().map(|res| match res {
-                        Ok(p) => abas_classe(&p, classe, resetar).into_any(),
-                        Err(_) => ().into_any(),
-                    })
-                }}
-            </Suspense>
+            // Busca e classes formam UM card: são o mesmo filtro, aplicado em duas linhas.
+            <div class="estoque-filtros">
+                <Filtros status busca busca_input ordem resetar exportar />
+                <Suspense fallback=|| ()>
+                    {move || {
+                        painel_res.get().map(|res| match res {
+                            Ok(p) => abas_classe(&p, classe, resetar).into_any(),
+                            Err(_) => ().into_any(),
+                        })
+                    }}
+                </Suspense>
+            </div>
 
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }
@@ -237,8 +229,8 @@ fn abas_classe(
         .collect();
     presentes.sort_by_key(|(c, _)| ordem_classe(c));
     view! {
-        <div class="abas-cartao">
-            <AbaClasse classe rotulo="Todas".to_owned() valor=None contagem=p.total_produtos resetar />
+        <div class="estoque-filtros__classes">
+            <AbaClasse classe rotulo="Todos".to_owned() valor=None contagem=p.total_produtos resetar />
             {presentes
                 .into_iter()
                 .map(|(cod, qtd)| {
@@ -291,53 +283,58 @@ fn AbaClasse(
     }
 }
 
+/// Ícone de máscara CSS a partir de um arquivo de `public/icons`.
+fn mascara(arquivo: &str) -> String {
+    format!("-webkit-mask-image:url(/icons/{arquivo});mask-image:url(/icons/{arquivo})")
+}
+
+/// Primeira linha do card de filtros: busca, ordenação, status e exportação.
 #[component]
-#[allow(clippy::too_many_lines)] // markup declarativo dos filtros (uma responsabilidade)
 fn Filtros(
     status: RwSignal<Option<String>>,
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
     ordem: RwSignal<String>,
     resetar: impl Fn() + Copy + 'static,
-    exportar: impl Fn(&'static str) + Copy + 'static,
+    exportar: impl Fn() + Copy + 'static,
 ) -> impl IntoView {
     let aplicar_busca = move || {
         busca.set(busca_input.get());
         resetar();
     };
-    let estilo_busca = "-webkit-mask-image:url(/icons/busca.svg);mask-image:url(/icons/busca.svg)";
-    let estilo_export =
-        "-webkit-mask-image:url(/icons/exportar.svg);mask-image:url(/icons/exportar.svg)";
     view! {
-        <div class="estoque-filtros">
-            <div class="estoque-filtros__linha">
-                <form
-                    class="estoque-filtros__busca"
-                    on:submit=move |ev| {
-                        ev.prevent_default();
-                        aplicar_busca();
-                    }
-                >
-                    <span class="busca-campo">
-                        <span class="busca-campo__icone" aria-hidden="true">
-                            <span class="icone-mask" style=estilo_busca></span>
-                        </span>
-                        <input
-                            class="input input--busca"
-                            placeholder="Buscar item, código, SKU…"
-                            prop:value=move || busca_input.get()
-                            on:input=move |ev| busca_input.set(event_target_value(&ev))
-                        />
+        <div class="estoque-filtros__linha">
+            <form
+                class="estoque-filtros__busca"
+                on:submit=move |ev| {
+                    ev.prevent_default();
+                    aplicar_busca();
+                }
+            >
+                <span class="campo-icone campo-icone--cresce">
+                    <span class="campo-icone__icone" aria-hidden="true">
+                        <span class="icone-mask" style=mascara("busca.svg")></span>
                     </span>
-                    <button type="submit" class="btn btn--escuro btn--sm">
-                        "Buscar"
-                    </button>
-                </form>
+                    <input
+                        class="input input--compacto input--com-icone"
+                        placeholder="Buscar item, código, SKU…"
+                        prop:value=move || busca_input.get()
+                        on:input=move |ev| busca_input.set(event_target_value(&ev))
+                    />
+                </span>
+                <button type="submit" class="btn btn--escuro btn--sm">
+                    "Buscar"
+                </button>
+            </form>
 
-                <span class="toolbar-sep"></span>
+            <span class="toolbar-sep"></span>
 
+            <span class="campo-icone">
+                <span class="campo-icone__icone" aria-hidden="true">
+                    <span class="icone-mask" style=mascara("ordenar.svg")></span>
+                </span>
                 <select
-                    class="select"
+                    class="select select--com-icone"
                     aria-label="Ordenar"
                     on:change=move |ev| {
                         ordem.set(event_target_value(&ev));
@@ -355,8 +352,13 @@ fn Filtros(
                     <option value="produto_desc">"Produto (Z–A)"</option>
                     <option value="classe_asc">"Classe (A→N)"</option>
                 </select>
+            </span>
+            <span class="campo-icone">
+                <span class="campo-icone__icone" aria-hidden="true">
+                    <span class="icone-mask" style=mascara("filtro.svg")></span>
+                </span>
                 <select
-                    class="select"
+                    class="select select--com-icone"
                     aria-label="Status"
                     on:change=move |ev| {
                         let v = event_target_value(&ev);
@@ -376,21 +378,18 @@ fn Filtros(
                     <option value="sem_historico">"Sem histórico"</option>
                     <option value="fora_de_linha">"Fora de Linha"</option>
                 </select>
+            </span>
 
-                <details class="export-menu">
-                    <summary class="export-menu__btn" aria-label="Exportar filtro completo">
-                        <span class="icone-mask" style=estilo_export></span>
-                    </summary>
-                    <div class="export-menu__lista">
-                        <button type="button" on:click=move |_| exportar("csv")>
-                            "Exportar CSV"
-                        </button>
-                        <button type="button" on:click=move |_| exportar("json")>
-                            "Exportar JSON"
-                        </button>
-                    </div>
-                </details>
-            </div>
+            // Exportação: CSV UTF-8 com BOM, do filtro completo (§12). Só um formato, sem menu.
+            <button
+                type="button"
+                class="btn-icone"
+                aria-label="Exportar CSV do filtro completo"
+                title="Exportar CSV"
+                on:click=move |_| exportar()
+            >
+                <span class="icone-mask" style=mascara("exportar.svg")></span>
+            </button>
         </div>
     }
 }

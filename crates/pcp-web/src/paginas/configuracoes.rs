@@ -40,9 +40,6 @@ pub fn Configuracoes() -> impl IntoView {
 
     view! {
         <section class="pagina">
-            <header class="pagina__cab">
-                <h1 class="pagina__titulo">"Configurações"</h1>
-            </header>
             <Suspense fallback=|| view! { <p class="texto-suave">"Carregando configuração…"</p> }>
                 {move || {
                     let eh_gestor = matches!(papel.get().as_deref(), Some("gestor" | "admin"));

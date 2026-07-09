@@ -64,9 +64,6 @@ pub fn PaginaAlertas() -> impl IntoView {
 
     view! {
         <section class="pagina">
-            <header class="pagina__cab">
-                <h1 class="pagina__titulo">"Central de Alertas"</h1>
-            </header>
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando alertas…"</p> }
             }>
