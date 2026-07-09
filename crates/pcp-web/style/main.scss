@@ -142,6 +142,7 @@ input {
 .metrica-card,
 .saude-item,
 .estoque-filtros,
+.abas-cartao,
 .cob-classe,
 .linha-alerta,
 .tabela-rolavel,
@@ -976,12 +977,11 @@ input {
 }
 .kpi__sub--alerta { color: var(--semaforo-critico); }
 
-/* KPI com ícone (chip cinza). Estoque: chip no topo (coluna). ABC: chip à esquerda (linha). */
-.kpi--icone .kpi__chip,
+/* KPI com ícone (chip cinza), ao lado do texto. */
 .kpi--linha .kpi__chip {
   display: inline-grid;
   place-items: center;
-  align-self: flex-start;
+  align-self: center;
   width: 44px;
   height: 44px;
   flex-shrink: 0;
@@ -989,17 +989,18 @@ input {
   background: var(--superficie-2);
   color: var(--texto-suave);
 }
-.kpi--icone .kpi__chip .icone-mask,
 .kpi--linha .kpi__chip .icone-mask {
   width: 22px;
   height: 22px;
 }
-/* KPI horizontal (ABC): ícone à esquerda, número + rótulo à direita. */
+/* KPI horizontal (Estoque e ABC): ícone à esquerda, número + rótulo à direita. Sem `min-height`,
+   o card acompanha o conteúdo e fica bem mais baixo que a variante em coluna. */
 .kpi--linha {
   flex-direction: row;
   align-items: center;
   gap: var(--e-4);
   min-height: auto;
+  padding: var(--e-4);
 }
 .kpi--linha .kpi__corpo {
   display: flex;
@@ -2045,21 +2046,6 @@ input {
   flex-wrap: wrap;
 }
 
-.estoque-filtros__avancado {
-  display: flex;
-  align-items: center;
-  gap: var(--e-5);
-  flex-wrap: wrap;
-}
-.faixa {
-  display: flex;
-  align-items: center;
-  gap: var(--e-2);
-}
-.faixa__ate {
-  font-size: var(--fs-sm);
-  color: var(--texto-suave);
-}
 .input--num {
   width: 90px;
 }
@@ -2162,6 +2148,53 @@ input {
   background: rgb(255 255 255 / 0.2);
   color: #fff;
 }
+/* Filtro de classe do Estoque: card próprio, abaixo da busca. Cada classe é um botão retangular
+   de cantos arredondados, com a contagem sob o rótulo. Selecionado destaca só a BORDA — sem
+   preenchimento —, e o realce vem de `box-shadow`, não de `border-width`, para o botão não mudar
+   de tamanho e empurrar a linha ao ser escolhido. */
+.abas-cartao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+  padding: var(--e-3);
+}
+.aba-classe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: var(--e-2) var(--e-3);
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: border-color var(--transicao), color var(--transicao),
+    box-shadow var(--transicao);
+}
+.aba-classe:hover {
+  border-color: var(--texto-suave);
+  color: var(--texto);
+}
+.aba-classe--ativa {
+  border-color: var(--texto);
+  box-shadow: 0 0 0 1px var(--texto);
+  color: var(--texto);
+}
+.aba-classe__rotulo {
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-medio);
+  line-height: 1.2;
+}
+.aba-classe__contagem {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.aba-classe--ativa .aba-classe__contagem { color: var(--texto); }
+
 /* Bolinha colorida por classe (§12) à esquerda da letra, na aba do ABC. */
 .aba__pt {
   width: 18px;
@@ -2187,10 +2220,7 @@ input {
 
 /* Filtros do estoque: um cartão com a linha de busca/ações + a linha avançada (mockup). */
 .estoque-filtros {
-  padding: var(--e-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-4);
+  padding: var(--e-3);
 }
 .estoque-filtros__linha {
   display: flex;
@@ -2200,11 +2230,41 @@ input {
 }
 .estoque-filtros__busca {
   display: flex;
+  align-items: center;
   gap: var(--e-2);
   flex: 1;
   min-width: 280px;
 }
-.estoque-filtros__busca .input { flex: 1; }
+/* Campo de busca com a lupa dentro: o ícone é decorativo e não pode roubar o clique do input. */
+.busca-campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+.busca-campo__icone {
+  position: absolute;
+  left: var(--e-3);
+  display: grid;
+  place-items: center;
+  color: var(--texto-suave);
+  pointer-events: none;
+}
+.busca-campo__icone .icone-mask {
+  width: 16px;
+  height: 16px;
+}
+/* Mesma altura dos selects e do botão Buscar (padding vertical --e-2 + fs-sm). */
+.input--busca {
+  flex: 1;
+  padding: var(--e-2) var(--e-3) var(--e-2) 2.25rem;
+  border-radius: var(--raio-sm);
+  font-size: var(--fs-sm);
+}
+.estoque-filtros__busca .btn--sm {
+  padding: var(--e-2) var(--e-4);
+  border-radius: var(--raio-sm);
+}
 /* Separador vertical entre Buscar e os selects. */
 .toolbar-sep {
   width: 1px;

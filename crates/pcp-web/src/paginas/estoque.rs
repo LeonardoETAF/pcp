@@ -26,10 +26,6 @@ pub fn PaginaEstoque() -> impl IntoView {
     let busca = RwSignal::new(String::new()); // termo aplicado
     let busca_input = RwSignal::new(String::new()); // o que está sendo digitado
     let ordem = RwSignal::new("sugerida_desc".to_owned());
-    let cobertura_min = RwSignal::new(None::<f64>);
-    let cobertura_max = RwSignal::new(None::<f64>);
-    let apenas_sugestao = RwSignal::new(false);
-    let apenas_fora_linha = RwSignal::new(false);
     let limite = RwSignal::new(50_i64);
     let deslocamento = RwSignal::new(0_i64);
     let tick = RwSignal::new(0_u32);
@@ -53,16 +49,18 @@ pub fn PaginaEstoque() -> impl IntoView {
     // Qualquer mudança de filtro volta para a primeira página.
     let resetar = move || deslocamento.set(0);
 
-    // Consulta atual a partir dos sinais. Para o servidor inteira (filtros + faixas + switches).
+    // Consulta atual a partir dos sinais; vai inteira para o servidor. A API ainda aceita faixa de
+    // cobertura e os recortes "só com sugestão"/"só fora de linha", mas a tela não os expõe: aqui
+    // seguem nos valores neutros, que não restringem o resultado.
     let consulta_atual = move || ConsultaEstoque {
         classe: classe.get(),
         status: status.get(),
         busca: Some(busca.get()),
         ordem: Some(ordem.get()),
-        cobertura_min: cobertura_min.get(),
-        cobertura_max: cobertura_max.get(),
-        apenas_sugestao: apenas_sugestao.get(),
-        apenas_fora_linha: apenas_fora_linha.get(),
+        cobertura_min: None,
+        cobertura_max: None,
+        apenas_sugestao: false,
+        apenas_fora_linha: false,
         limite: limite.get(),
         deslocamento: deslocamento.get(),
     };
@@ -119,33 +117,25 @@ pub fn PaginaEstoque() -> impl IntoView {
                 view! { <p class="texto-suave">"Carregando resumo…"</p> }
             }>
                 {move || {
-                    painel_res
-                        .get()
-                        .map(|res| match res {
-                            Ok(p) => {
-                                view! {
-                                    {kpis_estoque(&p)}
-                                    {abas_classe(&p, classe, resetar)}
-                                }
-                                    .into_any()
-                            }
-                            Err(_) => ().into_any(),
-                        })
+                    painel_res.get().map(|res| match res {
+                        Ok(p) => kpis_estoque(&p).into_any(),
+                        Err(_) => ().into_any(),
+                    })
                 }}
             </Suspense>
 
-            <Filtros
-                status
-                busca
-                busca_input
-                ordem
-                cobertura_min
-                cobertura_max
-                apenas_sugestao
-                apenas_fora_linha
-                resetar
-                exportar
-            />
+            <Filtros status busca busca_input ordem resetar exportar />
+
+            // As abas de classe ficam ABAIXO da busca: são o último filtro aplicado, e o card
+            // separado deixa claro que refinam o resultado da barra acima.
+            <Suspense fallback=|| ()>
+                {move || {
+                    painel_res.get().map(|res| match res {
+                        Ok(p) => abas_classe(&p, classe, resetar).into_any(),
+                        Err(_) => ().into_any(),
+                    })
+                }}
+            </Suspense>
 
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }
@@ -219,16 +209,19 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
     }
 }
 
+/// KPI horizontal: ícone ao lado do texto (o card fica mais baixo que na versão em coluna).
 #[component]
 fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl IntoView {
     let estilo = format!("-webkit-mask-image:url(/icons/{icone});mask-image:url(/icons/{icone})");
     view! {
-        <div class="kpi kpi--icone">
+        <div class="kpi kpi--linha">
             <span class="kpi__chip">
                 <span class="icone-mask" style=estilo></span>
             </span>
-            <span class="kpi__valor">{valor}</span>
-            <span class="kpi__rotulo">{rotulo}</span>
+            <div class="kpi__corpo">
+                <span class="kpi__valor">{valor}</span>
+                <span class="kpi__rotulo">{rotulo}</span>
+            </div>
         </div>
     }
 }
@@ -247,7 +240,7 @@ fn abas_classe(
         .collect();
     presentes.sort_by_key(|(c, _)| ordem_classe(c));
     view! {
-        <div class="abas-classe">
+        <div class="abas-cartao">
             <AbaClasse classe rotulo="Todas".to_owned() valor=None contagem=p.total_produtos resetar />
             {presentes
                 .into_iter()
@@ -283,22 +276,20 @@ fn AbaClasse(
     resetar: impl Fn() + Copy + 'static,
 ) -> impl IntoView {
     let alvo = valor.clone();
-    let ativo = {
-        let alvo = alvo.clone();
-        move || classe.get() == alvo
-    };
+    let ativo = Memo::new(move |_| classe.get() == valor);
     view! {
         <button
             type="button"
-            class="aba"
-            class:aba--ativa=ativo
+            class="aba-classe"
+            class:aba-classe--ativa=move || ativo.get()
+            aria-pressed=move || if ativo.get() { "true" } else { "false" }
             on:click=move |_| {
                 classe.set(alvo.clone());
                 resetar();
             }
         >
-            <span>{rotulo}</span>
-            <span class="aba__contagem">{fmt_milhar(contagem)}</span>
+            <span class="aba-classe__rotulo">{rotulo}</span>
+            <span class="aba-classe__contagem">{fmt_milhar(contagem)}</span>
         </button>
     }
 }
@@ -310,10 +301,6 @@ fn Filtros(
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
     ordem: RwSignal<String>,
-    cobertura_min: RwSignal<Option<f64>>,
-    cobertura_max: RwSignal<Option<f64>>,
-    apenas_sugestao: RwSignal<bool>,
-    apenas_fora_linha: RwSignal<bool>,
     resetar: impl Fn() + Copy + 'static,
     exportar: impl Fn(&'static str) + Copy + 'static,
 ) -> impl IntoView {
@@ -321,8 +308,7 @@ fn Filtros(
         busca.set(busca_input.get());
         resetar();
     };
-    // Lê um campo numérico não-negativo (vazio → sem limite).
-    let parse_cobertura = |valor: String| valor.parse::<f64>().ok().filter(|n| *n >= 0.0);
+    let estilo_busca = "-webkit-mask-image:url(/icons/busca.svg);mask-image:url(/icons/busca.svg)";
     let estilo_export =
         "-webkit-mask-image:url(/icons/exportar.svg);mask-image:url(/icons/exportar.svg)";
     view! {
@@ -335,13 +321,18 @@ fn Filtros(
                         aplicar_busca();
                     }
                 >
-                    <input
-                        class="input"
-                        placeholder="Buscar item, código, SKU…"
-                        prop:value=move || busca_input.get()
-                        on:input=move |ev| busca_input.set(event_target_value(&ev))
-                    />
-                    <button type="submit" class="btn btn--escuro">
+                    <span class="busca-campo">
+                        <span class="busca-campo__icone" aria-hidden="true">
+                            <span class="icone-mask" style=estilo_busca></span>
+                        </span>
+                        <input
+                            class="input input--busca"
+                            placeholder="Buscar item, código, SKU…"
+                            prop:value=move || busca_input.get()
+                            on:input=move |ev| busca_input.set(event_target_value(&ev))
+                        />
+                    </span>
+                    <button type="submit" class="btn btn--escuro btn--sm">
                         "Buscar"
                     </button>
                 </form>
@@ -402,61 +393,6 @@ fn Filtros(
                         </button>
                     </div>
                 </details>
-            </div>
-
-            <div class="estoque-filtros__avancado">
-                <div class="faixa">
-                    <span class="campo-select__rotulo">"Cobertura (dias)"</span>
-                    <input
-                        class="input input--num"
-                        type="number"
-                        min="0"
-                        placeholder="mín"
-                        prop:value=move || {
-                            cobertura_min.get().map(|n| n.to_string()).unwrap_or_default()
-                        }
-                        on:input=move |ev| {
-                            cobertura_min.set(parse_cobertura(event_target_value(&ev)));
-                            resetar();
-                        }
-                    />
-                    <span class="faixa__ate">"até"</span>
-                    <input
-                        class="input input--num"
-                        type="number"
-                        min="0"
-                        placeholder="máx"
-                        prop:value=move || {
-                            cobertura_max.get().map(|n| n.to_string()).unwrap_or_default()
-                        }
-                        on:input=move |ev| {
-                            cobertura_max.set(parse_cobertura(event_target_value(&ev)));
-                            resetar();
-                        }
-                    />
-                </div>
-                <label class="switch">
-                    <input
-                        type="checkbox"
-                        prop:checked=move || apenas_sugestao.get()
-                        on:change=move |ev| {
-                            apenas_sugestao.set(event_target_checked(&ev));
-                            resetar();
-                        }
-                    />
-                    <span>"Apenas com sugestão"</span>
-                </label>
-                <label class="switch">
-                    <input
-                        type="checkbox"
-                        prop:checked=move || apenas_fora_linha.get()
-                        on:change=move |ev| {
-                            apenas_fora_linha.set(event_target_checked(&ev));
-                            resetar();
-                        }
-                    />
-                    <span>"Apenas fora de linha"</span>
-                </label>
             </div>
         </div>
     }
