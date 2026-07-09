@@ -46,6 +46,29 @@ services:
     expose:
       - "8080"
 
+  # Ingestão contínua do ERP One (doc 05 / §16): a cada ONE_POLL_SEGUNDOS ingere (estoque full
+  # refresh + vendas incremental) e roda o pipeline do dia, que emite NOTIFY → a API repassa por
+  # SSE e a UI atualiza sozinha. Acesso ao One é SOMENTE-LEITURA; a URL é segredo (§7.4).
+  # Backfill histórico (uma vez):
+  #   docker compose -f docker-compose.prod.yml run --rm --entrypoint backfill_one sync-one
+  sync-one:
+    build:
+      context: .
+      target: pcp-sync
+    image: pcp-sync
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://pcp:${POSTGRES_PASSWORD:?}@postgres:5432/pcp
+      ONE_DATABASE_URL: ${ONE_DATABASE_URL:?defina ONE_DATABASE_URL (usuário read-only do One)}
+      # 300s (5 min) é o padrão do projeto: quase-tempo-real sem martelar o ERP legado.
+      ONE_POLL_SEGUNDOS: ${ONE_POLL_SEGUNDOS:-300}
+      ONE_BACKFILL_MESES: ${ONE_BACKFILL_MESES:-24}
+      PCP_CONFIG_PATH: /app/config/pcp.config.yaml
+    # Sem `ports`: serviço interno, não atende requisição nenhuma.
+
   web:
     build:
       context: .
