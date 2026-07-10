@@ -1828,43 +1828,36 @@ input {
   flex-direction: column;
   gap: var(--e-4);
 }
+/* Cada data é uma LINHA HORIZONTAL: a data à esquerda, e os cards das fases lado a lado à
+   direita, que quebram para a linha de baixo quando não cabem. */
 .mov-dia {
-  display: grid;
-  grid-template-columns: 92px 1fr;
+  display: flex;
+  align-items: baseline;
   gap: var(--e-4);
-  align-items: start;
 }
 .mov-dia__data {
+  flex-shrink: 0;
+  width: 92px;
   font-weight: var(--peso-medio);
   font-variant-numeric: tabular-nums;
-  padding-top: 3px;
 }
-.mov-linha {
-  list-style: none;
+.mov-fases {
   display: flex;
-  flex-direction: column;
-  gap: var(--e-3);
-  padding-left: var(--e-4);
-  border-left: 2px solid var(--borda);
-}
-.mov-fase {
-  position: relative;
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: var(--e-2);
-  font-size: var(--fs-sm);
+  flex: 1;
+  min-width: 0;
 }
-/* Bolinha sobre a linha vertical (o fundo "corta" a linha). */
-.mov-fase__ponto {
-  position: absolute;
-  left: calc(-1 * var(--e-4) - 6px);
-  top: 5px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--texto-suave);
-  box-shadow: 0 0 0 3px var(--superficie);
+/* Card compacto da fase (um movimento/ordem). */
+.mov-fase {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
+  font-size: var(--fs-sm);
 }
 .mov-fase__qtd { font-weight: var(--peso-medio); font-variant-numeric: tabular-nums; }
 .mov-fase__meta { color: var(--texto-suave); font-variant-numeric: tabular-nums; }

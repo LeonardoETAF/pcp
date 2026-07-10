@@ -482,21 +482,20 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                     let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
                     let lote = o.lote.map(|l| format!("Lote {l}"));
                     view! {
-                        <li class="mov-fase">
-                            <span class="mov-fase__ponto"></span>
+                        <div class="mov-fase">
                             <span class=classe_st>{rotulo_producao(&status)}</span>
                             <span class="mov-fase__qtd">
                                 {format!("{} un", fmt_milhar(o.quantidade))}
                             </span>
                             {lote.map(|l| view! { <span class="mov-fase__meta">{l}</span> })}
-                        </li>
+                        </div>
                     }
                 })
                 .collect_view();
             view! {
                 <div class="mov-dia">
                     <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <ol class="mov-linha">{itens}</ol>
+                    <div class="mov-fases">{itens}</div>
                 </div>
             }
         })
@@ -531,8 +530,7 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
                     };
                     let sinal = if entrada { "+" } else { "" };
                     view! {
-                        <li class="mov-fase">
-                            <span class="mov-fase__ponto"></span>
+                        <div class="mov-fase">
                             <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
                             <span class=classe_qtd>
                                 {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
@@ -540,14 +538,14 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
                             <span class="mov-fase__meta">
                                 {format!("saldo {} un", fmt_milhar(m.saldo))}
                             </span>
-                        </li>
+                        </div>
                     }
                 })
                 .collect_view();
             view! {
                 <div class="mov-dia">
                     <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <ol class="mov-linha">{itens}</ol>
+                    <div class="mov-fases">{itens}</div>
                 </div>
             }
         })
