@@ -541,7 +541,11 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                                 <span class="nivel__preenche" style=estilo_barra></span>
                             </div>
                             <span class="nivel__ref">
-                                {format!("{} de cobertura", fmt_cobertura(i.cobertura_dias))}
+                                {if i.cobertura_dias >= 999.0 {
+                                    "Sem histórico".to_owned()
+                                } else {
+                                    format!("{} dias", fmt_cobertura(i.cobertura_dias))
+                                }}
                             </span>
                         </div>
                     }
