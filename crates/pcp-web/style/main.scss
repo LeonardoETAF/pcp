@@ -2418,13 +2418,11 @@ input {
   flex-wrap: wrap;
   padding: var(--e-3);
 }
-/* Segunda linha do card: classes à esquerda, paginação à direita. Em tela estreita a paginação
-   desce e encosta na direita. */
+/* Segunda linha do card: classes à esquerda, paginação SEMPRE à direita, na mesma linha. As
+   classes crescem e quebram internamente; a paginação não encolhe nem desce. */
 .estoque-filtros__rodape {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--e-3);
   padding: 0 var(--e-3) var(--e-3);
 }
@@ -2432,8 +2430,11 @@ input {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e-3);
+  flex: 1;
+  min-width: 0;
 }
 .estoque-filtros__rodape .paginacao__botoes {
+  flex-shrink: 0;
   margin-left: auto;
 }
 .estoque-filtros__busca {
