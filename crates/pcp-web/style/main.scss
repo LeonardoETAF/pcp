@@ -2533,8 +2533,15 @@ input {
   width: 14px;
   height: 14px;
 }
-/* A coluna centralizada centra o botão, não o texto dentro dele. */
+/* A coluna centralizada centra o BOTÃO, não o texto dentro dele: a seta ocupa 14px só à direita e
+   empurra o rótulo para a esquerda. Um vão espelhado à esquerda devolve a simetria — a seta tem
+   caixa fixa, esteja visível ou não, então o rótulo fica centrado em qualquer coluna. */
 .tabela--centro thead th .th-ordena { justify-content: center; }
+.tabela--centro thead th .th-ordena::before {
+  content: "";
+  flex: none;
+  width: 14px;
+}
 
 /* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
 .tabela-cartao {
