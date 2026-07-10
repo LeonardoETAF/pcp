@@ -1820,8 +1820,6 @@ input {
 .card-resumo__nota { font-size: var(--fs-xs); color: var(--texto-suave); }
 
 /* O status de produção, quando sozinho no seu card, não precisa do filete de topo. */
-.prod-status-secao { padding: 0; }
-.prod-status-secao .prod-status { border-top: 0; }
 
 /* Grade de cards do histórico (produção/movimentação): colunas que se acomodam à largura. */
 .ativ-grid {
@@ -1871,21 +1869,25 @@ input {
 }
 /* Status de produção: botão informativo. Inerte (apagado) quando não há ordem em produção; ao
    clicar (só então) revela planejado × produzido × falta. */
-.prod-status { border-top: var(--cartao-borda); }
+.prod-status {
+  position: relative;
+  flex-shrink: 0;
+}
 .prod-status__btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--e-3);
-  width: 100%;
-  padding: var(--e-4) var(--e-5);
-  border: 0;
-  background: transparent;
+  gap: var(--e-2);
+  padding: var(--e-2) var(--e-3);
+  border: var(--cartao-borda);
+  border-radius: 999px;
+  background: var(--superficie);
   color: var(--texto);
   font: inherit;
-  text-align: left;
+  font-size: var(--fs-sm);
   cursor: pointer;
+  transition: background var(--transicao), border-color var(--transicao);
 }
-.prod-status__btn--ativo:hover { background: var(--superficie-2); }
+.prod-status__btn--ativo:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .prod-status__btn:disabled { cursor: default; color: var(--texto-suave); }
 .prod-status__ponto {
   width: 10px;
@@ -1904,7 +1906,19 @@ input {
 }
 .prod-status__seta--aberto { transform: rotate(180deg); }
 .prod-status__seta .icone-mask { width: 18px; height: 18px; }
-.prod-status__detalhe { padding: 0 var(--e-5) var(--e-5); }
+/* Detalhe (planejado/produzido/falta) como dropdown ancorado à direita do botão. */
+.prod-status__detalhe {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 260px;
+  padding: var(--e-4);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--sombra-2, var(--sombra-1));
+}
 /* Quantidade de entrada/saída no histórico de movimentação (semáforo §12). */
 .mov--entrada { color: var(--semaforo-ok); }
 .mov--saida { color: var(--semaforo-critico); }
@@ -1921,21 +1935,15 @@ input {
 
 .prod-cab {
   display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0;
-}
-.prod-cab__topo {
-  display: flex;
   align-items: center;
   gap: var(--e-4);
-  padding: var(--e-5);
 }
 .prod-cab__id {
   display: flex;
   flex-direction: column;
   gap: var(--e-2);
   min-width: 0;
+  flex: 1; /* empurra o status de produção para a direita, na linha do Voltar */
 }
 .prod-cab__meta {
   display: flex;

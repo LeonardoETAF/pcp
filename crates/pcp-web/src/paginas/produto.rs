@@ -123,6 +123,13 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
                     {sku.map(|s| format!(" · SKU: {s}"))}
                 </p>
             </div>
+            <Suspense fallback=|| ()>
+                {move || {
+                    ativ.get().flatten().map(|a| {
+                        view! { <BotaoStatusProducao s=a.status_producao /> }
+                    })
+                }}
+            </Suspense>
         </header>
 
         <Suspense fallback=|| view! { <div class="cards-resumo cards-resumo--sk"></div> }>
@@ -143,16 +150,6 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
                 })
             }}
         </Suspense>
-
-        <section class="cartao prod-status-secao">
-            <Suspense fallback=|| ()>
-                {move || {
-                    ativ.get().flatten().map(|a| {
-                        view! { <BotaoStatusProducao s=a.status_producao /> }
-                    })
-                }}
-            </Suspense>
-        </section>
 
         <Suspense fallback=|| {
             view! { <p class="texto-suave">"Carregando atividade…"</p> }
@@ -220,9 +217,6 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
                     <span class="card-resumo__chip">{format!("{sazonal} sazonal")}</span>
                 </header>
                 <span class="card-resumo__valor">{fmt_milhar(m.qtd_sugerida)}</span>
-                <span class="card-resumo__sub">
-                    {format!("Recomendada: {} un", fmt_milhar(m.estoque_total_recomendado))}
-                </span>
                 <span class="card-resumo__nota">{format!("Confiança {confianca}")}</span>
             </article>
 
