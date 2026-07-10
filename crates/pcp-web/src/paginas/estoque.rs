@@ -120,10 +120,20 @@ pub fn PaginaEstoque() -> impl IntoView {
                 <Filtros status busca busca_input resetar exportar />
                 // As contagens vêm da MESMA consulta da lista: mudam com a busca e o status,
                 // e nunca dessincronizam do que a tabela mostra.
+                // Segunda linha do card: as classes à esquerda; a paginação, no canto direito.
                 <Suspense fallback=|| ()>
                     {move || {
                         dados.get().map(|res| match res {
-                            Ok(pag) => abas_classe(&pag.contagem_classes, classe, resetar).into_any(),
+                            Ok(pag) => {
+                                let total = pag.total;
+                                view! {
+                                    <div class="estoque-filtros__rodape">
+                                        {abas_classe(&pag.contagem_classes, classe, resetar)}
+                                        <PaginacaoBotoes limite deslocamento total />
+                                    </div>
+                                }
+                                    .into_any()
+                            }
                             Err(_) => ().into_any(),
                         })
                     }}
@@ -637,13 +647,6 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
         }
     };
     let fim = move || (deslocamento.get() + limite.get()).min(total);
-    let tem_anterior = move || deslocamento.get() > 0;
-    let tem_proximo = move || deslocamento.get() + limite.get() < total;
-    // Divisão para cima: 51 itens em páginas de 50 são 2 páginas.
-    let total_paginas = move || (total + limite.get() - 1) / limite.get().max(1);
-    let atual = move || deslocamento.get() / limite.get().max(1) + 1;
-    let ir_para = move |pagina: i64| deslocamento.set((pagina - 1) * limite.get());
-
     view! {
         <nav class="paginacao">
             <span class="paginacao__info">
@@ -660,6 +663,26 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
                     }
                 }}
             </span>
+            <PaginacaoBotoes limite deslocamento total />
+        </nav>
+    }
+}
+
+/// Setas e páginas numeradas, sem o texto "Mostrando…". Aparecem no rodapé da tabela e também no
+/// canto inferior direito do card de filtros — os dois compartilham `limite`/`deslocamento`, então
+/// navegam juntos.
+#[component]
+fn PaginacaoBotoes(
+    limite: RwSignal<i64>,
+    deslocamento: RwSignal<i64>,
+    total: i64,
+) -> impl IntoView {
+    let tem_anterior = move || deslocamento.get() > 0;
+    let tem_proximo = move || deslocamento.get() + limite.get() < total;
+    let total_paginas = move || (total + limite.get() - 1) / limite.get().max(1);
+    let atual = move || deslocamento.get() / limite.get().max(1) + 1;
+    let ir_para = move |pagina: i64| deslocamento.set((pagina - 1) * limite.get());
+    view! {
             <div class="paginacao__botoes">
                 <button
                     type="button"
@@ -702,6 +725,5 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
                     <Icone arquivo="seta-direita.svg" />
                 </button>
             </div>
-        </nav>
     }
 }
