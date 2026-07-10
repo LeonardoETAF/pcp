@@ -1777,7 +1777,43 @@ input {
 .icone-btn-claro:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .icone-btn-claro .icone-mask { width: 20px; height: 20px; }
 
-/* Título das seções de histórico (produção/movimentação), acima da lista em linhas-cartão. */
+/* Grade de cards do histórico (produção/movimentação): colunas que se acomodam à largura. */
+.ativ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--e-3);
+}
+.ativ-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-4);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
+}
+.ativ-card__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+.ativ-card__data {
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+.ativ-card__linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e-2);
+  font-size: var(--fs-sm);
+}
+.ativ-card__rotulo { color: var(--texto-suave); }
+.ativ-card__valor { font-variant-numeric: tabular-nums; }
+
+/* Título das seções de histórico (produção/movimentação), acima da grade. */
 .prod-secao {
   display: flex;
   flex-direction: column;

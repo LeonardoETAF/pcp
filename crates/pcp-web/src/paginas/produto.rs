@@ -203,9 +203,9 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
     }
 }
 
-/// Histórico de produção: ordens da linha (mais recentes primeiro).
+/// Histórico de produção: ordens da linha em grade de cards (mais recentes primeiro).
 fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
-    let linhas = ordens
+    let cards = ordens
         .iter()
         .map(|o| {
             let data = o.data.clone().unwrap_or_else(|| "—".to_owned());
@@ -213,14 +213,20 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
             let status = o.status.clone().unwrap_or_default();
             let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
             view! {
-                <tr>
-                    <td class="tabela__cod">{fmt_data(&data)}</td>
-                    <td class="tabela__num">{format!("{} un", fmt_milhar(o.quantidade))}</td>
-                    <td>
+                <div class="ativ-card">
+                    <div class="ativ-card__topo">
+                        <span class="ativ-card__data">{fmt_data(&data)}</span>
                         <span class=classe_st>{rotulo_producao(&status)}</span>
-                    </td>
-                    <td class="tabela__cod">{lote}</td>
-                </tr>
+                    </div>
+                    <div class="ativ-card__linha">
+                        <span class="ativ-card__rotulo">"Quantidade"</span>
+                        <span class="ativ-card__valor">{format!("{} un", fmt_milhar(o.quantidade))}</span>
+                    </div>
+                    <div class="ativ-card__linha">
+                        <span class="ativ-card__rotulo">"Lote"</span>
+                        <span class="ativ-card__valor">{lote}</span>
+                    </div>
+                </div>
             }
         })
         .collect_view();
@@ -231,52 +237,41 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
             } else {
-                view! {
-                    <div class="tabela-cartao">
-                        <div class="tabela-rolavel">
-                            <table class="tabela tabela--centro">
-                                <thead>
-                                    <tr>
-                                        <th>"Data"</th>
-                                        <th class="tabela__num">"Quantidade"</th>
-                                        <th>"Status"</th>
-                                        <th>"Lote"</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{linhas}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                }
-                    .into_any()
+                view! { <div class="ativ-grid">{cards}</div> }.into_any()
             }}
         </section>
     }
 }
 
-/// Histórico de movimentação: kardex da linha (entradas e saídas, mais recentes primeiro).
+/// Histórico de movimentação: kardex da linha em grade de cards (entradas/saídas, recentes primeiro).
 fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
-    let linhas = movs
+    let cards = movs
         .iter()
         .map(|m| {
             let entrada = m.quantidade >= 0;
             let classe_qtd = if entrada {
-                "mov--entrada"
+                "ativ-card__valor mov--entrada"
             } else {
-                "mov--saida"
+                "ativ-card__valor mov--saida"
             };
             let sinal = if entrada { "+" } else { "" };
             view! {
-                <tr>
-                    <td class="tabela__cod">{fmt_data(&m.data)}</td>
-                    <td>
+                <div class="ativ-card">
+                    <div class="ativ-card__topo">
+                        <span class="ativ-card__data">{fmt_data(&m.data)}</span>
                         <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
-                    </td>
-                    <td class=format!("tabela__num {classe_qtd}")>
-                        {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
-                    </td>
-                    <td class="tabela__num">{format!("{} un", fmt_milhar(m.saldo))}</td>
-                </tr>
+                    </div>
+                    <div class="ativ-card__linha">
+                        <span class="ativ-card__rotulo">"Quantidade"</span>
+                        <span class=classe_qtd>
+                            {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
+                        </span>
+                    </div>
+                    <div class="ativ-card__linha">
+                        <span class="ativ-card__rotulo">"Saldo"</span>
+                        <span class="ativ-card__valor">{format!("{} un", fmt_milhar(m.saldo))}</span>
+                    </div>
+                </div>
             }
         })
         .collect_view();
@@ -286,24 +281,7 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
             {if movs.is_empty() {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
-                view! {
-                    <div class="tabela-cartao">
-                        <div class="tabela-rolavel">
-                            <table class="tabela tabela--centro">
-                                <thead>
-                                    <tr>
-                                        <th>"Data"</th>
-                                        <th>"Tipo"</th>
-                                        <th class="tabela__num">"Quantidade"</th>
-                                        <th class="tabela__num">"Saldo"</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{linhas}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                }
-                    .into_any()
+                view! { <div class="ativ-grid">{cards}</div> }.into_any()
             }}
         </section>
     }
