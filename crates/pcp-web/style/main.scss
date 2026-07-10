@@ -2637,7 +2637,46 @@ input {
 }
 .paginacao__botoes {
   display: flex;
-  gap: var(--e-2);
+  align-items: center;
+  gap: var(--e-1);
+}
+/* Setas e numeros compartilham a caixa: 34px, sem borda; o realce e a pilula do selecionado. */
+.paginacao__seta,
+.paginacao__pagina {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 var(--e-2);
+  border: 0;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao);
+}
+.paginacao__seta:hover:not(:disabled),
+.paginacao__pagina:hover {
+  background: var(--superficie-2);
+  color: var(--texto);
+}
+/* Na borda da lista a seta perde a funcao: apaga, mas segue ocupando o lugar - os numeros nao
+   podem dancar quando o usuario chega a primeira ou a ultima pagina. */
+.paginacao__seta:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.paginacao__seta .icone-mask {
+  width: 18px;
+  height: 18px;
+}
+.paginacao__pagina--ativa,
+.paginacao__pagina--ativa:hover {
+  background: #1b1814;
+  color: #fff;
+  font-weight: var(--peso-medio);
 }
 
 @media (max-width: 720px) {

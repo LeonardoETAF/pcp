@@ -345,7 +345,7 @@ fn Filtros(
                     </span>
                     <input
                         class="input input--compacto input--com-icone"
-                        placeholder="Buscar item, código, SKU, cor…"
+                        placeholder="Buscar Produto, Código, Cor ou SKU"
                         prop:value=move || busca_input.get()
                         on:input=move |ev| busca_input.set(event_target_value(&ev))
                     />
@@ -573,6 +573,19 @@ fn Cor(configuracao: Option<String>) -> impl IntoView {
     .into_any()
 }
 
+/// Quantas páginas numeradas cabem entre as setas.
+const JANELA_PAGINAS: i64 = 5;
+
+/// Janela de até [`JANELA_PAGINAS`] páginas em volta da atual, sem estourar as bordas: perto do
+/// início ou do fim ela não encolhe, desliza — o usuário sempre vê o mesmo número de botões.
+fn janela(atual: i64, total_paginas: i64) -> impl Iterator<Item = i64> {
+    let largura = JANELA_PAGINAS.min(total_paginas);
+    let primeira = (atual - largura / 2)
+        .max(1)
+        .min((total_paginas - largura + 1).max(1));
+    primeira..primeira + largura
+}
+
 #[component]
 fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> impl IntoView {
     let inicio = move || {
@@ -585,6 +598,10 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
     let fim = move || (deslocamento.get() + limite.get()).min(total);
     let tem_anterior = move || deslocamento.get() > 0;
     let tem_proximo = move || deslocamento.get() + limite.get() < total;
+    // Divisão para cima: 51 itens em páginas de 50 são 2 páginas.
+    let total_paginas = move || (total + limite.get() - 1) / limite.get().max(1);
+    let atual = move || deslocamento.get() / limite.get().max(1) + 1;
+    let ir_para = move |pagina: i64| deslocamento.set((pagina - 1) * limite.get());
 
     view! {
         <nav class="paginacao">
@@ -605,23 +622,43 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
             <div class="paginacao__botoes">
                 <button
                     type="button"
-                    class="btn btn--secundario btn--sm"
-                    prop:disabled=move || !tem_anterior()
+                    class="paginacao__seta"
+                    aria-label="Página anterior"
+                    disabled=move || (!tem_anterior()).then_some("")
                     on:click=move |_| {
                         deslocamento.update(|d| *d = (*d - limite.get()).max(0));
                     }
                 >
-                    "Anterior"
+                    <Icone arquivo="seta-esquerda.svg" />
                 </button>
+                {move || {
+                    janela(atual(), total_paginas())
+                        .map(|pagina| {
+                            let ativa = pagina == atual();
+                            view! {
+                                <button
+                                    type="button"
+                                    class="paginacao__pagina"
+                                    class:paginacao__pagina--ativa=ativa
+                                    aria-current=ativa.then_some("page")
+                                    on:click=move |_| ir_para(pagina)
+                                >
+                                    {fmt_milhar(pagina)}
+                                </button>
+                            }
+                        })
+                        .collect_view()
+                }}
                 <button
                     type="button"
-                    class="btn btn--secundario btn--sm"
-                    prop:disabled=move || !tem_proximo()
+                    class="paginacao__seta"
+                    aria-label="Próxima página"
+                    disabled=move || (!tem_proximo()).then_some("")
                     on:click=move |_| {
                         deslocamento.update(|d| *d += limite.get());
                     }
                 >
-                    "Próxima"
+                    <Icone arquivo="seta-direita.svg" />
                 </button>
             </div>
         </nav>
