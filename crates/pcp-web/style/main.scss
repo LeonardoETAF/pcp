@@ -2110,10 +2110,16 @@ input {
   flex-direction: column;
   min-width: 0;
 }
-.tabela__nome { font-weight: var(--peso-medio); }
+/* Nome e cor identificam o produto: nunca são cortados. Em tela estreita a linha quebra e a
+   célula cresce em altura; `overflow-wrap: anywhere` cuida do valor longo sem espaço. */
+.tabela__nome {
+  font-weight: var(--peso-medio);
+  overflow-wrap: anywhere;
+}
 .tabela__sku {
   font-size: var(--fs-xs);
   color: var(--texto-suave);
+  overflow-wrap: anywhere;
 }
 /* Variante centralizada: cabeçalho e valores alinhados ao centro, em coluna (dashboard "A produzir"
    e Gestão de Estoque). O badge é inline-flex, então `text-align:center` no <td> já o centraliza. */
@@ -2468,9 +2474,10 @@ input {
 }
 
 /* Coluna "Cor": o primeiro atributo da configuração em destaque, os demais numa segunda linha.
-   A coluna tem largura própria e corta com reticências — a configuração inteira vai no `title`. */
+   A cor NUNCA é cortada — ela identifica o produto tanto quanto o nome. Valor longo ou tela
+   estreita quebram a linha; a célula cresce em altura, não esconde texto. */
 .tabela__cor {
-  max-width: 220px;
+  max-width: 240px;
 }
 .cor-celula {
   display: flex;
@@ -2480,9 +2487,8 @@ input {
 }
 .cor-celula__valor,
 .cor-celula__extra {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .cor-celula__extra {
   font-size: var(--fs-xs);

@@ -541,15 +541,14 @@ fn SemAlvo() -> impl IntoView {
     }
 }
 
-/// Célula de cor: o primeiro atributo em destaque e os demais numa segunda linha. O `title` traz
-/// a configuração inteira, que na coluna estreita sai com reticências.
+/// Célula de cor: o primeiro atributo em destaque e os demais numa segunda linha. Nada é cortado —
+/// a cor identifica o produto tanto quanto o nome, então a célula cresce em altura se preciso.
 #[component]
 fn Cor(configuracao: Option<String>) -> impl IntoView {
     let partes = cor_partes(configuracao.as_deref());
     if partes.is_empty() {
         return view! { <span class="texto-suave">"—"</span> }.into_any();
     }
-    let completo = configuracao.unwrap_or_default();
     let (_, principal) = partes[0].clone();
     let extras = partes[1..]
         .iter()
@@ -557,7 +556,7 @@ fn Cor(configuracao: Option<String>) -> impl IntoView {
         .collect::<Vec<_>>()
         .join(" · ");
     view! {
-        <span class="cor-celula" title=completo>
+        <span class="cor-celula">
             <span class="cor-celula__valor">{principal}</span>
             {(!extras.is_empty()).then(|| view! { <span class="cor-celula__extra">{extras}</span> })}
         </span>
