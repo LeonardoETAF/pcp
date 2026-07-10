@@ -134,8 +134,9 @@ fn BarraLateral(recolhido: RwSignal<bool>) -> impl IntoView {
                 <ItemMenu href="/configuracoes" rotulo="Configurações" icone="settings.svg" />
             </nav>
             <div class="usuario">
+                // Mesmo símbolo que a logo assume com o menu recolhido.
                 <span class="usuario__avatar">
-                    <Icone arquivo="usuario.svg" />
+                    <img src="/images/simbolo-branco.svg" alt="" aria-hidden="true" />
                 </span>
                 <div class="usuario__dados">
                     <span class="usuario__nome">"Minha conta"</span>
