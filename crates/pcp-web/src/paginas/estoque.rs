@@ -462,12 +462,15 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
         i.classe.to_lowercase()
     );
     let cor_st = cor_status(&i.status);
+    // Sem recomendação (histórico insuficiente), o motor não tem alvo: não há nível a medir nem
+    // quantidade a produzir. Uma barra vazia contra alvo zero seria uma leitura inventada (§3).
+    let recomendada = i.estoque_total_recomendado;
+    let sem_alvo = recomendada <= 0;
     // Barra de nível: preenchimento = disponível / recomendado (0–100%), cor pelo status.
     // O alvo (recomendado) vai no rótulo; nada é recalculado aqui — só visualização (§3).
-    let alvo = i.estoque_total_recomendado.max(1);
+    let alvo = recomendada.max(1);
     let pct = ((i.qtd_disponivel as f64 / alvo as f64) * 100.0).clamp(0.0, 100.0);
     let estilo_barra = format!("width:{pct:.0}%;background:{cor_st}");
-    let recomendada = i.estoque_total_recomendado;
     view! {
         <tr>
             <td class="tabela__cod">{i.codigo_estoque.clone()}</td>
@@ -487,12 +490,21 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                 <span class=classe_abc>{i.classe.clone()}</span>
             </td>
             <td class="tabela__nivel-col">
-                <div class="nivel">
-                    <div class="nivel__trilho">
-                        <span class="nivel__preenche" style=estilo_barra></span>
-                    </div>
-                    <span class="nivel__ref">{format!("rec. {} un", fmt_milhar(recomendada))}</span>
-                </div>
+                {if sem_alvo {
+                    view! { <span class="texto-suave">"—"</span> }.into_any()
+                } else {
+                    view! {
+                        <div class="nivel">
+                            <div class="nivel__trilho">
+                                <span class="nivel__preenche" style=estilo_barra></span>
+                            </div>
+                            <span class="nivel__ref">
+                                {format!("rec. {} un", fmt_milhar(recomendada))}
+                            </span>
+                        </div>
+                    }
+                        .into_any()
+                }}
             </td>
             <td class="tabela__num">
                 <div class="tabela__disp">
@@ -503,10 +515,10 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                 </div>
             </td>
             <td class="tabela__num tabela__produzir">
-                {if i.qtd_sugerida > 0 {
-                    format!("{} un", fmt_milhar(i.qtd_sugerida))
+                {if sem_alvo || i.qtd_sugerida <= 0 {
+                    view! { <span class="texto-suave">"—"</span> }.into_any()
                 } else {
-                    "—".to_owned()
+                    view! { {format!("{} un", fmt_milhar(i.qtd_sugerida))} }.into_any()
                 }}
             </td>
             <td class="tabela__status">
