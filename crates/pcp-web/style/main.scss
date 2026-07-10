@@ -1777,9 +1777,19 @@ input {
 .icone-btn-claro:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .icone-btn-claro .icone-mask { width: 20px; height: 20px; }
 
+/* Título das seções de histórico (produção/movimentação), acima da lista em linhas-cartão. */
+.prod-secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.prod-secao__titulo {
+  font-size: var(--fs-lg);
+  font-weight: var(--peso-forte);
+}
 /* Status de produção: botão informativo. Inerte (apagado) quando não há ordem em produção; ao
    clicar (só então) revela planejado × produzido × falta. */
-.prod-status { padding: 0; overflow: hidden; }
+.prod-status { border-top: var(--cartao-borda); }
 .prod-status__btn {
   display: flex;
   align-items: center;
@@ -1829,8 +1839,15 @@ input {
 
 .prod-cab {
   display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+.prod-cab__topo {
+  display: flex;
   align-items: center;
   gap: var(--e-4);
+  padding: var(--e-5);
 }
 .prod-cab__id {
   display: flex;

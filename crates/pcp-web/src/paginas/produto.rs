@@ -6,8 +6,8 @@ use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
 use crate::api::{
-    produto_atividade, produto_detalhe, Atividade, DetalheProduto, MetricasProduto, Movimento,
-    OrdemProducao, StatusProducao,
+    produto_atividade, produto_detalhe, DetalheProduto, MetricasProduto, Movimento, OrdemProducao,
+    StatusProducao,
 };
 use crate::componentes::Icone;
 use crate::contexto::Sessao;
@@ -84,33 +84,12 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
     let codigo = d.codigo_estoque.clone();
     let sku = d.sku.clone().filter(|s| !s.is_empty());
 
-    view! {
-        <section class="cartao prod-cab">
-            <A href="/estoque" attr:class="icone-btn-claro" attr:aria-label="Voltar ao estoque" attr:title="Voltar">
-                <Icone arquivo="seta-esquerda.svg" />
-            </A>
-            <div class="prod-cab__id">
-                <h1 class="pagina__titulo">{nome}</h1>
-                <div class="prod-cab__meta">
-                    <span class="prod-cab__codigo">{codigo}</span>
-                    {sku.map(|s| view! { <span class="prod-cab__sku">{s}</span> })}
-                    <span class=classe_abc>{d.classe.clone()}</span>
-                    <span class=classe_status>{status_rotulo}</span>
-                </div>
-            </div>
-        </section>
-
-        {metricas(&d.metricas)}
-        <Atividades codigo=d.codigo_estoque.clone() />
-    }
-}
-
-/// Carrega e exibe status de produção, histórico de produção e histórico de movimentação.
-#[component]
-fn Atividades(codigo: String) -> impl IntoView {
+    // A atividade (status + históricos) é carregada UMA vez e lida em dois pontos: o status entra
+    // no card de cabeçalho; os históricos vêm abaixo das métricas.
     let sessao = expect_context::<Sessao>();
-    let dados = Resource::new(
-        move || (sessao.0.get(), codigo.clone()),
+    let cod = d.codigo_estoque.clone();
+    let ativ = Resource::new(
+        move || (sessao.0.get(), cod.clone()),
         |(token, codigo)| async move {
             match token {
                 Some(t) => produto_atividade(t, codigo).await.ok(),
@@ -118,25 +97,50 @@ fn Atividades(codigo: String) -> impl IntoView {
             }
         },
     );
+
     view! {
+        <section class="cartao prod-cab">
+            <div class="prod-cab__topo">
+                <A href="/estoque" attr:class="icone-btn-claro" attr:aria-label="Voltar ao estoque" attr:title="Voltar">
+                    <Icone arquivo="seta-esquerda.svg" />
+                </A>
+                <div class="prod-cab__id">
+                    <h1 class="pagina__titulo">{nome}</h1>
+                    <div class="prod-cab__meta">
+                        <span class="prod-cab__codigo">{codigo}</span>
+                        {sku.map(|s| view! { <span class="prod-cab__sku">{s}</span> })}
+                        <span class=classe_abc>{d.classe.clone()}</span>
+                        <span class=classe_status>{status_rotulo}</span>
+                    </div>
+                </div>
+            </div>
+            <Suspense fallback=|| ()>
+                {move || {
+                    ativ.get().flatten().map(|a| {
+                        view! { <BotaoStatusProducao s=a.status_producao /> }
+                    })
+                }}
+            </Suspense>
+        </section>
+
+        {metricas(&d.metricas)}
+
         <Suspense fallback=|| {
             view! { <p class="texto-suave">"Carregando atividade…"</p> }
         }>
             {move || {
-                dados.get().flatten().map_or_else(
+                ativ.get().flatten().map_or_else(
                     || ().into_any(),
-                    |a| view! { {secoes_atividade(&a)} }.into_any(),
+                    |a| {
+                        view! {
+                            {historico_producao(&a.producao)}
+                            {historico_movimentacao(&a.movimentos)}
+                        }
+                            .into_any()
+                    },
                 )
             }}
         </Suspense>
-    }
-}
-
-fn secoes_atividade(a: &Atividade) -> impl IntoView {
-    view! {
-        <BotaoStatusProducao s=a.status_producao.clone() />
-        {historico_producao(&a.producao)}
-        {historico_movimentacao(&a.movimentos)}
     }
 }
 
@@ -158,7 +162,7 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
         "Sem produção em andamento".to_owned()
     };
     view! {
-        <section class="cartao prod-status">
+        <div class="prod-status">
             <button
                 type="button"
                 class="prod-status__btn"
@@ -195,7 +199,7 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
                         .collect_view()}
                 </div>
             </Show>
-        </section>
+        </div>
     }
 }
 
@@ -221,27 +225,27 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
         })
         .collect_view();
     view! {
-        <section class="cartao">
-            <header class="cartao__cab">
-                <h2 class="cartao__titulo">"Histórico de produção"</h2>
-            </header>
+        <section class="prod-secao">
+            <h2 class="prod-secao__titulo">"Histórico de produção"</h2>
             {if ordens.is_empty() {
-                view! { <p class="texto-suave">"Sem ordens de produção registradas."</p> }
+                view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
             } else {
                 view! {
-                    <div class="tabela-rolavel">
-                        <table class="tabela">
-                            <thead>
-                                <tr>
-                                    <th>"Data"</th>
-                                    <th class="tabela__num">"Quantidade"</th>
-                                    <th>"Status"</th>
-                                    <th>"Lote"</th>
-                                </tr>
-                            </thead>
-                            <tbody>{linhas}</tbody>
-                        </table>
+                    <div class="tabela-cartao">
+                        <div class="tabela-rolavel">
+                            <table class="tabela tabela--centro">
+                                <thead>
+                                    <tr>
+                                        <th>"Data"</th>
+                                        <th class="tabela__num">"Quantidade"</th>
+                                        <th>"Status"</th>
+                                        <th>"Lote"</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{linhas}</tbody>
+                            </table>
+                        </div>
                     </div>
                 }
                     .into_any()
@@ -277,26 +281,26 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
         })
         .collect_view();
     view! {
-        <section class="cartao">
-            <header class="cartao__cab">
-                <h2 class="cartao__titulo">"Histórico de movimentação"</h2>
-            </header>
+        <section class="prod-secao">
+            <h2 class="prod-secao__titulo">"Histórico de movimentação"</h2>
             {if movs.is_empty() {
-                view! { <p class="texto-suave">"Sem movimentações registradas."</p> }.into_any()
+                view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
                 view! {
-                    <div class="tabela-rolavel">
-                        <table class="tabela">
-                            <thead>
-                                <tr>
-                                    <th>"Data"</th>
-                                    <th>"Tipo"</th>
-                                    <th class="tabela__num">"Quantidade"</th>
-                                    <th class="tabela__num">"Saldo"</th>
-                                </tr>
-                            </thead>
-                            <tbody>{linhas}</tbody>
-                        </table>
+                    <div class="tabela-cartao">
+                        <div class="tabela-rolavel">
+                            <table class="tabela tabela--centro">
+                                <thead>
+                                    <tr>
+                                        <th>"Data"</th>
+                                        <th>"Tipo"</th>
+                                        <th class="tabela__num">"Quantidade"</th>
+                                        <th class="tabela__num">"Saldo"</th>
+                                    </tr>
+                                </thead>
+                                <tbody>{linhas}</tbody>
+                            </table>
+                        </div>
                     </div>
                 }
                     .into_any()
