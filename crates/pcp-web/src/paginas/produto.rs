@@ -802,9 +802,10 @@ fn dia_producao(data: &str, fases: &[&OrdemProducao]) -> impl IntoView {
 #[component]
 fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
     // Separação de venda não é movimento de saldo (quantidade 0) — fica fora da lista.
+    // Separações (venda e produção) não mexem no saldo (quantidade 0) — ficam fora da lista.
     let movimentos: Vec<Movimento> = movimentos
         .into_iter()
-        .filter(|m| m.tipo != "SEPARACAO_VENDA")
+        .filter(|m| m.tipo != "SEPARACAO_VENDA" && m.tipo != "SEPARACAO_PRODUCAO")
         .collect();
     let dados = StoredValue::new(movimentos);
     let inicio = RwSignal::new(String::new());
