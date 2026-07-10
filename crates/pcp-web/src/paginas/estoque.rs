@@ -120,19 +120,11 @@ pub fn PaginaEstoque() -> impl IntoView {
                 <Filtros status busca busca_input resetar exportar />
                 // As contagens vêm da MESMA consulta da lista: mudam com a busca e o status,
                 // e nunca dessincronizam do que a tabela mostra.
-                // Segunda linha do card: as classes à esquerda; a paginação, no canto direito.
                 <Suspense fallback=|| ()>
                     {move || {
                         dados.get().map(|res| match res {
                             Ok(pag) => {
-                                let total = pag.total;
-                                view! {
-                                    <div class="estoque-filtros__rodape">
-                                        {abas_classe(&pag.contagem_classes, classe, resetar)}
-                                        <PaginacaoBotoes limite deslocamento total />
-                                    </div>
-                                }
-                                    .into_any()
+                                abas_classe(&pag.contagem_classes, classe, resetar).into_any()
                             }
                             Err(_) => ().into_any(),
                         })
@@ -149,6 +141,7 @@ pub fn PaginaEstoque() -> impl IntoView {
                             view! {
                                 <div class="lista-info">
                                     <PaginacaoInfo limite deslocamento total />
+                                    <PaginacaoBotoes limite deslocamento total />
                                 </div>
                             }
                                 .into_any()

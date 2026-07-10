@@ -2418,24 +2418,11 @@ input {
   flex-wrap: wrap;
   padding: var(--e-3);
 }
-/* Segunda linha do card: classes à esquerda, paginação SEMPRE à direita, na mesma linha. As
-   classes crescem e quebram internamente; a paginação não encolhe nem desce. */
-.estoque-filtros__rodape {
-  display: flex;
-  align-items: center;
-  gap: var(--e-3);
-  padding: 0 var(--e-3) var(--e-3);
-}
 .estoque-filtros__classes {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e-3);
-  flex: 1;
-  min-width: 0;
-}
-.estoque-filtros__rodape .paginacao__botoes {
-  flex-shrink: 0;
-  margin-left: auto;
+  padding: 0 var(--e-3) var(--e-3);
 }
 .estoque-filtros__busca {
   display: flex;
@@ -2683,9 +2670,16 @@ input {
   gap: var(--e-4);
   flex-wrap: wrap;
 }
-/* Faixa "Mostrando X à Y" logo abaixo do card de filtros, alinhada às margens da página. */
+/* Linha fora do card: "Mostrando X à Y" à esquerda, a paginação de cima à direita. */
 .lista-info {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
   padding: 0 var(--e-1);
+}
+.lista-info .paginacao__botoes {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .paginacao__info {
