@@ -1777,6 +1777,119 @@ input {
 .icone-btn-claro:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .icone-btn-claro .icone-mask { width: 20px; height: 20px; }
 
+/* ---- Detalhe do produto: topo estilo mockup ---- */
+.prod-cab__sub {
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+/* Barra de resumo: cor, estoque, cobertura, classe e status numa faixa. */
+.prod-resumo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--e-3) var(--e-5);
+  padding: var(--e-4) var(--e-5);
+}
+.prod-resumo__cor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-weight: var(--peso-medio);
+}
+.prod-resumo__ponto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.prod-resumo__item {
+  font-weight: var(--peso-medio);
+  font-variant-numeric: tabular-nums;
+}
+.prod-linha-ia {
+  display: flex;
+  gap: var(--e-5);
+  flex-wrap: wrap;
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  padding: 0 var(--e-1);
+}
+
+/* Quatro cards coloridos do resumo (mockup). Reusa a grade .cards-resumo (4 col). */
+.card-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  padding: var(--e-5);
+  border: 1px solid transparent;
+  border-radius: var(--cartao-raio);
+}
+.card-resumo--sk { min-height: 120px; }
+.card-resumo__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+.card-resumo__titulo {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  font-weight: var(--peso-medio);
+}
+.card-resumo__cab .icone-mask { width: 18px; height: 18px; color: var(--texto-suave); }
+.card-resumo__chip {
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-medio);
+  padding: 2px var(--e-2);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--texto-suave);
+}
+.card-resumo__valor {
+  font-size: var(--fs-2xl, 1.8rem);
+  font-weight: var(--peso-forte);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.card-resumo__sub { font-size: var(--fs-sm); color: var(--texto-suave); }
+.card-resumo__nota { font-size: var(--fs-xs); color: var(--texto-suave); }
+/* Cores por card (fundo pastel + valor colorido). */
+.card-resumo--estoque { background: rgba(21, 112, 239, 0.08); border-color: rgba(21, 112, 239, 0.18); }
+.card-resumo--estoque .card-resumo__valor { color: #1570ef; }
+.card-resumo--performance { background: rgba(18, 183, 106, 0.08); border-color: rgba(18, 183, 106, 0.18); }
+.card-resumo--performance .card-resumo__valor { color: #12b76a; }
+.card-resumo--ia { background: rgba(158, 119, 237, 0.10); border-color: rgba(158, 119, 237, 0.20); }
+.card-resumo--ia .card-resumo__valor { color: #7f56d9; }
+.card-resumo--alertas { background: rgba(234, 179, 8, 0.10); border-color: rgba(234, 179, 8, 0.22); }
+.card-resumo--alertas .card-resumo__valor { color: #b7791f; }
+
+/* Análise de tendências: direção e lista de alertas. */
+.prod-tend__dir {
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-medio);
+  padding: 2px var(--e-3);
+  border-radius: 999px;
+}
+.prod-tend__dir--alta { background: rgba(18, 183, 106, 0.14); color: #12b76a; }
+.prod-tend__dir--queda { background: rgba(217, 45, 32, 0.14); color: var(--semaforo-critico); }
+.prod-tend__dir--estavel { background: var(--superficie-2); color: var(--texto-suave); }
+.prod-tend__alertas {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin-top: var(--e-4);
+}
+.prod-tend__alerta {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  font-size: var(--fs-sm);
+}
+/* O status de produção, quando sozinho no seu card, não precisa do filete de topo. */
+.prod-status-secao { padding: 0; }
+.prod-status-secao .prod-status { border-top: 0; }
+
 /* Grade de cards do histórico (produção/movimentação): colunas que se acomodam à largura. */
 .ativ-grid {
   display: grid;
