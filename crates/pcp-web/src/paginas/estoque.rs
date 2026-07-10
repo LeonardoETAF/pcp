@@ -167,6 +167,9 @@ pub fn PaginaEstoque() -> impl IntoView {
     }
 }
 
+/// Traço exibido quando o motor não tem valor para o KPI: sem número, não há unidade a mostrar.
+const SEM_VALOR: &str = "—";
+
 /// KPIs do estoque (métricas reais do painel — frontend burro, §3). Sem dimensão financeira
 /// (custo/preço adiados — §6) nem "giro" (não calculado pelo motor): só o que a API já entrega.
 fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
@@ -183,7 +186,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
         .sum();
     let cobertura = p
         .cobertura_media
-        .map_or_else(|| "—".to_owned(), |c| format!("{c:.0}"));
+        .map_or_else(|| SEM_VALOR.to_owned(), |c| format!("{c:.0}"));
     view! {
         <div class="kpis">
             <KpiEstoque
@@ -196,7 +199,12 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
                 valor=fmt_milhar(abaixo)
                 rotulo="Abaixo do recomendado"
             />
-            <KpiEstoque icone="relogio.svg" valor=cobertura rotulo="Cobertura média" />
+            <KpiEstoque
+                icone="relogio.svg"
+                valor=cobertura
+                rotulo="Cobertura média"
+                unidade="dias"
+            />
             <KpiEstoque
                 icone="orders.svg"
                 valor=fmt_milhar(p.total_sugerido)
@@ -208,14 +216,25 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
 
 /// KPI horizontal: ícone ao lado do texto (o card fica mais baixo que na versão em coluna).
 #[component]
-fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl IntoView {
+fn KpiEstoque(
+    icone: &'static str,
+    valor: String,
+    rotulo: &'static str,
+    /// Unidade ao lado do número (ex.: "dias"). Omitida quando não há valor a qualificar.
+    #[prop(optional)]
+    unidade: Option<&'static str>,
+) -> impl IntoView {
+    let com_unidade = unidade.filter(|_| valor != SEM_VALOR);
     view! {
         <div class="kpi kpi--linha">
             <span class="kpi__chip">
                 <Icone arquivo=icone />
             </span>
             <div class="kpi__corpo">
-                <span class="kpi__valor">{valor}</span>
+                <span class="kpi__valor">
+                    {valor}
+                    {com_unidade.map(|u| view! { <span class="kpi__unidade">{u}</span> })}
+                </span>
                 <span class="kpi__rotulo">{rotulo}</span>
             </div>
         </div>

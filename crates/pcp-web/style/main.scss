@@ -1064,6 +1064,13 @@ input {
   font-variant-numeric: tabular-nums;
   margin-top: auto;
 }
+/* Unidade ao lado do número do KPI: menor, mais leve e sem `tabular-nums` — é texto, não dígito. */
+.kpi__unidade {
+  margin-left: 0.3em;
+  font-size: var(--fs-sm);
+  font-weight: var(--peso-medio);
+  color: var(--texto-suave);
+}
 .kpi--critico .kpi__valor { color: var(--semaforo-critico); }
 .kpi--medio .kpi__valor { color: var(--semaforo-alto); }
 .kpi__sub {
