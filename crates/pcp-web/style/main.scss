@@ -1840,7 +1840,6 @@ input {
   gap: var(--e-4);
   padding: var(--e-2) 0;
 }
-.mov-dia + .mov-dia { border-top: 1px solid var(--borda); }
 .mov-dia__data {
   flex-shrink: 0;
   width: 92px;
@@ -1884,6 +1883,7 @@ input {
 .mov-fase--prod-finalizado { --cor: var(--semaforo-ok); }
 .mov-fase--prod-aguardando { --cor: var(--semaforo-alto); }
 .mov-fase--prod-cancelado { --cor: var(--abc-d); }
+.mov-fase--venda { --cor: var(--semaforo-info); }
 .mov-fase--entrada { --cor: var(--semaforo-ok); }
 .mov-fase--saida { --cor: var(--semaforo-critico); }
 /* Conector ENTRE dois cards de fase do mesmo dia: uma linha com um ponto no meio. */
@@ -1936,6 +1936,11 @@ input {
   justify-content: space-between;
   gap: var(--e-3);
   flex-wrap: wrap;
+}
+.prod-secao__cab .input {
+  width: auto;
+  padding: var(--e-1) var(--e-2);
+  font-size: var(--fs-sm);
 }
 .prod-secao__titulo {
   font-size: var(--fs-lg);

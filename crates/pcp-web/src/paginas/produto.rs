@@ -591,6 +591,11 @@ fn dia_producao(data: &str, fases: &[&OrdemProducao]) -> impl IntoView {
 /// Histórico de movimentação: linha do tempo por data, com filtro e paginação.
 #[component]
 fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
+    // Separação de venda não é movimento de saldo (quantidade 0) — fica fora da lista.
+    let movimentos: Vec<Movimento> = movimentos
+        .into_iter()
+        .filter(|m| m.tipo != "SEPARACAO_VENDA")
+        .collect();
     let dados = StoredValue::new(movimentos);
     let filtro = RwSignal::new(String::new());
     let desloc = RwSignal::new(0_i64);
@@ -635,7 +640,9 @@ fn dia_movimentacao(data: &str, fases: &[&Movimento]) -> impl IntoView {
             itens.push(view! { <span class="mov-liga"></span> }.into_any());
         }
         let entrada = m.quantidade >= 0;
-        let classe = if entrada {
+        let classe = if m.tipo == "VENDA" {
+            "mov-fase mov-fase--venda"
+        } else if entrada {
             "mov-fase mov-fase--entrada"
         } else {
             "mov-fase mov-fase--saida"
