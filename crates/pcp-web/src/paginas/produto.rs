@@ -262,7 +262,7 @@ fn cards_resumo(
     let alertas = insights.map_or(0, |i| i.alertas.len());
     view! {
         <div class="cards-resumo">
-            <article class="card-resumo card-resumo--estoque">
+            <article class="card-resumo">
                 <header class="card-resumo__cab">
                     <span class="card-resumo__titulo">"Estoque atual"</span>
                     <Icone arquivo="inventory.svg" />
@@ -273,7 +273,7 @@ fn cards_resumo(
                 </span>
             </article>
 
-            <article class="card-resumo card-resumo--performance">
+            <article class="card-resumo">
                 <header class="card-resumo__cab">
                     <span class="card-resumo__titulo">"Performance"</span>
                     <span class="card-resumo__chip">{format!("{:.0}/dia", m.media_diaria)}</span>
@@ -284,7 +284,7 @@ fn cards_resumo(
                 </span>
             </article>
 
-            <article class="card-resumo card-resumo--ia">
+            <article class="card-resumo">
                 <header class="card-resumo__cab">
                     <span class="card-resumo__titulo">"Recomendação"</span>
                     <span class="card-resumo__chip">{format!("{sazonal} sazonal")}</span>
@@ -296,7 +296,7 @@ fn cards_resumo(
                 <span class="card-resumo__nota">{format!("Confiança {confianca}")}</span>
             </article>
 
-            <article class="card-resumo card-resumo--alertas">
+            <article class="card-resumo">
                 <header class="card-resumo__cab">
                     <span class="card-resumo__titulo">"Alertas & qualidade"</span>
                     <span class="card-resumo__chip">{format!("{dados} dados")}</span>

@@ -1821,8 +1821,10 @@ input {
   flex-direction: column;
   gap: var(--e-2);
   padding: var(--e-5);
-  border: 1px solid transparent;
+  background: var(--superficie);
+  border: var(--cartao-borda);
   border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
 }
 .card-resumo--sk { min-height: 120px; }
 .card-resumo__cab {
@@ -1850,18 +1852,10 @@ input {
   font-weight: var(--peso-forte);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
+  color: var(--texto);
 }
 .card-resumo__sub { font-size: var(--fs-sm); color: var(--texto-suave); }
 .card-resumo__nota { font-size: var(--fs-xs); color: var(--texto-suave); }
-/* Cores por card (fundo pastel + valor colorido). */
-.card-resumo--estoque { background: rgba(21, 112, 239, 0.08); border-color: rgba(21, 112, 239, 0.18); }
-.card-resumo--estoque .card-resumo__valor { color: #1570ef; }
-.card-resumo--performance { background: rgba(18, 183, 106, 0.08); border-color: rgba(18, 183, 106, 0.18); }
-.card-resumo--performance .card-resumo__valor { color: #12b76a; }
-.card-resumo--ia { background: rgba(158, 119, 237, 0.10); border-color: rgba(158, 119, 237, 0.20); }
-.card-resumo--ia .card-resumo__valor { color: #7f56d9; }
-.card-resumo--alertas { background: rgba(234, 179, 8, 0.10); border-color: rgba(234, 179, 8, 0.22); }
-.card-resumo--alertas .card-resumo__valor { color: #b7791f; }
 
 /* Análise de tendências: direção e lista de alertas. */
 .prod-tend__dir {
