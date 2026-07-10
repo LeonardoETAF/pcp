@@ -1759,6 +1759,24 @@ input {
 
 /* ── Detalhe do Produto (doc 03 §4): cabeçalho, regra, métricas, gráficos ── */
 
+/* Botão-ícone sobre fundo claro (voltar, no detalhe do produto): borda suave, ícone escuro. */
+.icone-btn-claro {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+  color: var(--texto);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transicao), border-color var(--transicao);
+}
+.icone-btn-claro:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
+.icone-btn-claro .icone-mask { width: 20px; height: 20px; }
+
 .prod-cab {
   display: flex;
   align-items: flex-start;
