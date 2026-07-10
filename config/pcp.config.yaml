@@ -22,7 +22,9 @@ parametros_estoque:
   dias_base_minimo: 15          # base de 15 dias (§3.5)
   teto_cobertura_dias: 60       # teto do recomendado (§3.5)
   fracao_minimo: 0.70           # estoque minimo = 70% do alvo-meta (§3.6)
-  defaults_sem_historico: { media: 50.0, min: 750, seguranca: 250, recomendado_max: 1000 }  # §3.4
+  # Zerado: produto com histórico insuficiente NÃO recebe piso nem alvo — o motor não
+  # inventa recomendação a partir de dado que não existe (decisão do dono, 2026-07-10).
+  defaults_sem_historico: { media: 0.0, min: 0, seguranca: 0, recomendado_max: 0 }  # §3.4
 
 sazonalidade: { clamp_min: 0.5, clamp_max: 2.0, atualizar_apos_dias: 30 }   # §4
 

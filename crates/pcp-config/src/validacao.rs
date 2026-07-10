@@ -93,9 +93,11 @@ fn validar_parametros(p: &ParametrosEstoque, erros: &mut Vec<String>) {
             p.fracao_minimo
         ));
     }
+    // Zero é válido e significativo: "produto sem histórico não recomenda nada" (decisão do dono,
+    // 2026-07-10). O que não se admite é média negativa nem um teto abaixo do piso.
     let d = &p.defaults_sem_historico;
-    if d.media <= 0.0 || d.min == 0 || d.seguranca == 0 || d.recomendado_max == 0 {
-        erros.push("parametros_estoque.defaults_sem_historico: valores devem ser > 0".into());
+    if d.media < 0.0 || !d.media.is_finite() {
+        erros.push("parametros_estoque.defaults_sem_historico: media deve ser >= 0".into());
     }
     if d.recomendado_max < d.min {
         erros.push(format!(
