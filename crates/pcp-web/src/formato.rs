@@ -117,7 +117,7 @@ fn rotulo_cor(rotulo: &str) -> String {
 #[must_use]
 pub fn nome_classe(classe: &str) -> &str {
     match classe {
-        "D" => "Dormente",
+        "D" => "Inativo",
         "F" => "Fora de linha",
         "N" => "Novo",
         letra => letra,

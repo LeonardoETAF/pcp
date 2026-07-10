@@ -2504,6 +2504,38 @@ input {
   color: var(--texto-suave);
 }
 
+/* Cabeçalho ordenável: o <th> vira botão, mas mantém a aparência de rótulo. A seta só existe na
+   coluna ativa, e gira 180° no ascendente. */
+.th-ordena {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.th-ordena:hover { color: var(--texto); }
+.th-ordena--ativa { color: var(--texto); }
+.th-ordena__seta {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transicao);
+}
+.th-ordena__seta--asc { transform: rotate(180deg); }
+.th-ordena__seta .icone-mask {
+  width: 14px;
+  height: 14px;
+}
+/* A coluna centralizada centra o botão, não o texto dentro dele. */
+.tabela--centro thead th .th-ordena { justify-content: center; }
+
 /* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
 .tabela-cartao {
   display: flex;

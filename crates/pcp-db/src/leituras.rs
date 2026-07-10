@@ -263,10 +263,12 @@ pub async fn contagem_classes(
 }
 
 /// Produtos ativos paginados (doc 03 §3 / doc 04 §6.2). Filtra por classe/status/busca e ordena
-/// por uma chave da allowlist (compile-time safe via CASE). Total calculado no mesmo filtro.
+/// por uma chave da allowlist (compile-time safe via CASE) — uma por coluna da tabela, nos dois
+/// sentidos. Chave desconhecida cai no padrão `sugerida_desc`. Total calculado no mesmo filtro.
 ///
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco.
+#[allow(clippy::too_many_lines)] // quase tudo é SQL: o ORDER BY tem uma linha por coluna ordenável
 pub async fn produtos_paginado(
     pool: &PgPool,
     filtro: FiltroEstoque<'_>,
@@ -321,17 +323,31 @@ pub async fn produtos_paginado(
              AND (NOT $7 OR qtd_sugerida > 0)
              AND (NOT $8 OR fora_de_linha)
            ORDER BY
+             -- codigo_estoque é texto, mas no One é sempre um inteiro (EST_ID). Ordenar como texto
+             -- daria 1, 10, 10001, 2. O CASE ~ '^[0-9]+$' protege um código não-numérico futuro.
+             (CASE WHEN $4 = 'codigo_asc' AND codigo_estoque ~ '^[0-9]+$'
+                   THEN codigo_estoque::bigint END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'codigo_desc' AND codigo_estoque ~ '^[0-9]+$'
+                   THEN codigo_estoque::bigint END) DESC NULLS LAST,
              (CASE WHEN $4 = 'produto_asc' THEN produto END) ASC NULLS LAST,
              (CASE WHEN $4 = 'produto_desc' THEN produto END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'cor_asc' THEN configuracao END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'cor_desc' THEN configuracao END) DESC NULLS LAST,
              (CASE WHEN $4 = 'classe_asc' THEN classe END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'classe_desc' THEN classe END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'status_asc' THEN status END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'status_desc' THEN status END) DESC NULLS LAST,
              (CASE WHEN $4 = 'disponivel_asc' THEN qtd_disponivel END) ASC NULLS LAST,
              (CASE WHEN $4 = 'disponivel_desc' THEN qtd_disponivel END) DESC NULLS LAST,
              (CASE WHEN $4 = 'cobertura_asc' THEN cobertura_dias END) ASC NULLS LAST,
              (CASE WHEN $4 = 'cobertura_desc' THEN cobertura_dias END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'recomendada_asc' THEN estoque_total_recomendado END) ASC NULLS LAST,
              (CASE WHEN $4 = 'recomendada_desc' THEN estoque_total_recomendado END) DESC NULLS LAST,
              (CASE WHEN $4 = 'sugerida_asc' THEN qtd_sugerida END) ASC NULLS LAST,
-             (CASE WHEN $4 NOT IN ('produto_asc','produto_desc','classe_asc','disponivel_asc',
-                  'disponivel_desc','cobertura_asc','cobertura_desc','recomendada_desc','sugerida_asc')
+             (CASE WHEN $4 NOT IN ('codigo_asc','codigo_desc','produto_asc','produto_desc',
+                  'cor_asc','cor_desc','classe_asc','classe_desc','status_asc','status_desc',
+                  'disponivel_asc','disponivel_desc','cobertura_asc','cobertura_desc',
+                  'recomendada_asc','recomendada_desc','sugerida_asc')
                 THEN qtd_sugerida END) DESC NULLS LAST,
              codigo_estoque
            LIMIT $9 OFFSET $10"#,

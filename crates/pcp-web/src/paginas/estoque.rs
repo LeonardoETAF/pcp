@@ -117,7 +117,7 @@ pub fn PaginaEstoque() -> impl IntoView {
 
             // Busca e classes formam UM card: são o mesmo filtro, aplicado em duas linhas.
             <div class="estoque-filtros">
-                <Filtros status busca busca_input ordem resetar exportar />
+                <Filtros status busca busca_input resetar exportar />
                 // As contagens vêm da MESMA consulta da lista: mudam com a busca e o status,
                 // e nunca dessincronizam do que a tabela mostra.
                 <Suspense fallback=|| ()>
@@ -154,7 +154,7 @@ pub fn PaginaEstoque() -> impl IntoView {
                                 let total = pag.total;
                                 view! {
                                     <div class="tabela-cartao">
-                                        <Tabela itens=pag.itens />
+                                        <Tabela itens=pag.itens ordem resetar />
                                         <Paginacao limite deslocamento total />
                                     </div>
                                 }
@@ -322,7 +322,6 @@ fn Filtros(
     status: RwSignal<Option<String>>,
     busca: RwSignal<String>,
     busca_input: RwSignal<String>,
-    ordem: RwSignal<String>,
     resetar: impl Fn() + Copy + Send + Sync + 'static,
     exportar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
@@ -332,6 +331,7 @@ fn Filtros(
     };
     view! {
         <div class="estoque-filtros__linha">
+            // Sem botão: Enter aplica a busca (o submit do formulário).
             <form
                 class="estoque-filtros__busca"
                 on:submit=move |ev| {
@@ -350,33 +350,8 @@ fn Filtros(
                         on:input=move |ev| busca_input.set(event_target_value(&ev))
                     />
                 </span>
-                <button type="submit" class="btn btn--escuro btn--sm">
-                    "Buscar"
-                </button>
             </form>
 
-            <span class="toolbar-sep"></span>
-
-            <Seletor
-                icone="ordenar.svg"
-                rotulo="Ordenar"
-                opcoes=vec![
-                    ("sugerida_desc", "Sugestão"),
-                    ("cobertura_asc", "Cobertura -"),
-                    ("cobertura_desc", "Cobertura +"),
-                    ("disponivel_desc", "Disponível +"),
-                    ("disponivel_asc", "Disponível -"),
-                    ("recomendada_desc", "Recomendada"),
-                    ("produto_asc", "Ordenado A - Z"),
-                    ("produto_desc", "Ordenado Z - A"),
-                    ("classe_asc", "Classe"),
-                ]
-                valor=Signal::derive(move || ordem.get())
-                ao_escolher=move |v| {
-                    ordem.set(v);
-                    resetar();
-                }
-            />
             <Seletor
                 icone="filtro.svg"
                 rotulo="Status"
@@ -412,21 +387,79 @@ fn Filtros(
     }
 }
 
+/// Cabeçalho ordenável. O primeiro clique ordena ascendente; o clique seguinte inverte. Só a
+/// coluna ativa mostra a seta — as demais ficam limpas, para não poluir o cabeçalho.
 #[component]
-fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
+fn Th(
+    rotulo: &'static str,
+    /// Prefixo da chave de ordenação da API (`{chave}_asc` / `{chave}_desc`).
+    chave: &'static str,
+    #[prop(optional)] classe: &'static str,
+    ordem: RwSignal<String>,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
+) -> impl IntoView {
+    let asc = move || ordem.get() == format!("{chave}_asc");
+    let desc = move || ordem.get() == format!("{chave}_desc");
+    let ativa = move || asc() || desc();
+    let alternar = move |_| {
+        ordem.set(if asc() {
+            format!("{chave}_desc")
+        } else {
+            format!("{chave}_asc")
+        });
+        resetar();
+    };
+    view! {
+        <th class=classe aria-sort=move || if asc() { "ascending" } else if desc() { "descending" } else { "none" }>
+            <button type="button" class="th-ordena" class:th-ordena--ativa=ativa on:click=alternar>
+                <span>{rotulo}</span>
+                <span class="th-ordena__seta" class:th-ordena__seta--asc=asc>
+                    <Show when=ativa fallback=|| ()>
+                        <Icone arquivo="seta-baixo.svg" />
+                    </Show>
+                </span>
+            </button>
+        </th>
+    }
+}
+
+#[component]
+fn Tabela(
+    itens: Vec<LinhaEstoque>,
+    ordem: RwSignal<String>,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
+) -> impl IntoView {
     view! {
         <div class="tabela-rolavel">
             <table class="tabela tabela--centro">
                 <thead>
                     <tr>
-                        <th>"Código"</th>
-                        <th>"Item"</th>
-                        <th>"Cor"</th>
-                        <th>"Classe"</th>
-                        <th class="tabela__nivel-col">"Nível de estoque"</th>
-                        <th class="tabela__num">"Disponível"</th>
-                        <th class="tabela__num">"Produzir"</th>
-                        <th>"Status"</th>
+                        <Th rotulo="Código" chave="codigo" ordem resetar />
+                        <Th rotulo="Produto" chave="produto" ordem resetar />
+                        <Th rotulo="Cor" chave="cor" ordem resetar />
+                        <Th rotulo="Classe" chave="classe" ordem resetar />
+                        <Th
+                            rotulo="Cobertura"
+                            chave="cobertura"
+                            classe="tabela__nivel-col"
+                            ordem
+                            resetar
+                        />
+                        <Th
+                            rotulo="Disponível"
+                            chave="disponivel"
+                            classe="tabela__num"
+                            ordem
+                            resetar
+                        />
+                        <Th
+                            rotulo="Recomendação"
+                            chave="sugerida"
+                            classe="tabela__num"
+                            ordem
+                            resetar
+                        />
+                        <Th rotulo="Status" chave="status" ordem resetar />
                     </tr>
                 </thead>
                 <tbody>
