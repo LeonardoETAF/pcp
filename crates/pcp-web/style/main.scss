@@ -1834,16 +1834,13 @@ input {
   flex-direction: column;
   gap: var(--e-3);
 }
-.mov-dia__card {
+.mov-dia {
   display: flex;
   align-items: center;
   gap: var(--e-4);
-  padding: var(--e-3) var(--e-4);
-  background: var(--superficie);
-  border: var(--cartao-borda);
-  border-radius: var(--cartao-raio);
-  box-shadow: var(--cartao-sombra);
+  padding: var(--e-2) 0;
 }
+.mov-dia + .mov-dia { border-top: 1px solid var(--borda); }
 .mov-dia__data {
   flex-shrink: 0;
   width: 92px;
@@ -1931,6 +1928,14 @@ input {
   display: flex;
   flex-direction: column;
   gap: var(--e-3);
+}
+.prod-secao .paginacao__botoes { align-self: flex-end; }
+.prod-secao__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  flex-wrap: wrap;
 }
 .prod-secao__titulo {
   font-size: var(--fs-lg);

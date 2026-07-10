@@ -9,7 +9,7 @@ use crate::api::{
     produto_atividade, produto_detalhe, produto_insights, DetalheProduto, Insights,
     MetricasProduto, Movimento, OrdemProducao, StatusProducao, VendaMesProduto,
 };
-use crate::componentes::Icone;
+use crate::componentes::{Icone, PaginacaoBotoes};
 use crate::contexto::Sessao;
 use crate::erro::mensagem_usuario;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao};
@@ -159,8 +159,8 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
                     || ().into_any(),
                     |a| {
                         view! {
-                            {historico_producao(&a.producao)}
-                            {historico_movimentacao(&a.movimentos)}
+                            <HistoricoProducao ordens=a.producao />
+                            <HistoricoMovimentacao movimentos=a.movimentos />
                         }
                             .into_any()
                     },
@@ -469,104 +469,194 @@ fn agrupar_por_data<T, F: Fn(&T) -> String>(itens: &[T], chave: F) -> Vec<(Strin
     grupos
 }
 
-/// Histórico de produção: linha do tempo por data, com as ordens do dia como fases.
-fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
-    let grupos = agrupar_por_data(ordens, |o| o.data.clone().unwrap_or_else(|| "—".to_owned()));
-    let dias = grupos
-        .into_iter()
-        .map(|(data, fases)| {
-            let mut itens: Vec<AnyView> = Vec::new();
-            for (idx, o) in fases.iter().enumerate() {
-                if idx > 0 {
-                    itens.push(view! { <span class="mov-liga"></span> }.into_any());
-                }
-                let status = o.status.clone().unwrap_or_default();
-                let classe = format!("mov-fase mov-fase--prod-{}", status.to_lowercase());
-                let lote = o.lote.map(|l| format!("Lote {l}"));
-                itens.push(
-                    view! {
-                        <div class=classe>
-                            <span class="mov-fase__tipo">{rotulo_producao(&status)}</span>
-                            <span class="mov-fase__qtd">
-                                {format!("{} un", fmt_milhar(o.quantidade))}
-                            </span>
-                            {lote.map(|l| view! { <span class="mov-fase__meta">{l}</span> })}
-                        </div>
-                    }
-                    .into_any(),
-                );
-            }
-            view! {
-                <div class="mov-dia__card">
-                    <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <div class="mov-fases">{itens}</div>
-                </div>
-            }
-        })
-        .collect_view();
+/// Quantas datas por página nos históricos.
+const DATAS_POR_PAGINA: i64 = 15;
+
+/// Uma fatia paginada de grupos-por-data já filtrada.
+struct PaginaDatas<'a, T> {
+    grupos: Vec<(String, Vec<&'a T>)>,
+    total: i64,
+}
+
+/// Agrupa por data, aplica o filtro (data exata) e recorta a página corrente.
+fn pagina_datas<'a, T, F: Fn(&T) -> String>(
+    itens: &'a [T],
+    chave: F,
+    filtro: &str,
+    desloc: i64,
+) -> PaginaDatas<'a, T> {
+    let mut grupos = agrupar_por_data(itens, chave);
+    if !filtro.is_empty() {
+        grupos.retain(|(d, _)| d == filtro);
+    }
+    let total = i64::try_from(grupos.len()).unwrap_or(i64::MAX);
+    let ini = usize::try_from(desloc).unwrap_or(0);
+    let pag = usize::try_from(DATAS_POR_PAGINA).unwrap_or(15);
+    let grupos = grupos.into_iter().skip(ini).take(pag).collect();
+    PaginaDatas { grupos, total }
+}
+
+/// Cabeçalho de um histórico: título + filtro por data.
+#[component]
+fn HistoricoCab(titulo: &'static str, filtro: RwSignal<String>) -> impl IntoView {
+    view! {
+        <header class="prod-secao__cab">
+            <h2 class="prod-secao__titulo">{titulo}</h2>
+            <input
+                class="input input--compacto"
+                type="date"
+                aria-label="Filtrar por data"
+                prop:value=move || filtro.get()
+                on:input=move |ev| filtro.set(event_target_value(&ev))
+            />
+        </header>
+    }
+}
+
+/// Histórico de produção: linha do tempo por data (fases do dia ligadas), com filtro e paginação.
+#[component]
+fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
+    let dados = StoredValue::new(ordens);
+    let filtro = RwSignal::new(String::new());
+    let desloc = RwSignal::new(0_i64);
+    let limite = RwSignal::new(DATAS_POR_PAGINA);
+    // Trocar o filtro volta para a primeira página.
+    Effect::new(move |_| {
+        filtro.track();
+        desloc.set(0);
+    });
+    let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
         <section class="cartao prod-secao">
-            <h2 class="prod-secao__titulo">"Histórico de produção"</h2>
-            {if ordens.is_empty() {
+            <HistoricoCab titulo="Histórico de produção" filtro />
+            {if vazio {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
             } else {
-                view! { <div class="mov-timeline">{dias}</div> }.into_any()
+                view! {
+                    {move || {
+                        let ordens = dados.get_value();
+                        let pag = pagina_datas(
+                            &ordens,
+                            |o| o.data.clone().unwrap_or_default(),
+                            &filtro.get(),
+                            desloc.get(),
+                        );
+                        let dias = pag
+                            .grupos
+                            .into_iter()
+                            .map(|(data, fases)| dia_producao(&data, &fases))
+                            .collect_view();
+                        view! {
+                            <div class="mov-timeline">{dias}</div>
+                            <PaginacaoBotoes limite deslocamento=desloc total=pag.total />
+                        }
+                    }}
+                }
+                    .into_any()
             }}
         </section>
     }
 }
 
-/// Histórico de movimentação: linha do tempo por data, com os movimentos do dia como fases.
-fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
-    let grupos = agrupar_por_data(movs, |m| m.data.clone());
-    let dias = grupos
-        .into_iter()
-        .map(|(data, fases)| {
-            let mut itens: Vec<AnyView> = Vec::new();
-            for (idx, m) in fases.iter().enumerate() {
-                if idx > 0 {
-                    itens.push(view! { <span class="mov-liga"></span> }.into_any());
-                }
-                let entrada = m.quantidade >= 0;
-                let classe = if entrada {
-                    "mov-fase mov-fase--entrada"
-                } else {
-                    "mov-fase mov-fase--saida"
-                };
-                let sinal = if entrada { "+" } else { "" };
-                itens.push(
-                    view! {
-                        <div class=classe>
-                            <span class="mov-fase__tipo">{rotulo_movimento(&m.tipo)}</span>
-                            <span class="mov-fase__qtd">
-                                {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
-                            </span>
-                            <span class="mov-fase__meta">
-                                {format!("saldo {} un", fmt_milhar(m.saldo))}
-                            </span>
-                        </div>
-                    }
-                    .into_any(),
-                );
-            }
+/// Uma linha (data) do histórico de produção: as ordens do dia ligadas por conectores.
+fn dia_producao(data: &str, fases: &[&OrdemProducao]) -> impl IntoView {
+    let mut itens: Vec<AnyView> = Vec::new();
+    for (idx, o) in fases.iter().enumerate() {
+        if idx > 0 {
+            itens.push(view! { <span class="mov-liga"></span> }.into_any());
+        }
+        let status = o.status.clone().unwrap_or_default();
+        let classe = format!("mov-fase mov-fase--prod-{}", status.to_lowercase());
+        let lote = o.lote.map(|l| format!("Lote {l}"));
+        itens.push(
             view! {
-                <div class="mov-dia__card">
-                    <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <div class="mov-fases">{itens}</div>
+                <div class=classe>
+                    <span class="mov-fase__tipo">{rotulo_producao(&status)}</span>
+                    <span class="mov-fase__qtd">{format!("{} un", fmt_milhar(o.quantidade))}</span>
+                    {lote.map(|l| view! { <span class="mov-fase__meta">{l}</span> })}
                 </div>
             }
-        })
-        .collect_view();
+            .into_any(),
+        );
+    }
+    view! {
+        <div class="mov-dia">
+            <span class="mov-dia__data">{fmt_data(data)}</span>
+            <div class="mov-fases">{itens}</div>
+        </div>
+    }
+}
+
+/// Histórico de movimentação: linha do tempo por data, com filtro e paginação.
+#[component]
+fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
+    let dados = StoredValue::new(movimentos);
+    let filtro = RwSignal::new(String::new());
+    let desloc = RwSignal::new(0_i64);
+    let limite = RwSignal::new(DATAS_POR_PAGINA);
+    Effect::new(move |_| {
+        filtro.track();
+        desloc.set(0);
+    });
+    let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
         <section class="cartao prod-secao">
-            <h2 class="prod-secao__titulo">"Histórico de movimentação"</h2>
-            {if movs.is_empty() {
+            <HistoricoCab titulo="Histórico de movimentação" filtro />
+            {if vazio {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
-                view! { <div class="mov-timeline">{dias}</div> }.into_any()
+                view! {
+                    {move || {
+                        let movs = dados.get_value();
+                        let pag = pagina_datas(&movs, |m| m.data.clone(), &filtro.get(), desloc.get());
+                        let dias = pag
+                            .grupos
+                            .into_iter()
+                            .map(|(data, fases)| dia_movimentacao(&data, &fases))
+                            .collect_view();
+                        view! {
+                            <div class="mov-timeline">{dias}</div>
+                            <PaginacaoBotoes limite deslocamento=desloc total=pag.total />
+                        }
+                    }}
+                }
+                    .into_any()
             }}
         </section>
+    }
+}
+
+/// Uma linha (data) do histórico de movimentação: os movimentos do dia ligados por conectores.
+fn dia_movimentacao(data: &str, fases: &[&Movimento]) -> impl IntoView {
+    let mut itens: Vec<AnyView> = Vec::new();
+    for (idx, m) in fases.iter().enumerate() {
+        if idx > 0 {
+            itens.push(view! { <span class="mov-liga"></span> }.into_any());
+        }
+        let entrada = m.quantidade >= 0;
+        let classe = if entrada {
+            "mov-fase mov-fase--entrada"
+        } else {
+            "mov-fase mov-fase--saida"
+        };
+        let sinal = if entrada { "+" } else { "" };
+        itens.push(
+            view! {
+                <div class=classe>
+                    <span class="mov-fase__tipo">{rotulo_movimento(&m.tipo)}</span>
+                    <span class="mov-fase__qtd">{format!("{sinal}{} un", fmt_milhar(m.quantidade))}</span>
+                    <span class="mov-fase__meta">{format!("saldo {} un", fmt_milhar(m.saldo))}</span>
+                </div>
+            }
+            .into_any(),
+        );
+    }
+    view! {
+        <div class="mov-dia">
+            <span class="mov-dia__data">{fmt_data(data)}</span>
+            <div class="mov-fases">{itens}</div>
+        </div>
     }
 }
 

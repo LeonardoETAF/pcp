@@ -11,7 +11,7 @@ use crate::api::{
     estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, ContagemClasse,
     LinhaEstoque, PainelResumo,
 };
-use crate::componentes::{EstadoVazio, Icone, Seletor};
+use crate::componentes::{EstadoVazio, Icone, PaginacaoBotoes, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
 use crate::erro::mensagem_usuario;
@@ -635,19 +635,6 @@ fn Cor(configuracao: Option<String>) -> impl IntoView {
     .into_any()
 }
 
-/// Quantas páginas numeradas cabem entre as setas.
-const JANELA_PAGINAS: i64 = 5;
-
-/// Janela de até [`JANELA_PAGINAS`] páginas em volta da atual, sem estourar as bordas: perto do
-/// início ou do fim ela não encolhe, desliza — o usuário sempre vê o mesmo número de botões.
-fn janela(atual: i64, total_paginas: i64) -> impl Iterator<Item = i64> {
-    let largura = JANELA_PAGINAS.min(total_paginas);
-    let primeira = (atual - largura / 2)
-        .max(1)
-        .min((total_paginas - largura + 1).max(1));
-    primeira..primeira + largura
-}
-
 #[component]
 fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> impl IntoView {
     view! {
@@ -685,65 +672,5 @@ fn PaginacaoInfo(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64)
                 }
             }}
         </span>
-    }
-}
-
-/// Setas e páginas numeradas, sem o texto "Mostrando…". Aparecem no rodapé da tabela e também no
-/// canto inferior direito do card de filtros — os dois compartilham `limite`/`deslocamento`, então
-/// navegam juntos.
-#[component]
-fn PaginacaoBotoes(
-    limite: RwSignal<i64>,
-    deslocamento: RwSignal<i64>,
-    total: i64,
-) -> impl IntoView {
-    let tem_anterior = move || deslocamento.get() > 0;
-    let tem_proximo = move || deslocamento.get() + limite.get() < total;
-    let total_paginas = move || (total + limite.get() - 1) / limite.get().max(1);
-    let atual = move || deslocamento.get() / limite.get().max(1) + 1;
-    let ir_para = move |pagina: i64| deslocamento.set((pagina - 1) * limite.get());
-    view! {
-            <div class="paginacao__botoes">
-                <button
-                    type="button"
-                    class="paginacao__seta"
-                    aria-label="Página anterior"
-                    disabled=move || (!tem_anterior()).then_some("")
-                    on:click=move |_| {
-                        deslocamento.update(|d| *d = (*d - limite.get()).max(0));
-                    }
-                >
-                    <Icone arquivo="seta-esquerda.svg" />
-                </button>
-                {move || {
-                    janela(atual(), total_paginas())
-                        .map(|pagina| {
-                            let ativa = pagina == atual();
-                            view! {
-                                <button
-                                    type="button"
-                                    class="paginacao__pagina"
-                                    class:paginacao__pagina--ativa=ativa
-                                    aria-current=ativa.then_some("page")
-                                    on:click=move |_| ir_para(pagina)
-                                >
-                                    {fmt_milhar(pagina)}
-                                </button>
-                            }
-                        })
-                        .collect_view()
-                }}
-                <button
-                    type="button"
-                    class="paginacao__seta"
-                    aria-label="Próxima página"
-                    disabled=move || (!tem_proximo()).then_some("")
-                    on:click=move |_| {
-                        deslocamento.update(|d| *d += limite.get());
-                    }
-                >
-                    <Icone arquivo="seta-direita.svg" />
-                </button>
-            </div>
     }
 }
