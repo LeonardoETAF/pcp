@@ -1777,15 +1777,42 @@ input {
 .icone-btn-claro:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .icone-btn-claro .icone-mask { width: 20px; height: 20px; }
 
-/* Detalhe do produto: produção e movimentação lado a lado (empilham no mobile). */
-.prod-atividade {
+/* Status de produção: botão informativo. Inerte (apagado) quando não há ordem em produção; ao
+   clicar (só então) revela planejado × produzido × falta. */
+.prod-status { padding: 0; overflow: hidden; }
+.prod-status__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  width: 100%;
+  padding: var(--e-4) var(--e-5);
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.prod-status__btn--ativo:hover { background: var(--superficie-2); }
+.prod-status__btn:disabled { cursor: default; color: var(--texto-suave); }
+.prod-status__ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--borda);
+}
+.prod-status__ponto--on { background: var(--semaforo-info); }
+.prod-status__rotulo { font-weight: var(--peso-medio); }
+.prod-status__seta {
+  margin-left: auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--e-4);
+  place-items: center;
+  transition: transform var(--transicao);
 }
-@media (max-width: 900px) {
-  .prod-atividade { grid-template-columns: 1fr; }
-}
+.prod-status__seta--aberto { transform: rotate(180deg); }
+.prod-status__seta .icone-mask { width: 18px; height: 18px; }
+.prod-status__detalhe { padding: 0 var(--e-5) var(--e-5); }
 /* Quantidade de entrada/saída no histórico de movimentação (semáforo §12). */
 .mov--entrada { color: var(--semaforo-ok); }
 .mov--saida { color: var(--semaforo-critico); }
@@ -1802,7 +1829,7 @@ input {
 
 .prod-cab {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--e-4);
 }
 .prod-cab__id {

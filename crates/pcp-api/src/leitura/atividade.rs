@@ -21,6 +21,8 @@ pub struct StatusProducaoDto {
     pub qtd_planejada: i64,
     pub em_producao: i64,
     pub aguardando: i64,
+    pub planejado_em_producao: i64,
+    pub produzido_em_producao: i64,
 }
 
 #[derive(Serialize)]
@@ -35,6 +37,7 @@ pub struct MovimentoDto {
 pub struct OrdemProducaoDto {
     pub data: Option<String>,
     pub quantidade: i64,
+    pub produzido: i64,
     pub status: Option<String>,
     pub lote: Option<i64>,
 }
@@ -63,12 +66,15 @@ pub async fn atividade(
             qtd_planejada: status.qtd_planejada,
             em_producao: status.em_producao,
             aguardando: status.aguardando,
+            planejado_em_producao: status.planejado_em_producao,
+            produzido_em_producao: status.produzido_em_producao,
         },
         producao: producao
             .into_iter()
             .map(|o| OrdemProducaoDto {
                 data: o.data.map(|d| d.to_string()),
                 quantidade: i64::from(o.quantidade),
+                produzido: i64::from(o.produzido),
                 status: o.status,
                 lote: o.lote,
             })

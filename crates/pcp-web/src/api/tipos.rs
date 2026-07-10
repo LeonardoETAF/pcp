@@ -341,6 +341,8 @@ pub struct StatusProducao {
     pub qtd_planejada: i64,
     pub em_producao: i64,
     pub aguardando: i64,
+    pub planejado_em_producao: i64,
+    pub produzido_em_producao: i64,
 }
 
 /// Uma ordem de produção da linha.
@@ -348,6 +350,7 @@ pub struct StatusProducao {
 pub struct OrdemProducao {
     pub data: Option<String>,
     pub quantidade: i64,
+    pub produzido: i64,
     pub status: Option<String>,
     pub lote: Option<i64>,
 }

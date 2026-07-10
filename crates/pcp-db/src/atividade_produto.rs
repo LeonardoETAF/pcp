@@ -1,7 +1,8 @@
 //! Atividade de uma linha de estoque para a tela de detalhe (doc 03 §4): movimentação e produção.
 //! Lê o `bronze` (kardex e ordens do One) — são dados de APOIO, só exibição, não entram no motor.
-//! Tudo por `est_id` (o `codigo_estoque`): movimento casa direto (`cdx_estq`); produção casa via
-//! `(est_itm, est_cnf)` da linha de estoque.
+//! Movimento casa direto por `est_id` (`cdx_estq`). Produção casa pelo ITEM (`est_itm = iprd_prd`)
+//! — a ordem em produção tem `iprd_cnf` nulo (produz-se o liso; a cor entra depois), então o
+//! histórico e o status são do item, comuns às cores dele.
 
 use sqlx::PgPool;
 
@@ -21,6 +22,7 @@ pub struct Movimento {
 pub struct OrdemProducao {
     pub data: Option<chrono::NaiveDate>,
     pub quantidade: i32,
+    pub produzido: i32,
     pub status: Option<String>,
     pub lote: Option<i64>,
 }
@@ -32,6 +34,9 @@ pub struct StatusProducao {
     pub qtd_planejada: i64,
     pub em_producao: i64,
     pub aguardando: i64,
+    /// Planejado e produzido SOMENTE das ordens em produção (para "quanto falta").
+    pub planejado_em_producao: i64,
+    pub produzido_em_producao: i64,
 }
 
 /// Últimos `limite` movimentos do kardex da linha de estoque (mais recentes primeiro).
@@ -82,13 +87,13 @@ pub async fn producao_historico(
         return Ok(Vec::new());
     };
     let linhas = sqlx::query!(
-        r#"SELECT p.aud_date AS data, p.iprd_qnt AS "quantidade!", p.iprd_stat AS status,
-                  p.iprd_lote AS lote
+        r#"SELECT p.aud_date AS data, p.iprd_qnt AS "quantidade!", p.iprd_qntt AS "produzido!",
+                  p.iprd_stat AS status, p.iprd_lote AS lote
            FROM bronze.one_producao p
-           JOIN bronze.one_estoque e
-             ON e.est_itm = p.iprd_prd AND e.est_cnf = p.iprd_cnf
-           WHERE e.est_id = $1
-             AND e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
+           WHERE p.iprd_prd = (SELECT est_itm FROM bronze.one_estoque
+                               WHERE est_id = $1
+                                 AND data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
+                               LIMIT 1)
              AND COALESCE(p.iprd_stat, '') <> 'CANCELADO'
            ORDER BY p.aud_date DESC NULLS LAST, p.iprd_id DESC
            LIMIT $2"#,
@@ -102,6 +107,7 @@ pub async fn producao_historico(
         .map(|r| OrdemProducao {
             data: r.data,
             quantidade: r.quantidade,
+            produzido: r.produzido,
             status: r.status,
             lote: r.lote,
         })
@@ -122,12 +128,14 @@ pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProduc
              COALESCE(SUM(p.iprd_qnt) FILTER (WHERE p.iprd_stat IN ('AGUARDANDO', 'PRODUCAO')), 0)
                AS "planejada!",
              COUNT(*) FILTER (WHERE p.iprd_stat = 'PRODUCAO') AS "em_producao!",
-             COUNT(*) FILTER (WHERE p.iprd_stat = 'AGUARDANDO') AS "aguardando!"
+             COUNT(*) FILTER (WHERE p.iprd_stat = 'AGUARDANDO') AS "aguardando!",
+             COALESCE(SUM(p.iprd_qnt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS "plan_prod!",
+             COALESCE(SUM(p.iprd_qntt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS "prod_prod!"
            FROM bronze.one_producao p
-           JOIN bronze.one_estoque e
-             ON e.est_itm = p.iprd_prd AND e.est_cnf = p.iprd_cnf
-           WHERE e.est_id = $1
-             AND e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)"#,
+           WHERE p.iprd_prd = (SELECT est_itm FROM bronze.one_estoque
+                               WHERE est_id = $1
+                                 AND data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
+                               LIMIT 1)"#,
         est_id,
     )
     .fetch_one(pool)
@@ -137,5 +145,7 @@ pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProduc
         qtd_planejada: r.planejada,
         em_producao: r.em_producao,
         aguardando: r.aguardando,
+        planejado_em_producao: r.plan_prod,
+        produzido_em_producao: r.prod_prod,
     })
 }

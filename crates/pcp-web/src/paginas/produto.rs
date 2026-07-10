@@ -85,7 +85,7 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
     let sku = d.sku.clone().filter(|s| !s.is_empty());
 
     view! {
-        <header class="prod-cab">
+        <section class="cartao prod-cab">
             <A href="/estoque" attr:class="icone-btn-claro" attr:aria-label="Voltar ao estoque" attr:title="Voltar">
                 <Icone arquivo="seta-esquerda.svg" />
             </A>
@@ -98,7 +98,7 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
                     <span class=classe_status>{status_rotulo}</span>
                 </div>
             </div>
-        </header>
+        </section>
 
         {metricas(&d.metricas)}
         <Atividades codigo=d.codigo_estoque.clone() />
@@ -134,51 +134,67 @@ fn Atividades(codigo: String) -> impl IntoView {
 
 fn secoes_atividade(a: &Atividade) -> impl IntoView {
     view! {
-        {status_producao(&a.status_producao)}
-        <div class="prod-atividade">
-            {historico_producao(&a.producao)}
-            {historico_movimentacao(&a.movimentos)}
-        </div>
+        <BotaoStatusProducao s=a.status_producao.clone() />
+        {historico_producao(&a.producao)}
+        {historico_movimentacao(&a.movimentos)}
     }
 }
 
-/// Status de produção: ordens abertas, em produção, aguardando e o total planejado.
-fn status_producao(s: &StatusProducao) -> impl IntoView {
-    let sem_producao = s.ordens_abertas == 0;
+/// Status de produção como botão informativo. Só ABRE (mostra produzido × falta) se houver ordem
+/// EM PRODUÇÃO — aguardando/sem ordem não tem progresso a mostrar, então o botão fica inerte.
+#[component]
+fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
+    let em_producao = s.em_producao > 0;
+    let aberto = RwSignal::new(false);
+    let falta = (s.planejado_em_producao - s.produzido_em_producao).max(0);
+    let rotulo = if em_producao {
+        format!("Em produção — {} ordem(ns)", fmt_milhar(s.em_producao))
+    } else if s.aguardando > 0 {
+        format!(
+            "Aguardando produção — {} ordem(ns)",
+            fmt_milhar(s.aguardando)
+        )
+    } else {
+        "Sem produção em andamento".to_owned()
+    };
     view! {
-        <section class="cartao">
-            <header class="cartao__cab">
-                <h2 class="cartao__titulo">"Status de produção"</h2>
-                <p class="texto-suave">"Ordens abertas no One (aguardando ou em produção)."</p>
-            </header>
-            {if sem_producao {
-                view! {
-                    <p class="texto-suave">"Nenhuma ordem de produção aberta para este produto."</p>
+        <section class="cartao prod-status">
+            <button
+                type="button"
+                class="prod-status__btn"
+                class:prod-status__btn--ativo=move || em_producao
+                disabled=(!em_producao).then_some("")
+                aria-expanded=move || if aberto.get() { "true" } else { "false" }
+                on:click=move |_| {
+                    if em_producao {
+                        aberto.update(|a| *a = !*a);
+                    }
                 }
-                    .into_any()
-            } else {
-                view! {
-                    <div class="prod-metricas">
-                        {[
-                            ("Ordens abertas", fmt_milhar(s.ordens_abertas)),
-                            ("Em produção", fmt_milhar(s.em_producao)),
-                            ("Aguardando", fmt_milhar(s.aguardando)),
-                            ("Qtd. planejada", format!("{} un", fmt_milhar(s.qtd_planejada))),
-                        ]
-                            .into_iter()
-                            .map(|(rotulo, valor)| {
-                                view! {
-                                    <div class="metrica-card">
-                                        <span class="metrica-card__rotulo">{rotulo}</span>
-                                        <span class="metrica-card__valor">{valor}</span>
-                                    </div>
-                                }
-                            })
-                            .collect_view()}
-                    </div>
-                }
-                    .into_any()
-            }}
+            >
+                <span class="prod-status__ponto" class:prod-status__ponto--on=move || em_producao></span>
+                <span class="prod-status__rotulo">{rotulo}</span>
+                {em_producao
+                    .then(|| view! { <span class="prod-status__seta" class:prod-status__seta--aberto=move || aberto.get()><Icone arquivo="seta-baixo.svg" /></span> })}
+            </button>
+            <Show when=move || aberto.get() && em_producao fallback=|| ()>
+                <div class="prod-metricas prod-status__detalhe">
+                    {[
+                        ("Planejado", format!("{} un", fmt_milhar(s.planejado_em_producao))),
+                        ("Já produzido", format!("{} un", fmt_milhar(s.produzido_em_producao))),
+                        ("Falta produzir", format!("{} un", fmt_milhar(falta))),
+                    ]
+                        .into_iter()
+                        .map(|(rotulo, valor)| {
+                            view! {
+                                <div class="metrica-card">
+                                    <span class="metrica-card__rotulo">{rotulo}</span>
+                                    <span class="metrica-card__valor">{valor}</span>
+                                </div>
+                            }
+                        })
+                        .collect_view()}
+                </div>
+            </Show>
         </section>
     }
 }
