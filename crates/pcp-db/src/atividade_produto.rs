@@ -8,6 +8,14 @@ use sqlx::PgPool;
 
 use crate::erro::ErroDb;
 
+/// Venda somada de um mês (para o gráfico anual comparativo).
+#[derive(Debug, Clone)]
+pub struct VendaMes {
+    pub ano: i32,
+    pub mes: i32,
+    pub total: i64,
+}
+
 /// Um movimento do kardex (entrada/saída), do mais recente ao mais antigo.
 #[derive(Debug, Clone)]
 pub struct Movimento {
@@ -148,4 +156,37 @@ pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProduc
         planejado_em_producao: r.plan_prod,
         produzido_em_producao: r.prod_prod,
     })
+}
+
+/// Vendas mensais da linha de estoque no ano corrente e no anterior (relativo à venda mais
+/// recente), para o gráfico anual comparativo. Vazio se o código não for numérico.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn vendas_mensais(pool: &PgPool, codigo: &str) -> Result<Vec<VendaMes>, ErroDb> {
+    if codigo.parse::<i64>().is_err() {
+        return Ok(Vec::new());
+    }
+    let linhas = sqlx::query!(
+        r#"SELECT EXTRACT(YEAR FROM dt_ref)::int AS "ano!",
+                  EXTRACT(MONTH FROM dt_ref)::int AS "mes!",
+                  SUM(qtd_vendida)::bigint AS "total!"
+           FROM pcp.vendas_dia
+           WHERE codigo_estoque = $1
+             AND dt_ref >= date_trunc('year',
+                   (SELECT MAX(dt_ref) FROM pcp.vendas_dia)) - INTERVAL '1 year'
+           GROUP BY 1, 2
+           ORDER BY 1, 2"#,
+        codigo,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|r| VendaMes {
+            ano: r.ano,
+            mes: r.mes,
+            total: r.total,
+        })
+        .collect())
 }

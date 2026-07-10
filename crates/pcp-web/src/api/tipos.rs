@@ -370,4 +370,14 @@ pub struct Atividade {
     pub status_producao: StatusProducao,
     pub producao: Vec<OrdemProducao>,
     pub movimentos: Vec<Movimento>,
+    #[serde(default)]
+    pub vendas_mensais: Vec<VendaMesProduto>,
+}
+
+/// Venda somada de um mês (gráfico anual comparativo do detalhe).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VendaMesProduto {
+    pub ano: i32,
+    pub mes: i32,
+    pub total: i64,
 }

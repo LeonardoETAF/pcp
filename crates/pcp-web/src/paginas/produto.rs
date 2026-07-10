@@ -7,7 +7,7 @@ use leptos_router::hooks::use_params_map;
 
 use crate::api::{
     produto_atividade, produto_detalhe, produto_insights, DetalheProduto, Insights,
-    MetricasProduto, Movimento, OrdemProducao, Ponto, StatusProducao,
+    MetricasProduto, Movimento, OrdemProducao, StatusProducao, VendaMesProduto,
 };
 use crate::componentes::Icone;
 use crate::contexto::Sessao;
@@ -110,7 +110,6 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
     );
 
     let m = d.metricas.clone();
-    let vendas_30d = ultimos(&d.vendas_90d, 30);
 
     view! {
         <header class="prod-cab">
@@ -137,8 +136,13 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
             }
         </Suspense>
 
-        <GraficoVendas dados=vendas_30d />
-
+        <Suspense fallback=|| ()>
+            {move || {
+                ativ.get().flatten().map(|a| {
+                    view! { <GraficoVendasAnual meses=a.vendas_mensais /> }
+                })
+            }}
+        </Suspense>
 
         <section class="cartao prod-status-secao">
             <Suspense fallback=|| ()>
@@ -167,12 +171,6 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
             }}
         </Suspense>
     }
-}
-
-/// Últimos `n` pontos de uma série (para o gráfico de 30 dias sobre a série de 90).
-fn ultimos(serie: &[Ponto], n: usize) -> Vec<Ponto> {
-    let inicio = serie.len().saturating_sub(n);
-    serie[inicio..].to_vec()
 }
 
 /// Quatro cards de resumo (estilo do mockup): estoque, performance, recomendação e alertas.
@@ -251,53 +249,122 @@ fn cobertura_valor(dias: f64) -> String {
     }
 }
 
-/// Gráfico de barras das vendas diárias (série do liso). SVG escalado ao máximo da série.
+/// Abreviação de mês (1–12) para o eixo do gráfico anual.
+fn mes_abrev(m: i32) -> &'static str {
+    const M: [&str; 12] = [
+        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+    ];
+    usize::try_from(m - 1)
+        .ok()
+        .and_then(|i| M.get(i).copied())
+        .unwrap_or("")
+}
+
+/// Gráfico anual comparativo: venda por mês do ano corrente vs. o anterior. Cada mês tem duas
+/// barras CENTRADAS no mesmo eixo — a do ano anterior mais larga (ao fundo) e a do ano atual mais
+/// estreita (à frente), uma dentro da outra.
 #[component]
-#[allow(clippy::cast_precision_loss)] // série curta (≤30): conversão exata para f64
-fn GraficoVendas(dados: Vec<Ponto>) -> impl IntoView {
+#[allow(clippy::cast_precision_loss)] // 12 meses; quantidades cabem exatas em f64
+fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
     const W: f64 = 720.0;
     const H: f64 = 200.0;
+    if meses.is_empty() {
+        return view! {
+            <section class="cartao">
+                <header class="cartao__cab">
+                    <h2 class="cartao__titulo">"Vendas Anual"</h2>
+                </header>
+                <p class="estado-vazio">"Sem vendas registradas."</p>
+            </section>
+        }
+        .into_any();
+    }
+    // Dois anos mais recentes presentes: `anterior` e `atual`.
+    let mut anos: Vec<i32> = meses.iter().map(|v| v.ano).collect();
+    anos.sort_unstable();
+    anos.dedup();
+    let atual = anos.last().copied().unwrap_or_default();
+    let anterior = atual - 1;
+    // Vetores por mês (1–12).
+    let serie = |ano: i32| -> [i64; 12] {
+        let mut v = [0_i64; 12];
+        for x in meses.iter().filter(|x| x.ano == ano) {
+            if let Some(slot) = usize::try_from(x.mes - 1).ok().filter(|&i| i < 12) {
+                v[slot] = x.total;
+            }
+        }
+        v
+    };
+    let va = serie(atual);
+    let vp = serie(anterior);
+    let max = va
+        .iter()
+        .chain(vp.iter())
+        .copied()
+        .max()
+        .unwrap_or(1)
+        .max(1) as f64;
+    let slot = W / 12.0;
+    let barras = (0..12)
+        .flat_map(|m| {
+            let centro = (m as f64 + 0.5) * slot;
+            let alt = |q: i64| (q as f64 / max) * H;
+            // Anterior: larga, ao fundo. Atual: estreita, à frente. Ambas centradas em `centro`.
+            let l_ant = slot * 0.62;
+            let l_atu = slot * 0.34;
+            let ha = alt(va[m]);
+            let hp = alt(vp[m]);
+            [
+                view! {
+                    <rect
+                        x=format!("{:.2}", centro - l_ant / 2.0)
+                        y=format!("{:.2}", H - hp)
+                        width=format!("{l_ant:.2}")
+                        height=format!("{hp:.2}")
+                        class="graf__barra graf__barra--anterior"
+                    />
+                },
+                view! {
+                    <rect
+                        x=format!("{:.2}", centro - l_atu / 2.0)
+                        y=format!("{:.2}", H - ha)
+                        width=format!("{l_atu:.2}")
+                        height=format!("{ha:.2}")
+                        class="graf__barra"
+                    />
+                },
+            ]
+        })
+        .collect_view();
+    let rotulos = (0..12_i32)
+        .map(|m| {
+            let x = (f64::from(m) + 0.5) * slot;
+            view! {
+                <text x=format!("{x:.1}") y="196" class="graf__rotulo-mes">
+                    {mes_abrev(m + 1)}
+                </text>
+            }
+        })
+        .collect_view();
     view! {
         <section class="cartao">
             <header class="cartao__cab">
-                <h2 class="cartao__titulo">"Evolução das vendas"</h2>
-                <p class="texto-suave">"Últimos 30 dias (liso)"</p>
+                <h2 class="cartao__titulo">"Vendas Anual"</h2>
+                <div class="graf__legenda">
+                    <span class="graf__leg graf__leg--anterior">{anterior.to_string()}</span>
+                    <span class="graf__leg graf__leg--atual">{atual.to_string()}</span>
+                </div>
             </header>
-            {if dados.is_empty() {
-                view! { <p class="estado-vazio">"Sem vendas no período."</p> }.into_any()
-            } else {
-                let max = dados.iter().map(|p| p.valor).max().unwrap_or(1).max(1) as f64;
-                let n = dados.len() as f64;
-                let largura = W / n;
-                let barras = dados
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, p)| {
-                        let altura = (p.valor as f64 / max) * H;
-                        let x = idx as f64 * largura;
-                        view! {
-                            <rect
-                                x=format!("{x:.2}")
-                                y=format!("{:.2}", H - altura)
-                                width=format!("{:.2}", (largura * 0.8).max(1.0))
-                                height=format!("{altura:.2}")
-                                class="graf__barra"
-                            />
-                        }
-                    })
-                    .collect_view();
-                view! {
-                    <svg class="grafico" viewBox=format!("0 0 {W} {H}") preserveAspectRatio="none">
-                        {barras}
-                    </svg>
-                }
-                    .into_any()
-            }}
+            <svg class="grafico grafico--anual" viewBox=format!("0 0 {W} {} ", H + 16.0)>
+                {barras}
+                {rotulos}
+            </svg>
         </section>
     }
+    .into_any()
 }
 
-/// Status de produção como botão informativo. Só ABRE (mostra produzido × falta) se houver ordem
+/// Status de produção como botão informativo./// Status de produção como botão informativo. Só ABRE (mostra produzido × falta) se houver ordem
 /// EM PRODUÇÃO — aguardando/sem ordem não tem progresso a mostrar, então o botão fica inerte.
 #[component]
 fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {

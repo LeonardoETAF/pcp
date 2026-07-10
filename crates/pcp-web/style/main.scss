@@ -2015,6 +2015,34 @@ input {
 .graf__barra {
   fill: #e08a6f;
 }
+/* Gráfico anual comparativo: barra do ano anterior larga ao fundo (clara), a do ano atual
+   estreita à frente (cor da marca), uma dentro da outra. */
+.grafico--anual { height: 216px; }
+.graf__barra--anterior { fill: var(--superficie-2); }
+.graf__rotulo-mes {
+  fill: var(--texto-suave);
+  font-size: 11px;
+  text-anchor: middle;
+}
+.graf__legenda {
+  display: flex;
+  gap: var(--e-3);
+  font-size: var(--fs-sm);
+}
+.graf__leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto-suave);
+}
+.graf__leg::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.graf__leg--anterior::before { background: var(--superficie-2); }
+.graf__leg--atual::before { background: #e08a6f; }
 .graf__linha {
   stroke: #1b1814;
   stroke-width: 2;

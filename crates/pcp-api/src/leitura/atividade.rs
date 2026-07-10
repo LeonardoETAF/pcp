@@ -43,10 +43,18 @@ pub struct OrdemProducaoDto {
 }
 
 #[derive(Serialize)]
+pub struct VendaMesDto {
+    pub ano: i32,
+    pub mes: i32,
+    pub total: i64,
+}
+
+#[derive(Serialize)]
 pub struct AtividadeDto {
     pub status_producao: StatusProducaoDto,
     pub producao: Vec<OrdemProducaoDto>,
     pub movimentos: Vec<MovimentoDto>,
+    pub vendas_mensais: Vec<VendaMesDto>,
 }
 
 /// Atividade da linha de estoque (autenticado — qualquer papel lê).
@@ -60,6 +68,7 @@ pub async fn atividade(
     let status = ativ::status_producao(&estado.pool, &codigo).await?;
     let producao = ativ::producao_historico(&estado.pool, &codigo, LIMITE_PRODUCAO).await?;
     let movimentos = ativ::movimentos(&estado.pool, &codigo, LIMITE_MOVIMENTOS).await?;
+    let vendas_mensais = ativ::vendas_mensais(&estado.pool, &codigo).await?;
     Ok(Json(AtividadeDto {
         status_producao: StatusProducaoDto {
             ordens_abertas: status.ordens_abertas,
@@ -86,6 +95,14 @@ pub async fn atividade(
                 tipo: m.tipo,
                 quantidade: i64::from(m.quantidade),
                 saldo: m.saldo,
+            })
+            .collect(),
+        vendas_mensais: vendas_mensais
+            .into_iter()
+            .map(|v| VendaMesDto {
+                ano: v.ano,
+                mes: v.mes,
+                total: v.total,
             })
             .collect(),
     }))
