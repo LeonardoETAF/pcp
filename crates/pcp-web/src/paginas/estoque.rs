@@ -192,7 +192,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
             <KpiEstoque
                 icone="inventory.svg"
                 valor=fmt_milhar(p.total_produtos)
-                rotulo="Produtos ativos"
+                rotulo="Produtos cadastrados"
             />
             <KpiEstoque
                 icone="alerta.svg"
@@ -208,7 +208,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
             <KpiEstoque
                 icone="orders.svg"
                 valor=fmt_milhar(p.total_sugerido)
-                rotulo="A produzir"
+                rotulo="Recomendação"
             />
         </div>
     }
@@ -541,7 +541,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                                 <span class="nivel__preenche" style=estilo_barra></span>
                             </div>
                             <span class="nivel__ref">
-                                {format!("rec. {} un", fmt_milhar(recomendada))}
+                                {format!("{} de cobertura", fmt_cobertura(i.cobertura_dias))}
                             </span>
                         </div>
                     }
@@ -552,7 +552,11 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                 <div class="tabela__disp">
                     <span class="tabela__disp-valor">{format!("{} un", fmt_milhar(i.qtd_disponivel))}</span>
                     <span class="tabela__disp-cob">
-                        {format!("{} de cobertura", fmt_cobertura(i.cobertura_dias))}
+                        {if sem_alvo {
+                            "sem recomendação".to_owned()
+                        } else {
+                            format!("rec. {} un", fmt_milhar(recomendada))
+                        }}
                     </span>
                 </div>
             </td>
