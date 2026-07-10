@@ -16,6 +16,8 @@ leptos = { version = "0.8" }
 leptos_router = { version = "0.8" }
 leptos_meta = { version = "0.8" }
 serde = { version = "1", features = ["derive"] }
+# Matemática de datas do calendário do filtro de período (§1).
+chrono = { version = "0.4", default-features = false }
 # Usado nos dois lados: DTO de filtro salvo carrega um `serde_json::Value` opaco.
 serde_json = "1"
 axum = { version = "0.8", optional = true }

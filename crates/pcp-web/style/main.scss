@@ -1982,21 +1982,75 @@ input {
   flex-direction: column;
   gap: var(--e-3);
   padding: var(--e-4);
-  min-width: 220px;
+  width: 280px;
   background: var(--superficie);
   border: var(--cartao-borda);
   border-radius: var(--cartao-raio);
   box-shadow: var(--sombra-2, var(--sombra-1));
 }
-.filtro-data__campo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-1);
-  font-size: var(--fs-sm);
-  color: var(--texto-suave);
-}
-.filtro-data__campo .input { width: 100%; }
 .filtro-data__limpar { align-self: flex-end; }
+/* Calendário de intervalo. */
+.cal__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+}
+.cal__titulo { font-weight: var(--peso-medio); }
+.cal__nav {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.cal__nav:hover { background: var(--superficie-2); color: var(--texto); }
+.cal__nav .icone-mask { width: 16px; height: 16px; }
+.cal__semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+  text-align: center;
+}
+.cal__grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal__vazio { aspect-ratio: 1; }
+.cal__dia {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  font-size: var(--fs-sm);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao);
+}
+.cal__dia:hover { background: var(--superficie-2); }
+/* Miolo do intervalo: faixa clara, cantos retos (contínua entre os extremos). */
+.cal__dia--mid {
+  background: rgba(224, 138, 111, 0.18);
+  border-radius: 0;
+}
+/* Extremos: círculo/pílula na cor de destaque, texto branco. */
+.cal__dia--sel,
+.cal__dia--ini,
+.cal__dia--fim {
+  background: #e08a6f;
+  color: #fff;
+  font-weight: var(--peso-medio);
+}
+.cal__dia--ini { border-radius: 8px 0 0 8px; }
+.cal__dia--fim { border-radius: 0 8px 8px 0; }
+.cal__dia--sel { border-radius: 8px; }
 .prod-secao__titulo {
   font-size: var(--fs-lg);
   font-weight: var(--peso-forte);

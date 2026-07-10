@@ -1,6 +1,7 @@
 //! Detalhe do Produto (doc 03 §4): cabeçalho, métricas e — nas próximas seções — status/histórico
 //! de produção e movimentação. Frontend burro (§3): tudo vem pronto da API.
 
+use chrono::{Datelike, NaiveDate};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
@@ -507,20 +508,81 @@ fn HistoricoCab(
     titulo: &'static str,
     inicio: RwSignal<String>,
     fim: RwSignal<String>,
+    ref_data: String,
 ) -> impl IntoView {
     view! {
         <header class="prod-secao__cab">
             <h2 class="prod-secao__titulo">{titulo}</h2>
-            <FiltroData inicio fim />
+            <FiltroData inicio fim ref_data />
         </header>
     }
 }
 
-/// Filtro por janela de tempo: um botão com o período atual que abre um popover com "De" e "Até"
-/// (dois seletores de data nativos) e um "Limpar". Fecha ao clicar fora (fundo transparente).
+/// Data ISO ("AAAA-MM-DD") → `NaiveDate`.
+fn parse_iso(s: &str) -> Option<NaiveDate> {
+    let mut partes = s.split('-');
+    let ano: i32 = partes.next()?.parse().ok()?;
+    let mes: u32 = partes.next()?.parse().ok()?;
+    let dia: u32 = partes.next()?.parse().ok()?;
+    NaiveDate::from_ymd_opt(ano, mes, dia)
+}
+
+/// `NaiveDate` → ISO ("AAAA-MM-DD").
+fn iso(d: NaiveDate) -> String {
+    format!("{:04}-{:02}-{:02}", d.year(), d.month(), d.day())
+}
+
+/// Nome do mês em pt-BR.
+fn nome_mes(m: u32) -> &'static str {
+    const M: [&str; 12] = [
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro",
+    ];
+    usize::try_from(m.saturating_sub(1))
+        .ok()
+        .and_then(|i| M.get(i).copied())
+        .unwrap_or("")
+}
+
+/// Primeiro dia do mês seguinte / anterior a `d`.
+fn mes_vizinho(d: NaiveDate, avancar: bool) -> NaiveDate {
+    let (mut y, mut m) = (d.year(), d.month());
+    if avancar {
+        if m == 12 {
+            y += 1;
+            m = 1;
+        } else {
+            m += 1;
+        }
+    } else if m == 1 {
+        y -= 1;
+        m = 12;
+    } else {
+        m -= 1;
+    }
+    NaiveDate::from_ymd_opt(y, m, 1).unwrap_or(d)
+}
+
+/// Filtro por janela de tempo: um botão com o período atual que abre um CALENDÁRIO único para
+/// escolher início e fim (clica no 1º dia, depois no 2º; o intervalo fica realçado).
 #[component]
-fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>) -> impl IntoView {
+fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>, ref_data: String) -> impl IntoView {
     let aberto = RwSignal::new(false);
+    let inicial = parse_iso(&ref_data)
+        .or_else(|| NaiveDate::from_ymd_opt(2026, 1, 1))
+        .map(|d| NaiveDate::from_ymd_opt(d.year(), d.month(), 1).unwrap_or(d))
+        .unwrap_or_default();
+    let mes = RwSignal::new(inicial);
     let ativo = move || !inicio.get().is_empty() || !fim.get().is_empty();
     let rotulo = move || {
         let (i, f) = (inicio.get(), fim.get());
@@ -538,6 +600,19 @@ fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>) -> impl IntoView 
                 fmt_data(&f)
             };
             format!("{a} — {b}")
+        }
+    };
+    // Clique num dia: começa novo intervalo, ou fecha o fim se já há início sem fim.
+    let clicar = move |d: NaiveDate| {
+        let iso_d = iso(d);
+        let (i, f) = (inicio.get_untracked(), fim.get_untracked());
+        if i.is_empty() || !f.is_empty() {
+            inicio.set(iso_d);
+            fim.set(String::new());
+        } else if iso_d >= i {
+            fim.set(iso_d);
+        } else {
+            inicio.set(iso_d);
         }
     };
     view! {
@@ -561,24 +636,73 @@ fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>) -> impl IntoView 
                     on:click=move |_| aberto.set(false)
                 ></button>
                 <div class="filtro-data__pop">
-                    <label class="filtro-data__campo">
-                        <span>"De"</span>
-                        <input
-                            class="input input--compacto"
-                            type="date"
-                            prop:value=move || inicio.get()
-                            on:input=move |ev| inicio.set(event_target_value(&ev))
-                        />
-                    </label>
-                    <label class="filtro-data__campo">
-                        <span>"Até"</span>
-                        <input
-                            class="input input--compacto"
-                            type="date"
-                            prop:value=move || fim.get()
-                            on:input=move |ev| fim.set(event_target_value(&ev))
-                        />
-                    </label>
+                    <div class="cal__cab">
+                        <button
+                            type="button"
+                            class="cal__nav"
+                            aria-label="Mês anterior"
+                            on:click=move |_| mes.update(|m| *m = mes_vizinho(*m, false))
+                        >
+                            <Icone arquivo="seta-esquerda.svg" />
+                        </button>
+                        <span class="cal__titulo">
+                            {move || format!("{} {}", nome_mes(mes.get().month()), mes.get().year())}
+                        </span>
+                        <button
+                            type="button"
+                            class="cal__nav"
+                            aria-label="Próximo mês"
+                            on:click=move |_| mes.update(|m| *m = mes_vizinho(*m, true))
+                        >
+                            <Icone arquivo="seta-direita.svg" />
+                        </button>
+                    </div>
+                    <div class="cal__semana">
+                        {["dom", "seg", "ter", "qua", "qui", "sex", "sáb"]
+                            .into_iter()
+                            .map(|d| view! { <span>{d}</span> })
+                            .collect_view()}
+                    </div>
+                    <div class="cal__grade">
+                        {move || {
+                            let base = mes.get();
+                            let offset = base.weekday().num_days_from_sunday();
+                            let ult = mes_vizinho(base, true);
+                            let dias = (ult - base).num_days();
+                            let (i, f) = (inicio.get(), fim.get());
+                            let mut cels: Vec<AnyView> = Vec::new();
+                            for _ in 0..offset {
+                                cels.push(view! { <span class="cal__vazio"></span> }.into_any());
+                            }
+                            for n in 1..=dias {
+                                let dia = NaiveDate::from_ymd_opt(base.year(), base.month(),
+                                    u32::try_from(n).unwrap_or(1)).unwrap_or(base);
+                                let s = iso(dia);
+                                let eh_i = s == i;
+                                let eh_f = s == f;
+                                let tem_fim = !f.is_empty();
+                                let mut classe = String::from("cal__dia");
+                                if eh_i && !tem_fim {
+                                    classe.push_str(" cal__dia--sel");
+                                } else if eh_i {
+                                    classe.push_str(" cal__dia--ini");
+                                } else if eh_f {
+                                    classe.push_str(" cal__dia--fim");
+                                } else if tem_fim && s.as_str() > i.as_str() && s.as_str() < f.as_str() {
+                                    classe.push_str(" cal__dia--mid");
+                                }
+                                cels.push(
+                                    view! {
+                                        <button type="button" class=classe on:click=move |_| clicar(dia)>
+                                            {n.to_string()}
+                                        </button>
+                                    }
+                                    .into_any(),
+                                );
+                            }
+                            cels
+                        }}
+                    </div>
                     <button
                         type="button"
                         class="btn btn--secundario btn--sm filtro-data__limpar"
@@ -587,7 +711,7 @@ fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>) -> impl IntoView 
                             fim.set(String::new());
                         }
                     >
-                        "Limpar"
+                        "Limpar período"
                     </button>
                 </div>
             </Show>
@@ -610,9 +734,10 @@ fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
         desloc.set(0);
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
+    let ref_data = dados.with_value(|v| v.first().and_then(|o| o.data.clone()).unwrap_or_default());
     view! {
         <section class="prod-secao">
-            <HistoricoCab titulo="Histórico de produção" inicio fim />
+            <HistoricoCab titulo="Histórico de produção" inicio fim ref_data />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
@@ -692,9 +817,10 @@ fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
         desloc.set(0);
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
+    let ref_data = dados.with_value(|v| v.first().map(|m| m.data.clone()).unwrap_or_default());
     view! {
         <section class="prod-secao">
-            <HistoricoCab titulo="Histórico de movimentação" inicio fim />
+            <HistoricoCab titulo="Histórico de movimentação" inicio fim ref_data />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
