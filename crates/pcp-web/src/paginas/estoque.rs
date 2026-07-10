@@ -140,6 +140,24 @@ pub fn PaginaEstoque() -> impl IntoView {
                 </Suspense>
             </div>
 
+            // A mesma faixa "Mostrando X à Y" do rodapé, logo abaixo do card de filtros.
+            <Suspense fallback=|| ()>
+                {move || {
+                    dados.get().map(|res| match res {
+                        Ok(pag) => {
+                            let total = pag.total;
+                            view! {
+                                <div class="lista-info">
+                                    <PaginacaoInfo limite deslocamento total />
+                                </div>
+                            }
+                                .into_any()
+                        }
+                        Err(_) => ().into_any(),
+                    })
+                }}
+            </Suspense>
+
             <Suspense fallback=|| {
                 view! { <p class="texto-suave">"Carregando produtos…"</p> }
             }>
@@ -639,6 +657,18 @@ fn janela(atual: i64, total_paginas: i64) -> impl Iterator<Item = i64> {
 
 #[component]
 fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> impl IntoView {
+    view! {
+        <nav class="paginacao">
+            <PaginacaoInfo limite deslocamento total />
+            <PaginacaoBotoes limite deslocamento total />
+        </nav>
+    }
+}
+
+/// Texto "Mostrando X à Y de Z itens" (a faixa da página atual). Aparece abaixo do card de
+/// filtros e no rodapé da tabela; lê os mesmos sinais, então os dois dizem sempre o mesmo.
+#[component]
+fn PaginacaoInfo(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> impl IntoView {
     let inicio = move || {
         if total == 0 {
             0
@@ -648,23 +678,20 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
     };
     let fim = move || (deslocamento.get() + limite.get()).min(total);
     view! {
-        <nav class="paginacao">
-            <span class="paginacao__info">
-                {move || {
-                    if total == 0 {
-                        "Nenhum item".to_owned()
-                    } else {
-                        format!(
-                            "Mostrando {} á {} de {} itens",
-                            fmt_milhar(inicio()),
-                            fmt_milhar(fim()),
-                            fmt_milhar(total),
-                        )
-                    }
-                }}
-            </span>
-            <PaginacaoBotoes limite deslocamento total />
-        </nav>
+        <span class="paginacao__info">
+            {move || {
+                if total == 0 {
+                    "Nenhum item".to_owned()
+                } else {
+                    format!(
+                        "Mostrando {} á {} de {} itens",
+                        fmt_milhar(inicio()),
+                        fmt_milhar(fim()),
+                        fmt_milhar(total),
+                    )
+                }
+            }}
+        </span>
     }
 }
 

@@ -2683,6 +2683,11 @@ input {
   gap: var(--e-4);
   flex-wrap: wrap;
 }
+/* Faixa "Mostrando X à Y" logo abaixo do card de filtros, alinhada às margens da página. */
+.lista-info {
+  padding: 0 var(--e-1);
+}
+
 .paginacao__info {
   font-size: var(--fs-sm);
   color: var(--texto-suave);
