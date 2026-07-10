@@ -206,11 +206,11 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
             <article class="card-resumo">
                 <header class="card-resumo__cab">
                     <span class="card-resumo__titulo">"Performance"</span>
-                    <span class="card-resumo__chip">{format!("{:.0}/dia", m.media_diaria)}</span>
+                    <span class="card-resumo__chip">{format!("{}/dia", fmt_media(m.media_diaria))}</span>
                 </header>
                 <span class="card-resumo__valor">{format!("Classe {classe}")}</span>
                 <span class="card-resumo__sub">
-                    {format!("Volume 12m: {}", fmt_milhar(m.volume_janela))}
+                    {format!("Volume Anual: {}", fmt_milhar(m.volume_janela))}
                 </span>
             </article>
 
@@ -219,9 +219,9 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
                     <span class="card-resumo__titulo">"Recomendação"</span>
                     <span class="card-resumo__chip">{format!("{sazonal} sazonal")}</span>
                 </header>
-                <span class="card-resumo__valor">{fmt_milhar(m.estoque_total_recomendado)}</span>
+                <span class="card-resumo__valor">{fmt_milhar(m.qtd_sugerida)}</span>
                 <span class="card-resumo__sub">
-                    {format!("Produzir: {} un", fmt_milhar(m.qtd_sugerida))}
+                    {format!("Recomendada: {} un", fmt_milhar(m.estoque_total_recomendado))}
                 </span>
                 <span class="card-resumo__nota">{format!("Confiança {confianca}")}</span>
             </article>
@@ -238,6 +238,12 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
             </article>
         </div>
     }
+}
+
+/// Média diária arredondada, com separador de milhar (ex.: 2424.7 → "2.425").
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // média pequena e não-negativa
+fn fmt_media(v: f64) -> String {
+    fmt_milhar(v.max(0.0).round() as i64)
 }
 
 /// Valor de cobertura para o card: dias com uma casa, ou "Sem histórico" (sentinela 999).
