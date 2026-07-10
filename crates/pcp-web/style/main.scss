@@ -2555,9 +2555,11 @@ input {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  /* Sem overflow no desktop: `overflow-x: auto` faria deste um scroll container e o cabeçalho
-     sticky grudaria NELE (que não rola), não na janela. O scroll horizontal do mobile está na
-     media query lá embaixo. */
+  /* `overflow: visible` EXPLÍCITO (não apenas omitido): a regra genérica `.tabela-rolavel` define
+     `overflow-x: auto`, e sem sobrescrever aqui ela continuaria valendo — tornando este um scroll
+     container e fazendo o cabeçalho sticky grudar NELE, não na janela. O scroll horizontal do
+     mobile volta na media query lá embaixo. */
+  overflow: visible;
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
