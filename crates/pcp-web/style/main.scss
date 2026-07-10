@@ -2025,7 +2025,9 @@ input {
 }
 .grafico--anual { height: 200px; }
 .grafico--anual .graf__barra { fill: #1b1814; }
-.graf__barra--anterior { fill: var(--superficie-2); }
+/* Vem DEPOIS e com a mesma especificidade (0,2,0) que a regra acima, senão o ano anterior herdaria
+   o ink escuro. Fica cinza claro. */
+.grafico--anual .graf__barra--anterior { fill: var(--superficie-2); }
 /* Rótulos de mês em HTML, alinhados às 12 fatias iguais do gráfico. */
 .graf__meses {
   display: flex;
