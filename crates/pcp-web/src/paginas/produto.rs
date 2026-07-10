@@ -455,29 +455,48 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
     }
 }
 
-/// Histórico de produção: ordens da linha em grade de cards (mais recentes primeiro).
+/// Agrupa itens já ordenados por data (desc) em `(data, itens)` — datas consecutivas caem no mesmo
+/// grupo. `chave` extrai a data de exibição de cada item.
+fn agrupar_por_data<T, F: Fn(&T) -> String>(itens: &[T], chave: F) -> Vec<(String, Vec<&T>)> {
+    let mut grupos: Vec<(String, Vec<&T>)> = Vec::new();
+    for it in itens {
+        let d = chave(it);
+        match grupos.last_mut() {
+            Some((data, v)) if *data == d => v.push(it),
+            _ => grupos.push((d, vec![it])),
+        }
+    }
+    grupos
+}
+
+/// Histórico de produção: linha do tempo por data, com as ordens do dia como fases.
 fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
-    let cards = ordens
-        .iter()
-        .map(|o| {
-            let data = o.data.clone().unwrap_or_else(|| "—".to_owned());
-            let lote = o.lote.map_or_else(|| "—".to_owned(), |l| l.to_string());
-            let status = o.status.clone().unwrap_or_default();
-            let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
+    let grupos = agrupar_por_data(ordens, |o| o.data.clone().unwrap_or_else(|| "—".to_owned()));
+    let dias = grupos
+        .into_iter()
+        .map(|(data, fases)| {
+            let itens = fases
+                .iter()
+                .map(|o| {
+                    let status = o.status.clone().unwrap_or_default();
+                    let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
+                    let lote = o.lote.map(|l| format!("Lote {l}"));
+                    view! {
+                        <li class="mov-fase">
+                            <span class="mov-fase__ponto"></span>
+                            <span class=classe_st>{rotulo_producao(&status)}</span>
+                            <span class="mov-fase__qtd">
+                                {format!("{} un", fmt_milhar(o.quantidade))}
+                            </span>
+                            {lote.map(|l| view! { <span class="mov-fase__meta">{l}</span> })}
+                        </li>
+                    }
+                })
+                .collect_view();
             view! {
-                <div class="ativ-card">
-                    <div class="ativ-card__topo">
-                        <span class="ativ-card__data">{fmt_data(&data)}</span>
-                        <span class=classe_st>{rotulo_producao(&status)}</span>
-                    </div>
-                    <div class="ativ-card__linha">
-                        <span class="ativ-card__rotulo">"Quantidade"</span>
-                        <span class="ativ-card__valor">{format!("{} un", fmt_milhar(o.quantidade))}</span>
-                    </div>
-                    <div class="ativ-card__linha">
-                        <span class="ativ-card__rotulo">"Lote"</span>
-                        <span class="ativ-card__valor">{lote}</span>
-                    </div>
+                <div class="mov-dia">
+                    <span class="mov-dia__data">{fmt_data(&data)}</span>
+                    <ol class="mov-linha">{itens}</ol>
                 </div>
             }
         })
@@ -489,40 +508,46 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
             } else {
-                view! { <div class="ativ-grid">{cards}</div> }.into_any()
+                view! { <div class="mov-timeline">{dias}</div> }.into_any()
             }}
         </section>
     }
 }
 
-/// Histórico de movimentação: kardex da linha em grade de cards (entradas/saídas, recentes primeiro).
+/// Histórico de movimentação: linha do tempo por data, com os movimentos do dia como fases.
 fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
-    let cards = movs
-        .iter()
-        .map(|m| {
-            let entrada = m.quantidade >= 0;
-            let classe_qtd = if entrada {
-                "ativ-card__valor mov--entrada"
-            } else {
-                "ativ-card__valor mov--saida"
-            };
-            let sinal = if entrada { "+" } else { "" };
+    let grupos = agrupar_por_data(movs, |m| m.data.clone());
+    let dias = grupos
+        .into_iter()
+        .map(|(data, fases)| {
+            let itens = fases
+                .iter()
+                .map(|m| {
+                    let entrada = m.quantidade >= 0;
+                    let classe_qtd = if entrada {
+                        "mov-fase__qtd mov--entrada"
+                    } else {
+                        "mov-fase__qtd mov--saida"
+                    };
+                    let sinal = if entrada { "+" } else { "" };
+                    view! {
+                        <li class="mov-fase">
+                            <span class="mov-fase__ponto"></span>
+                            <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
+                            <span class=classe_qtd>
+                                {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
+                            </span>
+                            <span class="mov-fase__meta">
+                                {format!("saldo {} un", fmt_milhar(m.saldo))}
+                            </span>
+                        </li>
+                    }
+                })
+                .collect_view();
             view! {
-                <div class="ativ-card">
-                    <div class="ativ-card__topo">
-                        <span class="ativ-card__data">{fmt_data(&m.data)}</span>
-                        <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
-                    </div>
-                    <div class="ativ-card__linha">
-                        <span class="ativ-card__rotulo">"Quantidade"</span>
-                        <span class=classe_qtd>
-                            {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
-                        </span>
-                    </div>
-                    <div class="ativ-card__linha">
-                        <span class="ativ-card__rotulo">"Saldo"</span>
-                        <span class="ativ-card__valor">{format!("{} un", fmt_milhar(m.saldo))}</span>
-                    </div>
+                <div class="mov-dia">
+                    <span class="mov-dia__data">{fmt_data(&data)}</span>
+                    <ol class="mov-linha">{itens}</ol>
                 </div>
             }
         })
@@ -533,7 +558,7 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
             {if movs.is_empty() {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
-                view! { <div class="ativ-grid">{cards}</div> }.into_any()
+                view! { <div class="mov-timeline">{dias}</div> }.into_any()
             }}
         </section>
     }

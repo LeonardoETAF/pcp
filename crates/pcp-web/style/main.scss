@@ -1821,41 +1821,53 @@ input {
 
 /* O status de produção, quando sozinho no seu card, não precisa do filete de topo. */
 
-/* Grade de cards do histórico (produção/movimentação): colunas que se acomodam à largura. */
-.ativ-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--e-3);
-}
-.ativ-card {
+/* Linha do tempo dos históricos (produção/movimentação): agrupada por DATA. À esquerda a data;
+   à direita, uma linha vertical com as fases (movimentos/ordens) daquele dia. */
+.mov-timeline {
   display: flex;
   flex-direction: column;
-  gap: var(--e-2);
-  padding: var(--e-4);
-  background: var(--superficie);
-  border: var(--cartao-borda);
-  border-radius: var(--cartao-raio);
-  box-shadow: var(--cartao-sombra);
+  gap: var(--e-4);
 }
-.ativ-card__topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e-2);
+.mov-dia {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: var(--e-4);
+  align-items: start;
 }
-.ativ-card__data {
+.mov-dia__data {
   font-weight: var(--peso-medio);
   font-variant-numeric: tabular-nums;
+  padding-top: 3px;
 }
-.ativ-card__linha {
+.mov-linha {
+  list-style: none;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding-left: var(--e-4);
+  border-left: 2px solid var(--borda);
+}
+.mov-fase {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--e-2);
   font-size: var(--fs-sm);
 }
-.ativ-card__rotulo { color: var(--texto-suave); }
-.ativ-card__valor { font-variant-numeric: tabular-nums; }
+/* Bolinha sobre a linha vertical (o fundo "corta" a linha). */
+.mov-fase__ponto {
+  position: absolute;
+  left: calc(-1 * var(--e-4) - 6px);
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+  box-shadow: 0 0 0 3px var(--superficie);
+}
+.mov-fase__qtd { font-weight: var(--peso-medio); font-variant-numeric: tabular-nums; }
+.mov-fase__meta { color: var(--texto-suave); font-variant-numeric: tabular-nums; }
 
 /* Título das seções de histórico (produção/movimentação), acima da grade. */
 .prod-secao {
