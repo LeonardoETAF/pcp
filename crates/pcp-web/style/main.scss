@@ -2451,6 +2451,28 @@ input {
   background: var(--borda);
 }
 
+/* Coluna "Cor": o primeiro atributo da configuração em destaque, os demais numa segunda linha.
+   A coluna tem largura própria e corta com reticências — a configuração inteira vai no `title`. */
+.tabela__cor {
+  max-width: 220px;
+}
+.cor-celula {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.cor-celula__valor,
+.cor-celula__extra {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cor-celula__extra {
+  font-size: var(--fs-xs);
+  color: var(--texto-suave);
+}
+
 /* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
 .tabela-cartao {
   display: flex;

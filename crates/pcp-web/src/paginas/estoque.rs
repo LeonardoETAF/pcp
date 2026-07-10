@@ -14,7 +14,7 @@ use crate::api::{
 use crate::componentes::{EstadoVazio, Icone, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
-use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
+use crate::formato::{cor_partes, fmt_cobertura, fmt_milhar, rotulo_status};
 
 #[component]
 #[allow(clippy::too_many_lines)] // a maior parte é markup declarativo (view!), não lógica
@@ -393,6 +393,7 @@ fn Tabela(itens: Vec<LinhaEstoque>) -> impl IntoView {
                     <tr>
                         <th>"Código"</th>
                         <th>"Item"</th>
+                        <th>"Cor"</th>
                         <th>"Classe"</th>
                         <th class="tabela__nivel-col">"Nível de estoque"</th>
                         <th class="tabela__num">"Disponível"</th>
@@ -426,11 +427,12 @@ fn cor_status(status: &str) -> &'static str {
 #[component]
 #[allow(clippy::cast_precision_loss)] // quantidades de estoque: conversão exata para f64 na razão
 fn Linha(i: LinhaEstoque) -> impl IntoView {
-    let nome = nome_exibicao(
-        i.produto.as_deref(),
-        i.configuracao.as_deref(),
-        &i.codigo_estoque,
-    );
+    // A cor tem coluna própria: o nome fica só com o produto (não repete a variação).
+    let nome = i
+        .produto
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| i.codigo_estoque.clone());
     let href = format!("/estoque/{}", i.codigo_estoque);
     let classe_abc = format!(
         "badge badge--circulo badge--abc-{}",
@@ -454,6 +456,9 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                         .filter(|s| !s.is_empty())
                         .map(|s| view! { <span class="tabela__sku">{s}</span> })}
                 </A>
+            </td>
+            <td class="tabela__cor">
+                <Cor configuracao=i.configuracao.clone() />
             </td>
             <td>
                 <span class=classe_abc>{i.classe.clone()}</span>
@@ -488,6 +493,30 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
             </td>
         </tr>
     }
+}
+
+/// Célula de cor: o primeiro atributo em destaque e os demais numa segunda linha. O `title` traz
+/// a configuração inteira, que na coluna estreita sai com reticências.
+#[component]
+fn Cor(configuracao: Option<String>) -> impl IntoView {
+    let partes = cor_partes(configuracao.as_deref());
+    if partes.is_empty() {
+        return view! { <span class="texto-suave">"—"</span> }.into_any();
+    }
+    let completo = configuracao.unwrap_or_default();
+    let (_, principal) = partes[0].clone();
+    let extras = partes[1..]
+        .iter()
+        .map(|(rot, val)| format!("{rot}: {val}"))
+        .collect::<Vec<_>>()
+        .join(" · ");
+    view! {
+        <span class="cor-celula" title=completo>
+            <span class="cor-celula__valor">{principal}</span>
+            {(!extras.is_empty()).then(|| view! { <span class="cor-celula__extra">{extras}</span> })}
+        </span>
+    }
+    .into_any()
 }
 
 #[component]

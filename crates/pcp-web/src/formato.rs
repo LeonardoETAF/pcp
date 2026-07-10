@@ -74,10 +74,42 @@ pub fn nome_exibicao(produto: Option<&str>, configuracao: Option<&str>, codigo: 
         .filter(|s| !s.is_empty())
         .unwrap_or(codigo)
         .to_owned();
-    match configuracao.and_then(|c| c.split(':').nth(1)) {
+    // A configuração pode ter vários atributos, separados por "|" ("COR DO PRODUTO: PRETO |
+    // COR DA ESTAMPA: PRATA"). A §12 fala do valor após o ":": aqui, o do PRIMEIRO atributo.
+    match configuracao
+        .and_then(|c| c.split('|').next())
+        .and_then(|a| a.split(':').nth(1))
+    {
         Some(cor) if !cor.trim().is_empty() => format!("{base} - {}", cor.trim()),
         _ => base,
     }
+}
+
+/// Quebra a configuração do One em `(atributo, valor)`, ex.:
+/// `"COR DO PRODUTO: PRETO | COR DA ESTAMPA: PRATA"` → `[("PRODUTO","PRETO"), ("ESTAMPA","PRATA")]`.
+/// O prefixo "COR DO/DA/DE" sai do rótulo: numa coluna chamada "Cor", ele só repete o cabeçalho.
+#[must_use]
+pub fn cor_partes(configuracao: Option<&str>) -> Vec<(String, String)> {
+    configuracao
+        .unwrap_or_default()
+        .split('|')
+        .filter_map(|atributo| {
+            let (rotulo, valor) = atributo.split_once(':')?;
+            let valor = valor.trim();
+            (!valor.is_empty()).then(|| (rotulo_cor(rotulo), valor.to_owned()))
+        })
+        .collect()
+}
+
+/// Encurta o rótulo do atributo removendo o prefixo redundante ("COR DO PRODUTO" → "PRODUTO").
+fn rotulo_cor(rotulo: &str) -> String {
+    let r = rotulo.trim();
+    for prefixo in ["COR DO ", "COR DA ", "COR DE ", "COR "] {
+        if let Some(resto) = r.strip_prefix(prefixo) {
+            return resto.to_owned();
+        }
+    }
+    r.to_owned()
 }
 
 /// Rótulo pt-BR do status canônico (doc 02 §5.2 / §12).

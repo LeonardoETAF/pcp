@@ -7,10 +7,14 @@ use chrono::NaiveDate;
 
 use pcp_db::{NovaVendaDia, NovoEstoqueSnapshot};
 
-/// Linha crua de estoque do One (já agregada por produto na leitura). Espelha `bronze.one_estoque`.
+/// Linha crua de estoque do One: **uma por linha de estoque** (`EST_ID` = item × configuração).
+/// Espelha `bronze.one_estoque`.
 #[derive(Debug, Clone)]
 pub struct BronzeEstoque {
-    pub itm_id: i64,
+    pub est_id: i64,
+    pub est_itm: i64,
+    pub est_cnf: Option<i64>,
+    pub est_dconf: Option<String>,
     pub itm_sku: Option<String>,
     pub itm_desc: Option<String>,
     pub est_qtde: i32,
@@ -20,33 +24,36 @@ pub struct BronzeEstoque {
     pub itm_proda: bool,
 }
 
-/// Linha crua de venda do One (pedido não cancelado, consolidado dia×produto). Espelha
-/// `bronze.one_venda`.
+/// Linha crua de venda do One (kardex, líquido dia×linha de estoque). Espelha `bronze.one_venda`.
 #[derive(Debug, Clone)]
 pub struct BronzeVenda {
-    pub pedv_datc: NaiveDate,
-    pub itmp_prd: i64,
+    pub cdx_datc: NaiveDate,
+    pub cdx_estq: i64,
     pub itm_sku: Option<String>,
     pub itm_desc: Option<String>,
-    pub itmp_qnt: i32,
+    pub est_dconf: Option<String>,
+    pub cdx_qtd: i32,
     pub itm_proda: bool,
 }
 
 /// ACL do estoque: `bronze.one_estoque` → `NovoEstoqueSnapshot` (doc 05 §2.2).
 ///
+/// `codigo_estoque ← EST_ID`, a linha de estoque (item × configuração) — é o `codigo_estoque` do
+/// legado, e não o `ITM_ID`: os produtos de referência do PRD §11 (6797, 10001, 10473) só existem
+/// como `EST_ID`. `configuracao ← EST_DCONF` (§12), ex.: `"COR DO PRODUTO: PRETO"`.
+///
 /// Decisão documentada: `qtd_disponivel ← EST_QTDD` (canônico, confirmado pelo suporte) e
 /// `qtd_estoque ← EST_QTDE`; a **reserva é derivada** (`estoque − disponível`) para honrar a
 /// invariante do contrato (`disponivel = estoque − reserva`), já que as três quantidades do One
-/// são `double` independentes e não fecham após arredondar. `configuracao = None` no nível de
-/// produto (agregação das variações). `codigo_estoque ← ITM_ID` (chave natural do One).
+/// são `double` independentes e não fecham após arredondar.
 #[must_use]
 pub fn acl_estoque(b: &BronzeEstoque, data_ref: NaiveDate) -> NovoEstoqueSnapshot {
     NovoEstoqueSnapshot {
         dt_ref: data_ref,
-        codigo_estoque: b.itm_id.to_string(),
+        codigo_estoque: b.est_id.to_string(),
         sku: limpar(b.itm_sku.as_deref()),
         produto: limpar(b.itm_desc.as_deref()),
-        configuracao: None,
+        configuracao: limpar(b.est_dconf.as_deref()),
         qtd_estoque: b.est_qtde,
         qtd_reserva: b.est_qtde - b.est_qtdd,
         qtd_disponivel: b.est_qtdd,
@@ -55,17 +62,18 @@ pub fn acl_estoque(b: &BronzeEstoque, data_ref: NaiveDate) -> NovoEstoqueSnapsho
     }
 }
 
-/// ACL da venda: `bronze.one_venda` → `NovaVendaDia` (doc 05 §2.1). `is_personalizado` é atributo
-/// do produto (`ITM_PRODA`); `configuracao = None` (consolidado por produto — o motor soma).
+/// ACL da venda: `bronze.one_venda` → `NovaVendaDia` (doc 05 §2.1). Mesma chave do snapshot
+/// (`EST_ID`), então venda e estoque falam do mesmo produto-cor. `is_personalizado` é atributo do
+/// item (`ITM_PRODA`).
 #[must_use]
 pub fn acl_venda(b: &BronzeVenda) -> NovaVendaDia {
     NovaVendaDia {
-        dt_ref: b.pedv_datc,
-        codigo_estoque: b.itmp_prd.to_string(),
+        dt_ref: b.cdx_datc,
+        codigo_estoque: b.cdx_estq.to_string(),
         sku: limpar(b.itm_sku.as_deref()),
         produto: limpar(b.itm_desc.as_deref()),
-        configuracao: None,
-        qtd_vendida: b.itmp_qnt,
+        configuracao: limpar(b.est_dconf.as_deref()),
+        qtd_vendida: b.cdx_qtd,
         is_personalizado: b.itm_proda,
     }
 }
@@ -89,7 +97,10 @@ mod testes {
     fn estoque_deriva_reserva_para_honrar_invariante() {
         // EST_QTDD (disponível) é canônico; reserva = estoque − disponível, sempre coerente.
         let b = BronzeEstoque {
-            itm_id: 923,
+            est_id: 923,
+            est_itm: 40,
+            est_cnf: Some(7),
+            est_dconf: Some("COR DO PRODUTO: PRETO".to_owned()),
             itm_sku: Some(" CANUDO ".to_owned()),
             itm_desc: Some("CANUDO P LISO".to_owned()),
             est_qtde: 1000,
@@ -106,7 +117,7 @@ mod testes {
         assert_eq!(s.qtd_reserva, 200);
         // invariante do contrato (doc 05 §2.2)
         assert_eq!(s.qtd_disponivel, s.qtd_estoque - s.qtd_reserva);
-        assert!(s.configuracao.is_none());
+        assert_eq!(s.configuracao.as_deref(), Some("COR DO PRODUTO: PRETO"));
         assert_eq!(s.estoque_min_erp, Some(50));
     }
 
@@ -114,7 +125,10 @@ mod testes {
     fn estoque_disponivel_maior_que_fisico_gera_reserva_negativa_coerente() {
         // O One pode ter disponível > físico; a invariante ainda fecha (reserva negativa).
         let b = BronzeEstoque {
-            itm_id: 1,
+            est_id: 1,
+            est_itm: 1,
+            est_cnf: None,
+            est_dconf: None,
             itm_sku: None,
             itm_desc: Some("   ".to_owned()), // só espaços → None
             est_qtde: 0,
@@ -131,20 +145,22 @@ mod testes {
     }
 
     #[test]
-    fn venda_mapeia_personalizado_e_consolida_sem_configuracao() {
+    fn venda_usa_a_linha_de_estoque_como_chave_e_carrega_a_configuracao() {
         let b = BronzeVenda {
-            pedv_datc: data(),
-            itmp_prd: 205,
-            itm_sku: Some("SKU-1".to_owned()),
-            itm_desc: Some("COPO".to_owned()),
-            itmp_qnt: 4800,
+            cdx_datc: data(),
+            cdx_estq: 10001,
+            itm_sku: Some("TLPL".to_owned()),
+            itm_desc: Some("TULIPA LISO".to_owned()),
+            est_dconf: Some("COR DO PRODUTO: CRISTAL".to_owned()),
+            cdx_qtd: 4800,
             itm_proda: true,
         };
         let v = acl_venda(&b);
-        assert_eq!(v.codigo_estoque, "205");
+        // Mesma chave do snapshot: venda e estoque falam do mesmo produto-cor.
+        assert_eq!(v.codigo_estoque, "10001");
         assert_eq!(v.dt_ref, data());
         assert_eq!(v.qtd_vendida, 4800);
         assert!(v.is_personalizado);
-        assert!(v.configuracao.is_none());
+        assert_eq!(v.configuracao.as_deref(), Some("COR DO PRODUTO: CRISTAL"));
     }
 }

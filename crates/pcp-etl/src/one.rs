@@ -2,8 +2,12 @@
 //! do trait [`FonteDados`] (CLAUDE.md §1/§8; docs/integracao/acesso-direto-one.md). Fluxo:
 //! consulta o One (read-only) → grava o cru no schema `bronze` → a ACL ([`crate::bronze`])
 //! transforma para o domínio. SQL em **runtime**: o schema legado não entra no cache compile-time
-//! do `SQLx`. Estoque = full refresh; vendas = **incremental** por `PEDV_DATC` com **janela
-//! deslizante** (re-lê dias recentes p/ capturar cancelamentos). Sessão forçada read-only (§7).
+//! do `SQLx`. Estoque = full refresh; vendas = **incremental** por `CDX_DATC` com **janela
+//! deslizante** (re-lê dias recentes p/ capturar estornos). Sessão forçada read-only (§7).
+//!
+//! **Grão = linha de estoque** (`F03005.EST_ID` = item × configuração de cor), não o item: é o
+//! `codigo_estoque` do legado (os produtos de referência do PRD §11 são `EST_ID`). Ver migration
+//! `0015_grao_linha_de_estoque.sql`.
 
 use chrono::{Duration, NaiveDate};
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
@@ -15,32 +19,40 @@ use crate::bronze::{acl_estoque, acl_venda, BronzeEstoque, BronzeVenda};
 use crate::erro::ErroEtl;
 use crate::fonte::FonteDados;
 
-/// Estoque cru agregado por produto (F03005 + F03001), só produto acabado. `EST_QTDD` é o
+/// Estoque cru, **uma linha por linha de estoque** (F03005 × F03001), só produto acabado. Sem
+/// `GROUP BY`: agregar por item somaria as cores e apagaria a configuração. `EST_QTDD` é o
 /// disponível canônico; a reserva é derivada na ACL.
 const SQL_ESTOQUE: &str = "\
-SELECT p.itm_id AS itm_id, p.itm_sku AS itm_sku, p.itm_desc AS itm_desc, \
-       ROUND(SUM(e.est_qtde))::int AS est_qtde, \
-       ROUND(SUM(e.est_qtdd))::int AS est_qtdd, \
-       ROUND(SUM(e.est_qtem))::int AS est_qtem, \
-       BOOL_OR(COALESCE(e.est_flin, false)) AS est_flin, \
-       BOOL_OR(COALESCE(p.itm_proda, false)) AS itm_proda \
+SELECT e.est_id AS est_id, e.est_itm AS est_itm, e.est_cnf AS est_cnf, e.est_dconf AS est_dconf, \
+       p.itm_sku AS itm_sku, p.itm_desc AS itm_desc, \
+       ROUND(e.est_qtde)::int AS est_qtde, \
+       ROUND(e.est_qtdd)::int AS est_qtdd, \
+       ROUND(e.est_qtem)::int AS est_qtem, \
+       COALESCE(e.est_flin, false) AS est_flin, \
+       COALESCE(p.itm_proda, false) AS itm_proda \
 FROM prd.f03005 e JOIN prd.f03001 p ON p.itm_id = e.est_itm \
-WHERE p.itm_gpprd = 'PRODUTO_ACABADO' \
-GROUP BY p.itm_id, p.itm_sku, p.itm_desc";
+WHERE p.itm_gpprd = 'PRODUTO_ACABADO'";
 
-/// Vendas cru = itens de pedido NÃO cancelados, consolidados por (data do pedido, produto).
-/// `$1` = data inicial da janela.
+/// Vendas cruas do **kardex** (F03007): é a única fonte que amarra a saída à linha de estoque
+/// (`CDX_ESTQ → EST_ID`). Os itens de pedido (F05001) não servem: `ITMP_CNF` é a configuração
+/// comercial e `ITMP_ESTM` aponta para a linha do produto LISO reservado — outro item.
+///
+/// Sinal: `VENDA` sai do estoque (`CDX_QTD` negativo) e `DEVOLUCAO_VENDA` entra (positivo); logo
+/// o líquido vendido é `-SUM(CDX_QTD)`. O `HAVING` descarta o dia cujo líquido não é positivo
+/// (devolução ≥ venda): `vendas_dia` exige `qtd_vendida >= 0` e um dia sem venda líquida não é
+/// venda. `$1` = data inicial da janela.
 const SQL_VENDAS: &str = "\
-SELECT p.pedv_datc::date AS pedv_datc, i.itmp_prd AS itmp_prd, \
-       prod.itm_sku AS itm_sku, prod.itm_desc AS itm_desc, \
-       ROUND(SUM(i.itmp_qnt))::int AS itmp_qnt, \
-       BOOL_OR(COALESCE(prod.itm_proda, false)) AS itm_proda \
-FROM prd.f05001 i \
-JOIN prd.f05002 p ON p.pedv_id = i.itmp_pedv \
-JOIN prd.f03001 prod ON prod.itm_id = i.itmp_prd \
-WHERE i.itmp_stpd <> 'CANCELADO' AND i.itmp_dcan IS NULL AND p.pedv_dcan IS NULL \
-  AND prod.itm_gpprd = 'PRODUTO_ACABADO' AND p.pedv_datc >= $1 \
-GROUP BY p.pedv_datc::date, i.itmp_prd, prod.itm_sku, prod.itm_desc";
+SELECT c.cdx_datc::date AS cdx_datc, c.cdx_estq AS cdx_estq, \
+       p.itm_sku AS itm_sku, p.itm_desc AS itm_desc, e.est_dconf AS est_dconf, \
+       ROUND(-SUM(c.cdx_qtd))::int AS cdx_qtd, \
+       BOOL_OR(COALESCE(p.itm_proda, false)) AS itm_proda \
+FROM prd.f03007 c \
+JOIN prd.f03005 e ON e.est_id = c.cdx_estq \
+JOIN prd.f03001 p ON p.itm_id = e.est_itm \
+WHERE c.cdx_tpmvm IN ('VENDA', 'DEVOLUCAO_VENDA') \
+  AND p.itm_gpprd = 'PRODUTO_ACABADO' AND c.cdx_datc >= $1 \
+GROUP BY c.cdx_datc::date, c.cdx_estq, p.itm_sku, p.itm_desc, e.est_dconf \
+HAVING ROUND(-SUM(c.cdx_qtd))::int > 0";
 
 /// Marca-d'água da fonte de vendas em `bronze.sincronizacao`.
 const FONTE_VENDAS: &str = "vendas";
@@ -118,7 +130,10 @@ impl FonteConsultaOne {
             .iter()
             .map(|r| {
                 Ok(BronzeEstoque {
-                    itm_id: r.try_get("itm_id")?,
+                    est_id: r.try_get("est_id")?,
+                    est_itm: r.try_get("est_itm")?,
+                    est_cnf: r.try_get::<Option<i64>, _>("est_cnf")?,
+                    est_dconf: texto(r, "est_dconf")?,
                     itm_sku: texto(r, "itm_sku")?,
                     itm_desc: texto(r, "itm_desc")?,
                     est_qtde: inteiro(r, "est_qtde")?,
@@ -141,11 +156,12 @@ impl FonteConsultaOne {
             .iter()
             .map(|r| {
                 Ok(BronzeVenda {
-                    pedv_datc: r.try_get("pedv_datc")?,
-                    itmp_prd: r.try_get("itmp_prd")?,
+                    cdx_datc: r.try_get("cdx_datc")?,
+                    cdx_estq: r.try_get("cdx_estq")?,
                     itm_sku: texto(r, "itm_sku")?,
                     itm_desc: texto(r, "itm_desc")?,
-                    itmp_qnt: inteiro(r, "itmp_qnt")?,
+                    est_dconf: texto(r, "est_dconf")?,
+                    cdx_qtd: inteiro(r, "cdx_qtd")?,
                     itm_proda: booleano(r, "itm_proda")?,
                 })
             })
@@ -163,11 +179,15 @@ impl FonteConsultaOne {
         for lote in cru.chunks(LOTE) {
             let mut qb = QueryBuilder::new(
                 "INSERT INTO bronze.one_estoque \
-                 (data_ref, itm_id, itm_sku, itm_desc, est_qtde, est_qtdd, est_qtem, est_flin, itm_proda) ",
+                 (data_ref, est_id, est_itm, est_cnf, est_dconf, itm_sku, itm_desc, \
+                  est_qtde, est_qtdd, est_qtem, est_flin, itm_proda) ",
             );
             qb.push_values(lote, |mut b, r| {
                 b.push_bind(data_ref)
-                    .push_bind(r.itm_id)
+                    .push_bind(r.est_id)
+                    .push_bind(r.est_itm)
+                    .push_bind(r.est_cnf)
+                    .push_bind(r.est_dconf.as_deref())
                     .push_bind(r.itm_sku.as_deref())
                     .push_bind(r.itm_desc.as_deref())
                     .push_bind(r.est_qtde)
@@ -185,21 +205,22 @@ impl FonteConsultaOne {
     /// Grava as vendas cruas no bronze (full refresh da janela: troca tudo a partir de `desde`).
     async fn landar_vendas(&self, desde: NaiveDate, cru: &[BronzeVenda]) -> Result<(), ErroEtl> {
         let mut tx = self.pcp.begin().await?;
-        sqlx::query("DELETE FROM bronze.one_venda WHERE pedv_datc >= $1")
+        sqlx::query("DELETE FROM bronze.one_venda WHERE cdx_datc >= $1")
             .bind(desde)
             .execute(&mut *tx)
             .await?;
         for lote in cru.chunks(LOTE) {
             let mut qb = QueryBuilder::new(
                 "INSERT INTO bronze.one_venda \
-                 (pedv_datc, itmp_prd, itm_sku, itm_desc, itmp_qnt, itm_proda) ",
+                 (cdx_datc, cdx_estq, itm_sku, itm_desc, est_dconf, cdx_qtd, itm_proda) ",
             );
             qb.push_values(lote, |mut b, r| {
-                b.push_bind(r.pedv_datc)
-                    .push_bind(r.itmp_prd)
+                b.push_bind(r.cdx_datc)
+                    .push_bind(r.cdx_estq)
                     .push_bind(r.itm_sku.as_deref())
                     .push_bind(r.itm_desc.as_deref())
-                    .push_bind(r.itmp_qnt)
+                    .push_bind(r.est_dconf.as_deref())
+                    .push_bind(r.cdx_qtd)
                     .push_bind(r.itm_proda);
             });
             qb.build().execute(&mut *tx).await?;
