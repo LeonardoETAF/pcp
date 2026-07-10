@@ -2555,16 +2555,35 @@ input {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow-x: auto;
+  /* Sem overflow no desktop: `overflow-x: auto` faria deste um scroll container e o cabeçalho
+     sticky grudaria NELE (que não rola), não na janela. O scroll horizontal do mobile está na
+     media query lá embaixo. */
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
   border-spacing: 0 var(--e-3);
 }
-/* Cabeçalho sem cartão; só rótulos alinhados às colunas. */
+/* Cabeçalho como CARD e fixo ao rolar: gruda no topo da janela (a página rola por ela; não há
+   topbar). Cada <th> pinta o fundo e a borda; o raio fica na 1ª e na última célula, como nas
+   linhas do corpo. z-index sobe para o corpo passar por baixo. */
 .tabela-cartao .tabela thead th {
-  border-bottom: 0;
-  padding: 0 var(--e-4) var(--e-1);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--superficie);
+  border-top: var(--cartao-borda);
+  border-bottom: var(--cartao-borda);
+  padding: var(--e-3) var(--e-4);
+}
+.tabela-cartao .tabela thead th:first-child {
+  border-left: var(--cartao-borda);
+  border-top-left-radius: var(--cartao-raio);
+  border-bottom-left-radius: var(--cartao-raio);
+}
+.tabela-cartao .tabela thead th:last-child {
+  border-right: var(--cartao-borda);
+  border-top-right-radius: var(--cartao-raio);
+  border-bottom-right-radius: var(--cartao-raio);
 }
 /* Cada linha de corpo é um card, com a mesma borda e o mesmo raio dos demais.
    O fundo e a borda vão nas CÉLULAS: a caixa do <tr> é retangular e ignora o border-radius (que
@@ -2731,6 +2750,8 @@ input {
 }
 
 @media (max-width: 720px) {
+  /* Em tela estreita a tabela larga rola na horizontal; o cabeçalho sticky perde efeito aqui. */
+  .tabela-cartao .tabela-rolavel { overflow-x: auto; }
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
   .filtros-estoque__selects { margin-left: 0; }
