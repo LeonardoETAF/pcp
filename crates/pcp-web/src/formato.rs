@@ -112,6 +112,18 @@ fn rotulo_cor(rotulo: &str) -> String {
     r.to_owned()
 }
 
+/// Rótulo da classe (doc 02 §2). A, B e C são posição na curva de Pareto e não têm nome; D, F e N
+/// são estados do produto, e a letra sozinha não diz nada a quem lê a tela.
+#[must_use]
+pub fn nome_classe(classe: &str) -> &str {
+    match classe {
+        "D" => "Dormente",
+        "F" => "Fora de linha",
+        "N" => "Novo",
+        letra => letra,
+    }
+}
+
 /// Rótulo pt-BR do status canônico (doc 02 §5.2 / §12).
 #[must_use]
 pub fn rotulo_status(codigo: &str) -> &'static str {

@@ -239,6 +239,13 @@ input {
   color: var(--texto-inverso);
 }
 /* Badge circular (classe ABC na tabela de estoque, igual ao mockup). */
+/* Classe com nome inteiro (Dormente, Fora de linha, Novo): pílula, não círculo. */
+.badge--pilula {
+  padding: 3px var(--e-3);
+  font-size: var(--fs-xs);
+  font-weight: var(--peso-medio);
+  white-space: nowrap;
+}
 .badge--circulo {
   justify-content: center;
   padding: 0;
@@ -2364,6 +2371,8 @@ input {
   font-size: var(--fs-sm);
   font-weight: var(--peso-medio);
   line-height: 1.2;
+  /* "Fora de linha" não pode quebrar em duas linhas e desalinhar a contagem abaixo. */
+  white-space: nowrap;
 }
 .aba-classe__contagem {
   font-size: var(--fs-xs);

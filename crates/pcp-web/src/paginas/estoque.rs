@@ -15,7 +15,7 @@ use crate::componentes::{EstadoVazio, Icone, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
 use crate::erro::mensagem_usuario;
-use crate::formato::{cor_partes, fmt_cobertura, fmt_milhar, rotulo_status};
+use crate::formato::{cor_partes, fmt_cobertura, fmt_milhar, nome_classe, rotulo_status};
 
 #[component]
 #[allow(clippy::too_many_lines)] // a maior parte é markup declarativo (view!), não lógica
@@ -262,7 +262,13 @@ fn abas_classe(
                 .into_iter()
                 .map(|(cod, qtd)| {
                     view! {
-                        <AbaClasse classe rotulo=cod.clone() valor=Some(cod) contagem=qtd resetar />
+                        <AbaClasse
+                            classe
+                            rotulo=nome_classe(&cod).to_owned()
+                            valor=Some(cod)
+                            contagem=qtd
+                            resetar
+                        />
                     }
                 })
                 .collect_view()}
@@ -270,15 +276,15 @@ fn abas_classe(
     }
 }
 
-/// Ordem canônica das classes para exibição das abas (A→N).
+/// Ordem de exibição das abas: primeiro a curva (A→C), depois os estados, com Novo à frente.
 fn ordem_classe(c: &str) -> u8 {
     match c {
         "A" => 0,
         "B" => 1,
         "C" => 2,
-        "D" => 3,
-        "F" => 4,
-        "N" => 5,
+        "N" => 3,
+        "D" => 4,
+        "F" => 5,
         _ => 9,
     }
 }
@@ -378,7 +384,7 @@ fn Filtros(
                     ("", "Todos"),
                     ("sem_estoque", "Sem estoque"),
                     ("critico", "Crítico"),
-                    ("estoque_baixo", "Estoque baixo"),
+                    ("estoque_baixo", "Baixo"),
                     ("adequado", "Adequado"),
                     ("alto", "Alto"),
                     ("excessivo", "Excessivo"),
@@ -456,10 +462,14 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| i.codigo_estoque.clone());
     let href = format!("/estoque/{}", i.codigo_estoque);
-    let classe_abc = format!(
-        "badge badge--circulo badge--abc-{}",
-        i.classe.to_lowercase()
-    );
+    // A, B e C cabem num círculo; D, F e N viram pílula, porque carregam o nome inteiro.
+    let rotulo_classe = nome_classe(&i.classe).to_owned();
+    let forma = if rotulo_classe.chars().count() == 1 {
+        "badge--circulo"
+    } else {
+        "badge--pilula"
+    };
+    let classe_abc = format!("badge {forma} badge--abc-{}", i.classe.to_lowercase());
     let cor_st = cor_status(&i.status);
     // Sem recomendação (histórico insuficiente), o motor não tem alvo: não há nível a medir nem
     // quantidade a produzir. Uma barra vazia contra alvo zero seria uma leitura inventada (§3).
@@ -486,7 +496,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                 <Cor configuracao=i.configuracao.clone() />
             </td>
             <td>
-                <span class=classe_abc>{i.classe.clone()}</span>
+                <span class=classe_abc>{rotulo_classe}</span>
             </td>
             <td class="tabela__nivel-col">
                 {if sem_alvo {
