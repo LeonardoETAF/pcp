@@ -73,11 +73,6 @@
   --cartao-borda: 1px solid var(--borda);
   --cartao-raio: var(--raio-lg);
   --cartao-sombra: var(--sombra-1);
-  /* Mesma sombra, como filtro. Necessária nas linhas-cartão da tabela: o <tr> é retangular e
-     ignora border-radius, então um box-shadow nele vazaria nas quinas. `drop-shadow` segue o
-     contorno real (já arredondado pelas células), e não a caixa. */
-  --cartao-sombra-filtro: drop-shadow(0 1px 2px rgba(16, 24, 40, 0.06))
-    drop-shadow(0 1px 3px rgba(16, 24, 40, 0.1));
   /* Realce de seleção/foco do sistema (§16): engrossa a borda sem mudar o tamanho da caixa —
      o mesmo desenho do botão de classe ativo. Nunca `outline`, que não acompanha o raio. */
   --foco-anel: 0 0 0 1px var(--texto);
@@ -2462,17 +2457,13 @@ input {
   flex-direction: column;
   gap: var(--e-3);
 }
-/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA.
-   O `overflow-x` cria uma caixa de rolagem, que RECORTA tudo que passa das bordas — inclusive a
-   sombra das linhas, deixando as quinas com aparência serrilhada. O respiro interno dá lugar à
-   sombra dentro da área rolável; a lista fica alguns pixels mais estreita, e é o que se quer. */
+/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA. */
 .tabela-cartao .tabela-rolavel {
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow-x: auto;
-  padding: var(--e-2);
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
@@ -2483,16 +2474,22 @@ input {
   border-bottom: 0;
   padding: 0 var(--e-4) var(--e-1);
 }
-/* Cada linha de corpo é um card, com a mesma superfície dos demais (borda + raio + sombra).
+/* Cada linha de corpo é um card, com a mesma borda e o mesmo raio dos demais.
    O fundo e a borda vão nas CÉLULAS: a caixa do <tr> é retangular e ignora o border-radius (que
    vive na 1ª e na última <td>), então pintar fundo nele vazaria nos cantos ("pontas").
-   A sombra vai no <tr>, mas por `filter: drop-shadow` — que segue o contorno real já arredondado
-   pelas células — e nunca por `box-shadow`, que voltaria a usar a caixa retangular. */
+
+   A linha NÃO tem sombra, e as três saídas estão fechadas:
+   - `box-shadow` no <tr> usa a caixa retangular e vaza nas quinas;
+   - `box-shadow` nas <td> pinta o borrão de cada célula por cima do fundo da anterior, deixando
+     emendas verticais nas divisões de coluna;
+   - `filter: drop-shadow` no <tr> segue a silhueta arredondada, mas a região do filtro é a caixa
+     retangular da linha: a sombra dos cantos é recortada nela e sobram riscos nas laterais, na
+     meia-altura (uma marca por linha, dos dois lados).
+   Como o pedido era a mesma BORDA dos cards, borda e raio idênticos bastam, sem artefato. */
 .tabela-cartao .tabela tbody tr,
 .tabela-cartao .tabela tbody tr:hover {
   background: transparent;
   box-shadow: none;
-  filter: var(--cartao-sombra-filtro);
 }
 .tabela-cartao .tabela tbody td {
   background: var(--superficie);
