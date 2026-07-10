@@ -1863,6 +1863,7 @@ input {
    card inteiro — não há badge dentro. */
 .mov-fase {
   --cor: var(--texto-suave);
+  --cor-val: var(--cor);
   flex-shrink: 0;
   width: 150px;
   min-height: 58px;
@@ -1887,9 +1888,11 @@ input {
 .mov-fase--prod-finalizado { --cor: var(--semaforo-ok); }
 .mov-fase--prod-aguardando { --cor: var(--semaforo-alto); }
 .mov-fase--prod-cancelado { --cor: var(--abc-d); }
-.mov-fase--venda { --cor: var(--semaforo-info); }
 .mov-fase--entrada { --cor: var(--semaforo-ok); }
 .mov-fase--saida { --cor: var(--semaforo-critico); }
+/* Inventário: borda e rótulo cinza; só o valor colore pela direção. */
+.mov-fase--inv-entrada { --cor: var(--texto-suave); --cor-val: var(--semaforo-ok); }
+.mov-fase--inv-saida { --cor: var(--texto-suave); --cor-val: var(--semaforo-critico); }
 /* Conector ENTRE dois cards de fase do mesmo dia: uma linha com um ponto no meio. */
 .mov-liga {
   position: relative;
@@ -1923,7 +1926,7 @@ input {
 .mov-fase__qtd {
   font-weight: var(--peso-forte);
   font-variant-numeric: tabular-nums;
-  color: var(--cor);
+  color: var(--cor-val);
 }
 .mov-fase__meta { color: var(--texto-suave); font-variant-numeric: tabular-nums; }
 

@@ -859,12 +859,13 @@ fn dia_movimentacao(data: &str, fases: &[&Movimento]) -> impl IntoView {
             itens.push(view! { <span class="mov-liga"></span> }.into_any());
         }
         let entrada = m.quantidade >= 0;
-        let classe = if m.tipo == "VENDA" {
-            "mov-fase mov-fase--venda"
-        } else if entrada {
-            "mov-fase mov-fase--entrada"
-        } else {
-            "mov-fase mov-fase--saida"
+        // Inventário: card cinza, mas o valor colore pela direção (entrada/saída). Nos demais, card
+        // e valor têm a mesma cor. Venda (saída) fica vermelha.
+        let classe = match (m.tipo.as_str(), entrada) {
+            ("INVENTARIO", true) => "mov-fase mov-fase--inv-entrada",
+            ("INVENTARIO", false) => "mov-fase mov-fase--inv-saida",
+            (_, true) => "mov-fase mov-fase--entrada",
+            (_, false) => "mov-fase mov-fase--saida",
         };
         let sinal = if entrada { "+" } else { "" };
         itens.push(
