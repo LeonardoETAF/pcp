@@ -73,12 +73,22 @@ impl From<LinhaEstoque> for LinhaEstoqueDto {
     }
 }
 
+/// Quantos itens cada classe traria com o filtro atual (busca/status), ignorando a classe
+/// escolhida — é o número que cada botão de classe exibe.
+#[derive(Serialize)]
+pub struct ContagemClasseDto {
+    pub classe: String,
+    pub quantidade: i64,
+}
+
 #[derive(Serialize)]
 pub struct PaginaEstoqueDto {
     pub itens: Vec<LinhaEstoqueDto>,
     pub total: i64,
     pub limite: i64,
     pub deslocamento: i64,
+    /// Vem junto com a página: um round-trip só, e nunca dessincroniza da lista.
+    pub contagem_classes: Vec<ContagemClasseDto>,
 }
 
 /// Produtos ativos paginados (autenticado — qualquer papel lê).
@@ -101,11 +111,19 @@ pub async fn estoque(
         apenas_sugestao: params.apenas_sugestao,
         apenas_fora_linha: params.apenas_fora_linha,
     };
+    let contagens = leituras::contagem_classes(&estado.pool, &filtro).await?;
     let pagina = leituras::produtos_paginado(&estado.pool, filtro, limite, deslocamento).await?;
     Ok(Json(PaginaEstoqueDto {
         itens: pagina.itens.into_iter().map(Into::into).collect(),
         total: pagina.total,
         limite,
         deslocamento,
+        contagem_classes: contagens
+            .into_iter()
+            .map(|c| ContagemClasseDto {
+                classe: c.classe,
+                quantidade: c.quantidade,
+            })
+            .collect(),
     }))
 }

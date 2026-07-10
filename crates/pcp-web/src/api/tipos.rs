@@ -48,6 +48,16 @@ pub struct LinhaEstoque {
 pub struct PaginaEstoque {
     pub itens: Vec<LinhaEstoque>,
     pub total: i64,
+    /// Quantidade por classe sob o filtro atual (busca/status), ignorando a classe escolhida.
+    #[serde(default)]
+    pub contagem_classes: Vec<ContagemClasse>,
+}
+
+/// Contagem de uma classe nas abas da tela de estoque.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ContagemClasse {
+    pub classe: String,
+    pub quantidade: i64,
 }
 
 /// Parâmetros da consulta de estoque (filtros + ordenação + paginação no servidor — doc 03 §3.2).

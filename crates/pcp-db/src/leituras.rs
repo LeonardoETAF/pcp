@@ -202,7 +202,7 @@ pub async fn dashboard(pool: &PgPool) -> Result<ResumoDashboard, ErroDb> {
     })
 }
 
-/// Filtros e ordenação da tabela de estoque (doc 03 §3.2). `busca` casa código/produto/SKU
+/// Filtros e ordenação da tabela de estoque (doc 03 §3.2). `busca` casa código/produto/SKU/cor
 /// (parcial, case-insensitive). `ordem` é uma chave coluna+direção da allowlist (ver SQL).
 /// Faixa de cobertura (dias) e switches `apenas_sugestao`/`apenas_fora_linha` afinam a fila.
 #[derive(Debug, Clone, Copy, Default)]
@@ -215,6 +215,51 @@ pub struct FiltroEstoque<'a> {
     pub cobertura_max: Option<f64>,
     pub apenas_sugestao: bool,
     pub apenas_fora_linha: bool,
+}
+
+/// Quantidade de produtos por classe **sob o filtro corrente**, ignorando de propósito o filtro
+/// de classe: cada botão precisa mostrar quantos itens ele traria se fosse o escolhido.
+pub struct ContagemClasse {
+    pub classe: String,
+    pub quantidade: i64,
+}
+
+/// Contagem por classe para as abas da tela de estoque. Mesmo `WHERE` da lista, sem a classe.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn contagem_classes(
+    pool: &PgPool,
+    filtro: &FiltroEstoque<'_>,
+) -> Result<Vec<ContagemClasse>, ErroDb> {
+    let linhas = sqlx::query!(
+        r#"SELECT classe AS "classe!", COUNT(*) AS "quantidade!"
+           FROM pcp.produto_ativo
+           WHERE ($1::text IS NULL OR status = $1)
+             AND ($2::text IS NULL OR codigo_estoque ILIKE '%' || $2 || '%'
+                  OR produto ILIKE '%' || $2 || '%' OR sku ILIKE '%' || $2 || '%'
+                  OR configuracao ILIKE '%' || $2 || '%')
+             AND ($3::float8 IS NULL OR cobertura_dias >= $3)
+             AND ($4::float8 IS NULL OR cobertura_dias <= $4)
+             AND (NOT $5 OR qtd_sugerida > 0)
+             AND (NOT $6 OR fora_de_linha)
+           GROUP BY classe ORDER BY classe"#,
+        filtro.status,
+        filtro.busca,
+        filtro.cobertura_min,
+        filtro.cobertura_max,
+        filtro.apenas_sugestao,
+        filtro.apenas_fora_linha,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|r| ContagemClasse {
+            classe: r.classe,
+            quantidade: r.quantidade,
+        })
+        .collect())
 }
 
 /// Produtos ativos paginados (doc 03 §3 / doc 04 §6.2). Filtra por classe/status/busca e ordena
@@ -243,7 +288,8 @@ pub async fn produtos_paginado(
            WHERE ($1::text IS NULL OR classe = $1)
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
-                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')
+                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%'
+                  OR configuracao ILIKE '%' || $3 || '%')
              AND ($4::float8 IS NULL OR cobertura_dias >= $4)
              AND ($5::float8 IS NULL OR cobertura_dias <= $5)
              AND (NOT $6 OR qtd_sugerida > 0)
@@ -268,7 +314,8 @@ pub async fn produtos_paginado(
            WHERE ($1::text IS NULL OR classe = $1)
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
-                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%')
+                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%'
+                  OR configuracao ILIKE '%' || $3 || '%')
              AND ($5::float8 IS NULL OR cobertura_dias >= $5)
              AND ($6::float8 IS NULL OR cobertura_dias <= $6)
              AND (NOT $7 OR qtd_sugerida > 0)

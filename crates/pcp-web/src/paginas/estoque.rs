@@ -8,8 +8,8 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use crate::api::{
-    estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, LinhaEstoque,
-    PainelResumo,
+    estoque, exportar_estoque, obter_preferencias, painel, ConsultaEstoque, ContagemClasse,
+    LinhaEstoque, PainelResumo,
 };
 use crate::componentes::{EstadoVazio, Icone, Seletor};
 use crate::contexto::Sessao;
@@ -118,10 +118,12 @@ pub fn PaginaEstoque() -> impl IntoView {
             // Busca e classes formam UM card: são o mesmo filtro, aplicado em duas linhas.
             <div class="estoque-filtros">
                 <Filtros status busca busca_input ordem resetar exportar />
+                // As contagens vêm da MESMA consulta da lista: mudam com a busca e o status,
+                // e nunca dessincronizam do que a tabela mostra.
                 <Suspense fallback=|| ()>
                     {move || {
-                        painel_res.get().map(|res| match res {
-                            Ok(p) => abas_classe(&p, classe, resetar).into_any(),
+                        dados.get().map(|res| match res {
+                            Ok(pag) => abas_classe(&pag.contagem_classes, classe, resetar).into_any(),
                             Err(_) => ().into_any(),
                         })
                     }}
@@ -220,22 +222,23 @@ fn KpiEstoque(icone: &'static str, valor: String, rotulo: &'static str) -> impl 
     }
 }
 
-/// Abas de filtro por classe ABC (substituem as categorias de material do mockup — no PCP a
-/// categorização canônica é a classe A/B/C/D/F/N, §4). Contagens reais do painel.
+/// Abas de filtro por classe ABC (§4). As contagens são as da consulta corrente (busca + status),
+/// não as do catálogo inteiro: cada botão diz quantos itens traria se fosse o escolhido.
 fn abas_classe(
-    p: &PainelResumo,
+    contagens: &[ContagemClasse],
     classe: RwSignal<Option<String>>,
     resetar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
-    let mut presentes: Vec<(String, i64)> = p
-        .por_classe
+    let mut presentes: Vec<(String, i64)> = contagens
         .iter()
-        .map(|c| (c.rotulo.clone(), c.quantidade))
+        .map(|c| (c.classe.clone(), c.quantidade))
         .collect();
     presentes.sort_by_key(|(c, _)| ordem_classe(c));
+    // "Todos" é a soma das classes sob o mesmo filtro — não o total do catálogo.
+    let total: i64 = presentes.iter().map(|(_, q)| q).sum();
     view! {
         <div class="estoque-filtros__classes">
-            <AbaClasse classe rotulo="Todos".to_owned() valor=None contagem=p.total_produtos resetar />
+            <AbaClasse classe rotulo="Todos".to_owned() valor=None contagem=total resetar />
             {presentes
                 .into_iter()
                 .map(|(cod, qtd)| {
@@ -317,7 +320,7 @@ fn Filtros(
                     </span>
                     <input
                         class="input input--compacto input--com-icone"
-                        placeholder="Buscar item, código, SKU…"
+                        placeholder="Buscar item, código, SKU, cor…"
                         prop:value=move || busca_input.get()
                         on:input=move |ev| busca_input.set(event_target_value(&ev))
                     />

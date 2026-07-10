@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classe AS \"classe!\", COUNT(*) AS \"quantidade!\"\n           FROM pcp.produto_ativo\n           WHERE ($1::text IS NULL OR status = $1)\n             AND ($2::text IS NULL OR codigo_estoque ILIKE '%' || $2 || '%'\n                  OR produto ILIKE '%' || $2 || '%' OR sku ILIKE '%' || $2 || '%'\n                  OR configuracao ILIKE '%' || $2 || '%')\n             AND ($3::float8 IS NULL OR cobertura_dias >= $3)\n             AND ($4::float8 IS NULL OR cobertura_dias <= $4)\n             AND (NOT $5 OR qtd_sugerida > 0)\n             AND (NOT $6 OR fora_de_linha)\n           GROUP BY classe ORDER BY classe",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classe!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "produto_ativo",
+            "name": "classe"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "quantidade!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "01adf96e12d4de98b286b029534ac958c8a098ad98f2ab704eaab6abe76db870"
+}
