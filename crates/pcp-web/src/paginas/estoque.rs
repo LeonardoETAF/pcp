@@ -491,7 +491,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
             </td>
             <td class="tabela__nivel-col">
                 {if sem_alvo {
-                    view! { <span class="texto-suave">"—"</span> }.into_any()
+                    view! { <SemAlvo /> }.into_any()
                 } else {
                     view! {
                         <div class="nivel">
@@ -516,7 +516,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
             </td>
             <td class="tabela__num tabela__produzir">
                 {if sem_alvo || i.qtd_sugerida <= 0 {
-                    view! { <span class="texto-suave">"—"</span> }.into_any()
+                    view! { <SemAlvo /> }.into_any()
                 } else {
                     view! { {format!("{} un", fmt_milhar(i.qtd_sugerida))} }.into_any()
                 }}
@@ -527,6 +527,17 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
                 </span>
             </td>
         </tr>
+    }
+}
+
+/// Marca de célula sem valor a exibir. O `title` diz por que está vazia — o asterisco sozinho não
+/// explica nada a quem chega na tela.
+#[component]
+fn SemAlvo() -> impl IntoView {
+    view! {
+        <span class="sem-alvo" title="Sem histórico suficiente para recomendar">
+            "*"
+        </span>
     }
 }
 

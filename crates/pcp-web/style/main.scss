@@ -2458,6 +2458,15 @@ input {
   background: var(--borda);
 }
 
+/* Asterisco das células sem alvo: alinhado ao texto (o "*" do tipo sobe muito) e discreto. */
+.sem-alvo {
+  display: inline-block;
+  color: var(--texto-suave);
+  line-height: 1;
+  transform: translateY(0.25em);
+  cursor: help;
+}
+
 /* Coluna "Cor": o primeiro atributo da configuração em destaque, os demais numa segunda linha.
    A coluna tem largura própria e corta com reticências — a configuração inteira vai no `title`. */
 .tabela__cor {
