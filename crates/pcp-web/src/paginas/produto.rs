@@ -191,7 +191,6 @@ fn corpo(d: DetalheProduto) -> impl IntoView {
             }}
         </Suspense>
 
-        {metricas(&d.metricas)}
 
         <section class="cartao prod-status-secao">
             <Suspense fallback=|| ()>
@@ -591,40 +590,6 @@ fn fmt_data(iso: &str) -> String {
     {
         Some(br) => br,
         None => iso.to_owned(),
-    }
-}
-
-/// Grade de métricas (doc 03 §4.1).
-fn metricas(m: &MetricasProduto) -> impl IntoView {
-    let cards = vec![
-        ("Estoque total", fmt_milhar(m.qtd_estoque)),
-        ("Reserva", fmt_milhar(m.qtd_reserva)),
-        ("Disponível", fmt_milhar(m.qtd_disponivel)),
-        ("Cobertura (dias)", fmt_cobertura(m.cobertura_dias)),
-        ("Demanda média/dia", format!("{:.1}", m.media_diaria)),
-        ("Estoque de segurança", fmt_milhar(m.estoque_seguranca)),
-        ("Estoque mínimo", fmt_milhar(m.estoque_minimo)),
-        ("Recomendada", fmt_milhar(m.estoque_total_recomendado)),
-        ("Sugestão de produção", fmt_milhar(m.qtd_sugerida)),
-        ("Volume (janela)", fmt_milhar(m.volume_janela)),
-        ("Dias com venda", fmt_milhar(m.dias_com_vendas)),
-        ("Outliers", fmt_milhar(m.outliers_detectados)),
-        ("Coef. de variação", format!("{:.2}", m.coef_variacao)),
-    ];
-    view! {
-        <div class="prod-metricas">
-            {cards
-                .into_iter()
-                .map(|(rotulo, valor)| {
-                    view! {
-                        <div class="metrica-card">
-                            <span class="metrica-card__rotulo">{rotulo}</span>
-                            <span class="metrica-card__valor">{valor}</span>
-                        </div>
-                    }
-                })
-                .collect_view()}
-        </div>
     }
 }
 
