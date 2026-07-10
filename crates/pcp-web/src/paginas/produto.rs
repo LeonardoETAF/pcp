@@ -478,16 +478,21 @@ struct PaginaDatas<'a, T> {
     total: i64,
 }
 
-/// Agrupa por data, aplica o filtro (data exata) e recorta a página corrente.
+/// Agrupa por data, aplica a janela [`inicio`, `fim`] (ISO, comparação lexicográfica = cronológica)
+/// e recorta a página corrente. Limites vazios não restringem aquele lado.
 fn pagina_datas<'a, T, F: Fn(&T) -> String>(
     itens: &'a [T],
     chave: F,
-    filtro: &str,
+    inicio: &str,
+    fim: &str,
     desloc: i64,
 ) -> PaginaDatas<'a, T> {
     let mut grupos = agrupar_por_data(itens, chave);
-    if !filtro.is_empty() {
-        grupos.retain(|(d, _)| d == filtro);
+    if !inicio.is_empty() {
+        grupos.retain(|(d, _)| d.as_str() >= inicio);
+    }
+    if !fim.is_empty() {
+        grupos.retain(|(d, _)| d.as_str() <= fim);
     }
     let total = i64::try_from(grupos.len()).unwrap_or(i64::MAX);
     let ini = usize::try_from(desloc).unwrap_or(0);
@@ -496,20 +501,97 @@ fn pagina_datas<'a, T, F: Fn(&T) -> String>(
     PaginaDatas { grupos, total }
 }
 
-/// Cabeçalho de um histórico: título + filtro por data.
+/// Cabeçalho de um histórico: título + filtro por janela de tempo.
 #[component]
-fn HistoricoCab(titulo: &'static str, filtro: RwSignal<String>) -> impl IntoView {
+fn HistoricoCab(
+    titulo: &'static str,
+    inicio: RwSignal<String>,
+    fim: RwSignal<String>,
+) -> impl IntoView {
     view! {
         <header class="prod-secao__cab">
             <h2 class="prod-secao__titulo">{titulo}</h2>
-            <input
-                class="input input--compacto"
-                type="date"
-                aria-label="Filtrar por data"
-                prop:value=move || filtro.get()
-                on:input=move |ev| filtro.set(event_target_value(&ev))
-            />
+            <FiltroData inicio fim />
         </header>
+    }
+}
+
+/// Filtro por janela de tempo: um botão com o período atual que abre um popover com "De" e "Até"
+/// (dois seletores de data nativos) e um "Limpar". Fecha ao clicar fora (fundo transparente).
+#[component]
+fn FiltroData(inicio: RwSignal<String>, fim: RwSignal<String>) -> impl IntoView {
+    let aberto = RwSignal::new(false);
+    let ativo = move || !inicio.get().is_empty() || !fim.get().is_empty();
+    let rotulo = move || {
+        let (i, f) = (inicio.get(), fim.get());
+        if i.is_empty() && f.is_empty() {
+            "Período".to_owned()
+        } else {
+            let a = if i.is_empty() {
+                "…".to_owned()
+            } else {
+                fmt_data(&i)
+            };
+            let b = if f.is_empty() {
+                "…".to_owned()
+            } else {
+                fmt_data(&f)
+            };
+            format!("{a} — {b}")
+        }
+    };
+    view! {
+        <div class="filtro-data" class:filtro-data--aberto=move || aberto.get()>
+            <button
+                type="button"
+                class="filtro-data__btn"
+                class:filtro-data__btn--ativo=ativo
+                aria-expanded=move || if aberto.get() { "true" } else { "false" }
+                on:click=move |_| aberto.update(|a| *a = !*a)
+            >
+                <Icone arquivo="calendario.svg" />
+                <span class="filtro-data__rotulo">{rotulo}</span>
+            </button>
+            <Show when=move || aberto.get() fallback=|| ()>
+                <button
+                    type="button"
+                    class="filtro-data__fundo"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    on:click=move |_| aberto.set(false)
+                ></button>
+                <div class="filtro-data__pop">
+                    <label class="filtro-data__campo">
+                        <span>"De"</span>
+                        <input
+                            class="input input--compacto"
+                            type="date"
+                            prop:value=move || inicio.get()
+                            on:input=move |ev| inicio.set(event_target_value(&ev))
+                        />
+                    </label>
+                    <label class="filtro-data__campo">
+                        <span>"Até"</span>
+                        <input
+                            class="input input--compacto"
+                            type="date"
+                            prop:value=move || fim.get()
+                            on:input=move |ev| fim.set(event_target_value(&ev))
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        class="btn btn--secundario btn--sm filtro-data__limpar"
+                        on:click=move |_| {
+                            inicio.set(String::new());
+                            fim.set(String::new());
+                        }
+                    >
+                        "Limpar"
+                    </button>
+                </div>
+            </Show>
+        </div>
     }
 }
 
@@ -517,18 +599,20 @@ fn HistoricoCab(titulo: &'static str, filtro: RwSignal<String>) -> impl IntoView
 #[component]
 fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
     let dados = StoredValue::new(ordens);
-    let filtro = RwSignal::new(String::new());
+    let inicio = RwSignal::new(String::new());
+    let fim = RwSignal::new(String::new());
     let desloc = RwSignal::new(0_i64);
     let limite = RwSignal::new(DATAS_POR_PAGINA);
-    // Trocar o filtro volta para a primeira página.
+    // Mudar a janela volta para a primeira página.
     Effect::new(move |_| {
-        filtro.track();
+        inicio.track();
+        fim.track();
         desloc.set(0);
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
         <section class="cartao prod-secao">
-            <HistoricoCab titulo="Histórico de produção" filtro />
+            <HistoricoCab titulo="Histórico de produção" inicio fim />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
                     .into_any()
@@ -539,7 +623,8 @@ fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
                         let pag = pagina_datas(
                             &ordens,
                             |o| o.data.clone().unwrap_or_default(),
-                            &filtro.get(),
+                            &inicio.get(),
+                            &fim.get(),
                             desloc.get(),
                         );
                         let dias = pag
@@ -597,24 +682,32 @@ fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
         .filter(|m| m.tipo != "SEPARACAO_VENDA")
         .collect();
     let dados = StoredValue::new(movimentos);
-    let filtro = RwSignal::new(String::new());
+    let inicio = RwSignal::new(String::new());
+    let fim = RwSignal::new(String::new());
     let desloc = RwSignal::new(0_i64);
     let limite = RwSignal::new(DATAS_POR_PAGINA);
     Effect::new(move |_| {
-        filtro.track();
+        inicio.track();
+        fim.track();
         desloc.set(0);
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
         <section class="cartao prod-secao">
-            <HistoricoCab titulo="Histórico de movimentação" filtro />
+            <HistoricoCab titulo="Histórico de movimentação" inicio fim />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
             } else {
                 view! {
                     {move || {
                         let movs = dados.get_value();
-                        let pag = pagina_datas(&movs, |m| m.data.clone(), &filtro.get(), desloc.get());
+                        let pag = pagina_datas(
+                            &movs,
+                            |m| m.data.clone(),
+                            &inicio.get(),
+                            &fim.get(),
+                            desloc.get(),
+                        );
                         let dias = pag
                             .grupos
                             .into_iter()

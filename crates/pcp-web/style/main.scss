@@ -1937,11 +1937,62 @@ input {
   gap: var(--e-3);
   flex-wrap: wrap;
 }
-.prod-secao__cab .input {
-  width: auto;
-  padding: var(--e-1) var(--e-2);
-  font-size: var(--fs-sm);
+/* Filtro por janela de tempo: botão + popover com dois calendários. */
+.filtro-data {
+  position: relative;
 }
+.filtro-data__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-3);
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: border-color var(--transicao), color var(--transicao);
+}
+.filtro-data__btn:hover { border-color: var(--texto-suave); color: var(--texto); }
+.filtro-data__btn .icone-mask { width: 16px; height: 16px; }
+.filtro-data__btn--ativo {
+  border-color: var(--texto);
+  color: var(--texto);
+  font-weight: var(--peso-medio);
+}
+.filtro-data__fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+.filtro-data__pop {
+  position: absolute;
+  z-index: 31;
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  min-width: 220px;
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--sombra-2, var(--sombra-1));
+}
+.filtro-data__campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+}
+.filtro-data__campo .input { width: 100%; }
+.filtro-data__limpar { align-self: flex-end; }
 .prod-secao__titulo {
   font-size: var(--fs-lg);
   font-weight: var(--peso-forte);
