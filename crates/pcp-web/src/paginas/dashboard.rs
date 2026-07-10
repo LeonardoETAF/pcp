@@ -10,6 +10,7 @@ use crate::api::{
     LinhaEstoque, PainelResumo, VendaMes,
 };
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 use crate::formato::{
     cor_status, fmt_cobertura, fmt_compacto, fmt_dec1, fmt_milhar, nome_exibicao, rotulo_status,
 };
@@ -147,7 +148,7 @@ pub fn PaginaDashboard() -> impl IntoView {
                         .get()
                         .map(|res| match res {
                             Err(e) => {
-                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                                view! { <p class="form-auth__erro">{mensagem_usuario(&e)}</p> }.into_any()
                             }
                             Ok(p) => kpis_topo(&p).into_any(),
                         })
@@ -630,7 +631,7 @@ fn TabelaProduzir(recurso: Resource<Result<Vec<LinhaEstoque>, ServerFnError>>) -
                         .get()
                         .map(|res| match res {
                             Err(e) => {
-                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                                view! { <p class="form-auth__erro">{mensagem_usuario(&e)}</p> }.into_any()
                             }
                             Ok(itens) if itens.is_empty() => {
                                 view! { <p class="estado-vazio">"Nada por aqui."</p> }.into_any()
@@ -721,7 +722,7 @@ fn EstoqueCritico(recurso: Resource<Result<Vec<LinhaEstoque>, ServerFnError>>) -
                         .get()
                         .map(|res| match res {
                             Err(e) => {
-                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                                view! { <p class="form-auth__erro">{mensagem_usuario(&e)}</p> }.into_any()
                             }
                             Ok(itens) if itens.is_empty() => {
                                 view! { <p class="estado-vazio">"Nenhum item crítico."</p> }

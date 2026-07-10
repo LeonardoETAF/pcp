@@ -15,6 +15,7 @@ use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::download;
+use crate::erro::mensagem_usuario;
 use crate::formato::{fmt_milhar, rotulo_status};
 
 #[component]
@@ -546,7 +547,7 @@ fn ForaDeLinha() -> impl IntoView {
         leptos::task::spawn_local(async move {
             match transicionar_ciclo_vida(token, id, para.to_owned()).await {
                 Ok(_) => recarregar.update(|n| *n += 1),
-                Err(e) => msg.set(Some(e.to_string())),
+                Err(e) => msg.set(Some(mensagem_usuario(&e))),
             }
         });
     };

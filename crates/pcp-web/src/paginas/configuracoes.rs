@@ -15,6 +15,7 @@ use crate::api::{
 use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 
 #[component]
 pub fn Configuracoes() -> impl IntoView {
@@ -91,7 +92,7 @@ fn Preferencias() -> impl IntoView {
         leptos::task::spawn_local(async move {
             match salvar_preferencias(token, pi, tp).await {
                 Ok(_) => msg.set(Some("Preferências salvas.".to_owned())),
-                Err(e) => msg.set(Some(e.to_string())),
+                Err(e) => msg.set(Some(mensagem_usuario(&e))),
             }
         });
     };
@@ -225,7 +226,7 @@ fn Sazonalidade() -> impl IntoView {
                     msg.set(Some(format!("Fator de {} salvo.", nome_mes(mes))));
                     recarregar.update(|n| *n += 1);
                 }
-                Err(e) => msg.set(Some(e.to_string())),
+                Err(e) => msg.set(Some(mensagem_usuario(&e))),
             }
         });
     };
@@ -349,7 +350,7 @@ fn Usuarios() -> impl IntoView {
                     msg.set(Some("Usuário criado.".to_owned()));
                     recarregar.update(|x| *x += 1);
                 }
-                Err(err) => msg.set(Some(err.to_string())),
+                Err(err) => msg.set(Some(mensagem_usuario(&err))),
             }
         });
     };
@@ -490,7 +491,7 @@ fn EditorConfig(config: Value, eh_gestor: bool, recarregar: RwSignal<u32>) -> im
                     msg.set(Some((true, "Configuração salva e recarregada.".to_owned())));
                     recarregar.update(|n| *n += 1);
                 }
-                Err(e) => msg.set(Some((false, e.to_string()))),
+                Err(e) => msg.set(Some((false, mensagem_usuario(&e)))),
             }
         });
     };

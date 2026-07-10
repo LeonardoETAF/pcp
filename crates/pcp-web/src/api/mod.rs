@@ -4,6 +4,21 @@
 
 use leptos::prelude::*;
 // Só o build SSR usa o derive nas structs locais das server fns (ex.: `perfil`); no WASM seria ocioso.
+/// Erro de REDE ao chamar a `pcp-api`. O detalhe (URL, causa do `reqwest`) vai para o log; ao
+/// usuário só a frase curta — ele não pode agir sobre um `ConnectionRefused`.
+#[cfg(feature = "ssr")]
+fn erro_rede(e: &reqwest::Error) -> ServerFnError {
+    leptos::logging::error!("falha ao contatar a pcp-api: {e}");
+    ServerFnError::new("Sem conexão com o servidor.")
+}
+
+/// Erro ao DESSERIALIZAR a resposta da `pcp-api`. O nome do campo que faltou é detalhe interno.
+#[cfg(feature = "ssr")]
+fn erro_resposta(e: &reqwest::Error) -> ServerFnError {
+    leptos::logging::error!("resposta da pcp-api não pôde ser lida: {e}");
+    ServerFnError::new("Não foi possível ler a resposta do servidor.")
+}
+
 #[cfg(feature = "ssr")]
 use serde::Deserialize;
 
@@ -57,17 +72,17 @@ pub async fn estoque(
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao carregar dados"));
+        return Err(ServerFnError::new("Não foi possível carregar os produtos."));
     }
     resposta
         .json::<PaginaEstoque>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Exporta o filtro completo de estoque (`GET /pcp/estoque/exportar`) em CSV ou JSON. Devolve o
@@ -90,17 +105,14 @@ pub async fn exportar_estoque(
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao exportar dados"));
+        return Err(ServerFnError::new("Não foi possível exportar."));
     }
-    resposta
-        .text()
-        .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+    resposta.text().await.map_err(|e| erro_resposta(&e))
 }
 
 /// Lista os filtros salvos do usuário (`GET /pcp/estoque/filtros`).
@@ -129,17 +141,17 @@ pub async fn salvar_filtro(
         .json(&serde_json::json!({ "nome": nome, "filtro": filtro }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao salvar o filtro"));
+        return Err(ServerFnError::new("Não foi possível salvar o filtro."));
     }
     resposta
         .json::<FiltroSalvo>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Exclui um filtro salvo do usuário (`DELETE /pcp/estoque/filtros/{id}`).
@@ -154,12 +166,12 @@ pub async fn excluir_filtro(token: String, id: String) -> Result<(), ServerFnErr
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao excluir o filtro"));
+        return Err(ServerFnError::new("Não foi possível excluir o filtro."));
     }
     Ok(())
 }
@@ -179,21 +191,21 @@ pub async fn produto_detalhe(
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if resposta.status() == reqwest::StatusCode::NOT_FOUND {
         return Ok(None);
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao carregar o produto"));
+        return Err(ServerFnError::new("Não foi possível carregar o produto."));
     }
     resposta
         .json::<DetalheProduto>()
         .await
         .map(Some)
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Lista as solicitações de produção de um produto (`GET /pcp/solicitacoes?codigo=`).
@@ -212,17 +224,19 @@ pub async fn listar_solicitacoes(
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao carregar solicitações"));
+        return Err(ServerFnError::new(
+            "Não foi possível carregar as solicitações.",
+        ));
     }
     resposta
         .json::<Vec<Solicitacao>>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Cria uma solicitação de produção (`POST /pcp/solicitacoes`).
@@ -250,17 +264,17 @@ pub async fn criar_solicitacao(
         }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao criar a solicitação"));
+        return Err(ServerFnError::new("Não foi possível criar a solicitação."));
     }
     resposta
         .json::<Solicitacao>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Transiciona o estado de uma solicitação (`POST /pcp/solicitacoes/{id}/transicao`) — gestor+.
@@ -280,20 +294,22 @@ pub async fn transicionar_solicitacao(
         .json(&serde_json::json!({ "para_estado": para_estado }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(ServerFnError::new("apenas gestor pode alterar o estado"));
+        return Err(ServerFnError::new("Só o gestor pode alterar o estado."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao atualizar a solicitação"));
+        return Err(ServerFnError::new(
+            "Não foi possível atualizar a solicitação.",
+        ));
     }
     resposta
         .json::<Solicitacao>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Tabela ABC completa (`GET /pcp/abc/tabela`).
@@ -340,20 +356,20 @@ pub async fn transicionar_ciclo_vida(
         .json(&serde_json::json!({ "para_estado": para_estado }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(ServerFnError::new("apenas gestor pode aplicar"));
+        return Err(ServerFnError::new("Só o gestor pode aplicar."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao atualizar a sugestão"));
+        return Err(ServerFnError::new("Não foi possível atualizar a sugestão."));
     }
     resposta
         .json::<SugestaoCicloVida>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Configuração de negócio vigente como JSON opaco (`GET /pcp/config`). O frontend não conhece a
@@ -382,9 +398,9 @@ pub async fn salvar_config(
         .json(&config)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
         return Err(ServerFnError::new(
@@ -396,12 +412,14 @@ pub async fn salvar_config(
         return Err(ServerFnError::new(format!("configuração inválida: {msg}")));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao salvar a configuração"));
+        return Err(ServerFnError::new(
+            "Não foi possível salvar a configuração.",
+        ));
     }
     resposta
         .json::<serde_json::Value>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Auditoria de configuração (`GET /pcp/config/auditoria`) — gestor+.
@@ -442,12 +460,12 @@ pub async fn criar_usuario(
         .json(&serde_json::json!({ "email": email, "senha": senha, "papel": papel, "nome": nome }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(ServerFnError::new("apenas admin gere usuários"));
+        return Err(ServerFnError::new("Só o admin gerencia usuários."));
     }
     if resposta.status() == reqwest::StatusCode::CONFLICT {
-        return Err(ServerFnError::new("e-mail já cadastrado"));
+        return Err(ServerFnError::new("Este e-mail já está cadastrado."));
     }
     if !resposta.status().is_success() {
         return Err(ServerFnError::new(
@@ -475,17 +493,17 @@ pub async fn atualizar_usuario(
         .json(&serde_json::json!({ "papel": papel, "ativo": ativo }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(ServerFnError::new("apenas admin gere usuários"));
+        return Err(ServerFnError::new("Só o admin gerencia usuários."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao atualizar usuário"));
+        return Err(ServerFnError::new("Não foi possível atualizar o usuário."));
     }
     resposta
         .json::<UsuarioConta>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Preferências do usuário (`GET /pcp/preferencias`).
@@ -517,14 +535,16 @@ pub async fn salvar_preferencias(
         }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao salvar preferências"));
+        return Err(ServerFnError::new(
+            "Não foi possível salvar as preferências.",
+        ));
     }
     resposta
         .json::<Preferencia>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Fatores sazonais vigentes (`GET /pcp/sazonalidade`).
@@ -555,21 +575,21 @@ pub async fn override_sazonalidade(
         .json(&serde_json::json!({ "fator": fator, "justificativa": justificativa }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
-        return Err(ServerFnError::new("apenas gestor edita sazonalidade"));
+        return Err(ServerFnError::new("Só o gestor edita a sazonalidade."));
     }
     if resposta.status() == reqwest::StatusCode::BAD_REQUEST {
         let msg = resposta.text().await.unwrap_or_default();
         return Err(ServerFnError::new(msg));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao salvar o fator"));
+        return Err(ServerFnError::new("Não foi possível salvar o fator."));
     }
     resposta
         .json::<FatorMes>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Insights estatísticos de um produto.
@@ -637,17 +657,14 @@ async fn obter_json<T: serde::de::DeserializeOwned>(
         .bearer_auth(token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao carregar dados"));
+        return Err(ServerFnError::new("Não foi possível carregar os produtos."));
     }
-    resposta
-        .json::<T>()
-        .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+    resposta.json::<T>().await.map_err(|e| erro_resposta(&e))
 }
 
 /// Execuções recentes do pipeline (`GET /pcp/admin/pipeline`, admin) — painel de operação.
@@ -686,19 +703,18 @@ pub async fn admin_reprocessar(
         .json(&serde_json::json!({ "inicio": inicio, "fim": fim }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::FORBIDDEN {
         return Err(ServerFnError::new(
             "apenas administradores podem reprocessar",
         ));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("intervalo inválido ou falha ao iniciar"));
+        return Err(ServerFnError::new(
+            "Intervalo inválido ou o reprocesso não pôde iniciar.",
+        ));
     }
-    let corpo: serde_json::Value = resposta
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let corpo: serde_json::Value = resposta.json().await.map_err(|e| erro_resposta(&e))?;
     Ok(corpo["mensagem"]
         .as_str()
         .unwrap_or("Reprocesso iniciado.")
@@ -717,17 +733,17 @@ pub async fn alertas(token: String) -> Result<Vec<AlertaResumo>, ServerFnError> 
         .bearer_auth(&token)
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if resposta.status() == reqwest::StatusCode::UNAUTHORIZED {
-        return Err(ServerFnError::new("sessão expirada — entre novamente"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("falha ao carregar os alertas"));
+        return Err(ServerFnError::new("Não foi possível carregar os alertas."));
     }
     resposta
         .json::<Vec<AlertaResumo>>()
         .await
-        .map_err(|e| ServerFnError::new(e.to_string()))
+        .map_err(|e| erro_resposta(&e))
 }
 
 /// Autentica na `pcp-api` (`POST /auth/login`) e devolve access + refresh token.
@@ -742,21 +758,20 @@ pub async fn login(email: String, senha: String) -> Result<Credenciais, ServerFn
         .json(&serde_json::json!({ "email": email, "senha": senha }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("credenciais inválidas"));
+        return Err(ServerFnError::new("E-mail ou senha incorretos."));
     }
-    let corpo: serde_json::Value = resposta
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let corpo: serde_json::Value = resposta.json().await.map_err(|e| erro_resposta(&e))?;
     let pegar = |chave: &str| corpo[chave].as_str().map(ToOwned::to_owned);
     match (pegar("access_token"), pegar("refresh_token")) {
         (Some(access_token), Some(refresh_token)) => Ok(Credenciais {
             access_token,
             refresh_token,
         }),
-        _ => Err(ServerFnError::new("resposta da API sem tokens")),
+        _ => Err(ServerFnError::new(
+            "Não foi possível entrar. Tente novamente.",
+        )),
     }
 }
 
@@ -773,18 +788,15 @@ pub async fn renovar_sessao(refresh_token: String) -> Result<String, ServerFnErr
         .json(&serde_json::json!({ "refresh_token": refresh_token }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     if !resposta.status().is_success() {
-        return Err(ServerFnError::new("refresh token inválido"));
+        return Err(ServerFnError::new("Sessão expirada. Entre novamente."));
     }
-    let corpo: serde_json::Value = resposta
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let corpo: serde_json::Value = resposta.json().await.map_err(|e| erro_resposta(&e))?;
     corpo["access_token"]
         .as_str()
         .map(ToOwned::to_owned)
-        .ok_or_else(|| ServerFnError::new("resposta da API sem access_token"))
+        .ok_or_else(|| ServerFnError::new("Não foi possível entrar. Tente novamente."))
 }
 
 /// Revoga o refresh token no servidor (`POST /auth/logout`) — chamado ao sair.
@@ -799,6 +811,6 @@ pub async fn encerrar_sessao(refresh_token: String) -> Result<(), ServerFnError>
         .json(&serde_json::json!({ "refresh_token": refresh_token }))
         .send()
         .await
-        .map_err(|e| ServerFnError::new(format!("falha ao contatar a API: {e}")))?;
+        .map_err(|e| erro_rede(&e))?;
     Ok(())
 }

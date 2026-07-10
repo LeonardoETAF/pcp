@@ -14,6 +14,7 @@ use crate::api::{
 use crate::componentes::EstadoVazio;
 use crate::componentes::Seletor;
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, rotulo_status};
 
 #[component]
@@ -43,7 +44,7 @@ pub fn DetalheProdutoPagina() -> impl IntoView {
                             Err(e) => {
                                 view! {
                                     <div class="estado-erro">
-                                        <p class="form-auth__erro">{e.to_string()}</p>
+                                        <p class="form-auth__erro">{mensagem_usuario(&e)}</p>
                                         <button
                                             class="btn btn--secundario"
                                             on:click=move |_| tick.update(|n| *n += 1)
@@ -318,7 +319,7 @@ fn CentroComando(codigo: String, recomendacao: Recomendacao) -> impl IntoView {
                     msg.set(None);
                     recarregar.update(|n| *n += 1);
                 }
-                Err(e) => msg.set(Some(e.to_string())),
+                Err(e) => msg.set(Some(mensagem_usuario(&e))),
             }
         });
     };
@@ -330,7 +331,7 @@ fn CentroComando(codigo: String, recomendacao: Recomendacao) -> impl IntoView {
         leptos::task::spawn_local(async move {
             match transicionar_solicitacao(token, id, para.to_owned()).await {
                 Ok(_) => recarregar.update(|n| *n += 1),
-                Err(e) => msg.set(Some(e.to_string())),
+                Err(e) => msg.set(Some(mensagem_usuario(&e))),
             }
         });
     };

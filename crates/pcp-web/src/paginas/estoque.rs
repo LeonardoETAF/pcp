@@ -14,6 +14,7 @@ use crate::api::{
 use crate::componentes::{EstadoVazio, Icone, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
+use crate::erro::mensagem_usuario;
 use crate::formato::{cor_partes, fmt_cobertura, fmt_milhar, rotulo_status};
 
 #[component]
@@ -135,7 +136,7 @@ pub fn PaginaEstoque() -> impl IntoView {
                         .get()
                         .map(|res| match res {
                             Err(e) => {
-                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                                view! { <p class="form-auth__erro">{mensagem_usuario(&e)}</p> }.into_any()
                             }
                             Ok(pag) if pag.itens.is_empty() => {
                                 view! {
@@ -540,7 +541,7 @@ fn Paginacao(limite: RwSignal<i64>, deslocamento: RwSignal<i64>, total: i64) -> 
                         "Nenhum item".to_owned()
                     } else {
                         format!(
-                            "Mostrando {}–{} de {} itens",
+                            "Mostrando {} á {} de {} itens",
                             fmt_milhar(inicio()),
                             fmt_milhar(fim()),
                             fmt_milhar(total),

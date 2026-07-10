@@ -9,6 +9,7 @@ use leptos_router::NavigateOptions;
 use super::{Icone, Vista};
 use crate::api::{obter_preferencias, Login};
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 
 // Mensagens exibidas PELO SISTEMA (nada de balão do navegador), uma por situação de cada campo.
 const MSG_EMAIL_VAZIO: &str = "Informe seu e-mail.";
@@ -81,7 +82,12 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
             });
         }
     });
-    let tem_erro = move || matches!(login.value().get(), Some(Err(_)));
+    // A causa da falha importa: servidor fora do ar não é senha errada. Mostra a mensagem do
+    // erro, já traduzida para o usuário.
+    let erro_login = move || match login.value().get() {
+        Some(Err(e)) => Some(mensagem_usuario(&e)),
+        _ => None,
+    };
     // Validação do sistema (não do navegador). As mensagens só aparecem DEPOIS de tentar entrar —
     // nunca enquanto o usuário digita; ao voltar a digitar, os avisos somem. Cada campo tem a sua.
     let senha = RwSignal::new(String::new());
@@ -206,8 +212,8 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                     </button>
                 </div>
                 {move || {
-                    tem_erro()
-                        .then(|| view! { <p class="form-auth__erro" role="alert">"Credenciais inválidas."</p> })
+                    erro_login()
+                        .map(|m| view! { <p class="form-auth__erro" role="alert">{m}</p> })
                 }}
                 // O bloqueio é no CLIQUE (o submit é a ação padrão dele). Não dá para interceptar
                 // pelo `on:submit` do ActionForm: o handler dele é registrado antes e já despacha.

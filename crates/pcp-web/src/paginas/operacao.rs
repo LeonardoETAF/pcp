@@ -10,6 +10,7 @@ use crate::api::{
 };
 use crate::componentes::EstadoVazio;
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 use crate::formato::fmt_milhar;
 
 #[component]
@@ -111,7 +112,7 @@ fn FormReprocesso() -> impl IntoView {
         leptos::task::spawn_local(async move {
             match admin_reprocessar(token, i, f).await {
                 Ok(m) => msg.set(m),
-                Err(e) => msg.set(e.to_string()),
+                Err(e) => msg.set(mensagem_usuario(&e)),
             }
         });
     };

@@ -21,6 +21,7 @@ mod armazenamento;
 mod componentes;
 mod contexto;
 mod download;
+mod erro;
 mod formato;
 mod hydratacao;
 mod layout;

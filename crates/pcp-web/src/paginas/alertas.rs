@@ -10,6 +10,7 @@ use leptos_router::components::A;
 use crate::api::{alertas, AlertaResumo};
 use crate::componentes::EstadoVazio;
 use crate::contexto::Sessao;
+use crate::erro::mensagem_usuario;
 
 /// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10).
 fn nome_exibicao(a: &AlertaResumo) -> String {
@@ -73,7 +74,7 @@ pub fn PaginaAlertas() -> impl IntoView {
                         .get()
                         .map(|res| match res {
                             Err(e) => {
-                                view! { <p class="form-auth__erro">{e.to_string()}</p> }.into_any()
+                                view! { <p class="form-auth__erro">{mensagem_usuario(&e)}</p> }.into_any()
                             }
                             Ok(lista) => corpo(lista, filtro, busca).into_any(),
                         })

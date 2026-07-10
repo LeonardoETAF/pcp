@@ -37,8 +37,12 @@ pub async fn salvar(
     claims.exige(Papel::Gestor)?;
     let por_id = Uuid::parse_str(&claims.sub).map_err(|_| ApiError::Interno)?;
 
-    let nova: pcp_config::Config = serde_json::from_value(corpo)
-        .map_err(|e| ApiError::Requisicao(format!("configuração malformada: {e}")))?;
+    // O detalhe do serde (caminho do campo, tipo esperado) é interno: vai para o log, não para
+    // a tela. O usuário só precisa saber que o formulário não está válido.
+    let nova: pcp_config::Config = serde_json::from_value(corpo).map_err(|e| {
+        tracing::warn!(erro = %e, "configuração enviada é inválida");
+        ApiError::Requisicao("Configuração inválida.".to_owned())
+    })?;
     pcp_config::validar(&nova).map_err(|e| ApiError::Requisicao(e.to_string()))?;
 
     let atual = estado.config();
