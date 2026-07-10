@@ -1838,7 +1838,11 @@ input {
   display: flex;
   align-items: center;
   gap: var(--e-4);
-  padding: var(--e-2) 0;
+  padding: var(--e-3) var(--e-4);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
 }
 .mov-dia__data {
   flex-shrink: 0;

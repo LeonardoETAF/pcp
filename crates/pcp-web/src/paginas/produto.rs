@@ -611,7 +611,7 @@ fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
-        <section class="cartao prod-secao">
+        <section class="prod-secao">
             <HistoricoCab titulo="Histórico de produção" inicio fim />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
@@ -653,7 +653,7 @@ fn dia_producao(data: &str, fases: &[&OrdemProducao]) -> impl IntoView {
         }
         let status = o.status.clone().unwrap_or_default();
         let classe = format!("mov-fase mov-fase--prod-{}", status.to_lowercase());
-        let lote = o.lote.map(|l| format!("Lote {l}"));
+        let lote = o.lote.map(|l| format!("Lote: {l}"));
         itens.push(
             view! {
                 <div class=classe>
@@ -693,7 +693,7 @@ fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
     });
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     view! {
-        <section class="cartao prod-secao">
+        <section class="prod-secao">
             <HistoricoCab titulo="Histórico de movimentação" inicio fim />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
