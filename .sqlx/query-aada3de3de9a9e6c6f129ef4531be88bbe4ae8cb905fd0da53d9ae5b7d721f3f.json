@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT cdx_datc AS \"data!\", cdx_tpmvm AS \"tipo!\", cdx_qtd AS \"quantidade!\",\n                  cdx_sd AS \"saldo!\"\n           FROM bronze.one_movimento\n           WHERE cdx_estq = $1\n           ORDER BY cdx_datc DESC, cdx_id DESC\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data!",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_movimento",
+            "name": "cdx_datc"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "tipo!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_movimento",
+            "name": "cdx_tpmvm"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "quantidade!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_movimento",
+            "name": "cdx_qtd"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "saldo!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_movimento",
+            "name": "cdx_sd"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "aada3de3de9a9e6c6f129ef4531be88bbe4ae8cb905fd0da53d9ae5b7d721f3f"
+}

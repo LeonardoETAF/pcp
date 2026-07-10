@@ -5,7 +5,10 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
-use crate::api::{produto_detalhe, DetalheProduto, MetricasProduto};
+use crate::api::{
+    produto_atividade, produto_detalhe, Atividade, DetalheProduto, MetricasProduto, Movimento,
+    OrdemProducao, StatusProducao,
+};
 use crate::componentes::Icone;
 use crate::contexto::Sessao;
 use crate::erro::mensagem_usuario;
@@ -98,6 +101,229 @@ fn corpo(d: &DetalheProduto) -> impl IntoView {
         </header>
 
         {metricas(&d.metricas)}
+        <Atividades codigo=d.codigo_estoque.clone() />
+    }
+}
+
+/// Carrega e exibe status de produção, histórico de produção e histórico de movimentação.
+#[component]
+fn Atividades(codigo: String) -> impl IntoView {
+    let sessao = expect_context::<Sessao>();
+    let dados = Resource::new(
+        move || (sessao.0.get(), codigo.clone()),
+        |(token, codigo)| async move {
+            match token {
+                Some(t) => produto_atividade(t, codigo).await.ok(),
+                None => None,
+            }
+        },
+    );
+    view! {
+        <Suspense fallback=|| {
+            view! { <p class="texto-suave">"Carregando atividade…"</p> }
+        }>
+            {move || {
+                dados.get().flatten().map_or_else(
+                    || ().into_any(),
+                    |a| view! { {secoes_atividade(&a)} }.into_any(),
+                )
+            }}
+        </Suspense>
+    }
+}
+
+fn secoes_atividade(a: &Atividade) -> impl IntoView {
+    view! {
+        {status_producao(&a.status_producao)}
+        <div class="prod-atividade">
+            {historico_producao(&a.producao)}
+            {historico_movimentacao(&a.movimentos)}
+        </div>
+    }
+}
+
+/// Status de produção: ordens abertas, em produção, aguardando e o total planejado.
+fn status_producao(s: &StatusProducao) -> impl IntoView {
+    let sem_producao = s.ordens_abertas == 0;
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Status de produção"</h2>
+                <p class="texto-suave">"Ordens abertas no One (aguardando ou em produção)."</p>
+            </header>
+            {if sem_producao {
+                view! {
+                    <p class="texto-suave">"Nenhuma ordem de produção aberta para este produto."</p>
+                }
+                    .into_any()
+            } else {
+                view! {
+                    <div class="prod-metricas">
+                        {[
+                            ("Ordens abertas", fmt_milhar(s.ordens_abertas)),
+                            ("Em produção", fmt_milhar(s.em_producao)),
+                            ("Aguardando", fmt_milhar(s.aguardando)),
+                            ("Qtd. planejada", format!("{} un", fmt_milhar(s.qtd_planejada))),
+                        ]
+                            .into_iter()
+                            .map(|(rotulo, valor)| {
+                                view! {
+                                    <div class="metrica-card">
+                                        <span class="metrica-card__rotulo">{rotulo}</span>
+                                        <span class="metrica-card__valor">{valor}</span>
+                                    </div>
+                                }
+                            })
+                            .collect_view()}
+                    </div>
+                }
+                    .into_any()
+            }}
+        </section>
+    }
+}
+
+/// Histórico de produção: ordens da linha (mais recentes primeiro).
+fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
+    let linhas = ordens
+        .iter()
+        .map(|o| {
+            let data = o.data.clone().unwrap_or_else(|| "—".to_owned());
+            let lote = o.lote.map_or_else(|| "—".to_owned(), |l| l.to_string());
+            let status = o.status.clone().unwrap_or_default();
+            let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
+            view! {
+                <tr>
+                    <td class="tabela__cod">{fmt_data(&data)}</td>
+                    <td class="tabela__num">{format!("{} un", fmt_milhar(o.quantidade))}</td>
+                    <td>
+                        <span class=classe_st>{rotulo_producao(&status)}</span>
+                    </td>
+                    <td class="tabela__cod">{lote}</td>
+                </tr>
+            }
+        })
+        .collect_view();
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Histórico de produção"</h2>
+            </header>
+            {if ordens.is_empty() {
+                view! { <p class="texto-suave">"Sem ordens de produção registradas."</p> }
+                    .into_any()
+            } else {
+                view! {
+                    <div class="tabela-rolavel">
+                        <table class="tabela">
+                            <thead>
+                                <tr>
+                                    <th>"Data"</th>
+                                    <th class="tabela__num">"Quantidade"</th>
+                                    <th>"Status"</th>
+                                    <th>"Lote"</th>
+                                </tr>
+                            </thead>
+                            <tbody>{linhas}</tbody>
+                        </table>
+                    </div>
+                }
+                    .into_any()
+            }}
+        </section>
+    }
+}
+
+/// Histórico de movimentação: kardex da linha (entradas e saídas, mais recentes primeiro).
+fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
+    let linhas = movs
+        .iter()
+        .map(|m| {
+            let entrada = m.quantidade >= 0;
+            let classe_qtd = if entrada {
+                "mov--entrada"
+            } else {
+                "mov--saida"
+            };
+            let sinal = if entrada { "+" } else { "" };
+            view! {
+                <tr>
+                    <td class="tabela__cod">{fmt_data(&m.data)}</td>
+                    <td>
+                        <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
+                    </td>
+                    <td class=format!("tabela__num {classe_qtd}")>
+                        {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
+                    </td>
+                    <td class="tabela__num">{format!("{} un", fmt_milhar(m.saldo))}</td>
+                </tr>
+            }
+        })
+        .collect_view();
+    view! {
+        <section class="cartao">
+            <header class="cartao__cab">
+                <h2 class="cartao__titulo">"Histórico de movimentação"</h2>
+            </header>
+            {if movs.is_empty() {
+                view! { <p class="texto-suave">"Sem movimentações registradas."</p> }.into_any()
+            } else {
+                view! {
+                    <div class="tabela-rolavel">
+                        <table class="tabela">
+                            <thead>
+                                <tr>
+                                    <th>"Data"</th>
+                                    <th>"Tipo"</th>
+                                    <th class="tabela__num">"Quantidade"</th>
+                                    <th class="tabela__num">"Saldo"</th>
+                                </tr>
+                            </thead>
+                            <tbody>{linhas}</tbody>
+                        </table>
+                    </div>
+                }
+                    .into_any()
+            }}
+        </section>
+    }
+}
+
+/// Rótulo pt-BR do status da ordem de produção.
+fn rotulo_producao(s: &str) -> &'static str {
+    match s {
+        "AGUARDANDO" => "Aguardando",
+        "PRODUCAO" => "Em produção",
+        "FINALIZADO" => "Finalizado",
+        "CANCELADO" => "Cancelado",
+        _ => "—",
+    }
+}
+
+/// Rótulo pt-BR do tipo de movimento do kardex.
+fn rotulo_movimento(t: &str) -> &'static str {
+    match t {
+        "VENDA" => "Venda",
+        "DEVOLUCAO_VENDA" => "Devolução",
+        "PRODUCAO" => "Produção",
+        "SEPARACAO_VENDA" => "Separação (venda)",
+        "SEPARACAO_PRODUCAO" => "Separação (produção)",
+        "INVENTARIO" => "Inventário",
+        "AJUSTE" => "Ajuste",
+        "LOCAL_ESTOQUE" => "Transferência",
+        "RESERVA_TEMPORARIA" => "Reserva",
+        _ => "Movimento",
+    }
+}
+
+/// Converte "AAAA-MM-DD" em "DD/MM/AAAA" (formato BR, §12); devolve o original se não casar.
+fn fmt_data(iso: &str) -> String {
+    match iso
+        .split_once('-')
+        .and_then(|(a, resto)| resto.split_once('-').map(|(m, d)| format!("{d}/{m}/{a}")))
+    {
+        Some(br) => br,
+        None => iso.to_owned(),
     }
 }
 

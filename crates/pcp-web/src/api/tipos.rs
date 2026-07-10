@@ -333,3 +333,38 @@ pub struct RelatorioSaude {
     pub gerado_em: String,
     pub verificacoes: Vec<VerificacaoSaude>,
 }
+
+/// Situação atual da produção da linha (detalhe do produto, doc 03 §4).
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct StatusProducao {
+    pub ordens_abertas: i64,
+    pub qtd_planejada: i64,
+    pub em_producao: i64,
+    pub aguardando: i64,
+}
+
+/// Uma ordem de produção da linha.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OrdemProducao {
+    pub data: Option<String>,
+    pub quantidade: i64,
+    pub status: Option<String>,
+    pub lote: Option<i64>,
+}
+
+/// Um movimento de estoque (kardex) da linha.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Movimento {
+    pub data: String,
+    pub tipo: String,
+    pub quantidade: i64,
+    pub saldo: i64,
+}
+
+/// Atividade da linha de estoque: status/histórico de produção e histórico de movimentação.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct Atividade {
+    pub status_producao: StatusProducao,
+    pub producao: Vec<OrdemProducao>,
+    pub movimentos: Vec<Movimento>,
+}

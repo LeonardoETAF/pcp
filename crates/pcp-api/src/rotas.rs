@@ -58,6 +58,10 @@ pub fn rotas(estado: AppState) -> Router {
         .route("/pcp/estoque/filtros/{id}", delete(filtros_salvos::excluir))
         .route("/pcp/produto/{codigo}", get(leitura::produto::produto))
         .route(
+            "/pcp/produto/{codigo}/atividade",
+            get(leitura::atividade::atividade),
+        )
+        .route(
             "/pcp/produto/{codigo}/insights",
             get(leitura::insights::insights),
         )

@@ -262,6 +262,7 @@ impl FonteConsultaOne {
     ) -> Result<(u64, u64), ErroEtl> {
         let faturas = crate::complementar::sincronizar_faturas(&self.one, &self.pcp, desde).await?;
         let producao = crate::complementar::sincronizar_producao(&self.one, &self.pcp).await?;
+        crate::complementar::sincronizar_movimentos(&self.one, &self.pcp, desde).await?;
         Ok((faturas, producao))
     }
 }

@@ -5,6 +5,7 @@
 pub mod abc;
 pub mod abc_tabela;
 pub mod alertas;
+pub mod atividade;
 pub mod dashboard;
 pub mod dashboard_classes;
 pub mod estoque;

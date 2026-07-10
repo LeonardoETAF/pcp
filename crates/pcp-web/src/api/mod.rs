@@ -601,6 +601,15 @@ pub async fn produto_insights(token: String, codigo: String) -> Result<Insights,
     obter_json(&format!("/pcp/produto/{codigo}/insights"), &token).await
 }
 
+/// Atividade de um produto: status/histórico de produção e movimentação (detalhe, doc 03 §4).
+///
+/// # Errors
+/// [`ServerFnError`] em falha de rede, sessão expirada ou corpo inválido.
+#[server(name = ProdutoAtividade, prefix = "/api")]
+pub async fn produto_atividade(token: String, codigo: String) -> Result<Atividade, ServerFnError> {
+    obter_json(&format!("/pcp/produto/{codigo}/atividade"), &token).await
+}
+
 /// Papel do usuário autenticado (`GET /pcp/me`).
 ///
 /// # Errors

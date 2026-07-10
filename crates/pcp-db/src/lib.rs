@@ -10,6 +10,7 @@ mod modelos;
 mod pool;
 
 pub mod agregacoes;
+pub mod atividade_produto;
 pub mod ciclo_vida;
 pub mod config_persist;
 pub mod derivadas;

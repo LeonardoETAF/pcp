@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.aud_date AS data, p.iprd_qnt AS \"quantidade!\", p.iprd_stat AS status,\n                  p.iprd_lote AS lote\n           FROM bronze.one_producao p\n           JOIN bronze.one_estoque e\n             ON e.est_itm = p.iprd_prd AND e.est_cnf = p.iprd_cnf\n           WHERE e.est_id = $1\n             AND e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)\n             AND COALESCE(p.iprd_stat, '') <> 'CANCELADO'\n           ORDER BY p.aud_date DESC NULLS LAST, p.iprd_id DESC\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_producao",
+            "name": "aud_date"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "quantidade!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_producao",
+            "name": "iprd_qnt"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_producao",
+            "name": "iprd_stat"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "lote",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bronze.one_producao",
+            "name": "iprd_lote"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "cf0aa1a156f54faab5ef5488d298bc7b9b8618d76fcbf392062926b1517a9605"
+}
