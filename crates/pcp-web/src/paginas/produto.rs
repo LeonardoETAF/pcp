@@ -481,12 +481,12 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                     itens.push(view! { <span class="mov-liga"></span> }.into_any());
                 }
                 let status = o.status.clone().unwrap_or_default();
-                let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
+                let classe = format!("mov-fase mov-fase--prod-{}", status.to_lowercase());
                 let lote = o.lote.map(|l| format!("Lote {l}"));
                 itens.push(
                     view! {
-                        <div class="mov-fase">
-                            <span class=classe_st>{rotulo_producao(&status)}</span>
+                        <div class=classe>
+                            <span class="mov-fase__tipo">{rotulo_producao(&status)}</span>
                             <span class="mov-fase__qtd">
                                 {format!("{} un", fmt_milhar(o.quantidade))}
                             </span>
@@ -529,17 +529,17 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
                     itens.push(view! { <span class="mov-liga"></span> }.into_any());
                 }
                 let entrada = m.quantidade >= 0;
-                let classe_qtd = if entrada {
-                    "mov-fase__qtd mov--entrada"
+                let classe = if entrada {
+                    "mov-fase mov-fase--entrada"
                 } else {
-                    "mov-fase__qtd mov--saida"
+                    "mov-fase mov-fase--saida"
                 };
                 let sinal = if entrada { "+" } else { "" };
                 itens.push(
                     view! {
-                        <div class="mov-fase">
-                            <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
-                            <span class=classe_qtd>
+                        <div class=classe>
+                            <span class="mov-fase__tipo">{rotulo_movimento(&m.tipo)}</span>
+                            <span class="mov-fase__qtd">
                                 {format!("{sinal}{} un", fmt_milhar(m.quantidade))}
                             </span>
                             <span class="mov-fase__meta">
