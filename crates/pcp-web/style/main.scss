@@ -536,14 +536,50 @@ input {
 .lembrar {
   display: flex;
   align-items: center;
-  gap: var(--e-3);
+  gap: var(--e-2);
   font-size: var(--fs-sm);
   cursor: pointer;
+  user-select: none;
 }
-.lembrar input {
+/* O checkbox nativo é desenhado pelo navegador e ignora o design system. Ele continua no DOM
+   (teclado, foco, leitor de tela), mas invisível — e a caixa ao lado é a nossa. Não uso
+   `display: none`, que o tiraria da ordem de tabulação. */
+.lembrar__entrada {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.lembrar__caixa {
+  display: grid;
+  place-items: center;
   width: 18px;
   height: 18px;
-  accent-color: var(--auth-escuro);
+  flex-shrink: 0;
+  border: 1px solid var(--auth-borda);
+  border-radius: 5px;
+  background: #fff;
+  color: transparent;
+  transition: background var(--transicao), border-color var(--transicao),
+    color var(--transicao), box-shadow var(--transicao);
+}
+.lembrar__caixa .icone-mask {
+  width: 12px;
+  height: 12px;
+}
+.lembrar:hover .lembrar__caixa {
+  border-color: var(--auth-texto);
+}
+/* Marcado: caixa cheia e o "visto" aparece (a máscara pinta com `currentColor`). */
+.lembrar__entrada:checked + .lembrar__caixa {
+  background: var(--auth-escuro);
+  border-color: var(--auth-escuro);
+  color: #fff;
+}
+/* Foco pelo teclado: o anel vai na CAIXA, já que o input está invisível. */
+.lembrar__entrada:focus-visible + .lembrar__caixa {
+  box-shadow: 0 0 0 3px rgba(20, 18, 16, 0.14);
 }
 .link-suave,
 .link-forte {

@@ -183,12 +183,18 @@ pub fn VistaLogin(vista: RwSignal<Vista>) -> impl IntoView {
                 </div>
                 // "Lembrar" à esquerda e "Esqueci a senha" à direita, abaixo do campo de senha.
                 <div class="lembrar-linha">
+                    // O <input> real fica sob a caixa desenhada: preserva teclado, foco e leitor
+                    // de tela; quem aparece é a caixa, que o navegador não pinta.
                     <label class="lembrar">
                         <input
+                            class="lembrar__entrada"
                             type="checkbox"
                             prop:checked=move || lembrar.get()
                             on:change=move |ev| lembrar.set(event_target_checked(&ev))
                         />
+                        <span class="lembrar__caixa" aria-hidden="true">
+                            <Icone arquivo="confirmar.svg" />
+                        </span>
                         <span>"Lembrar"</span>
                     </label>
                     <button
