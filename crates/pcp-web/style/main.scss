@@ -2041,8 +2041,12 @@ input {
   padding: var(--e-1);
   background: var(--superficie);
   border: var(--cartao-borda);
-  border-radius: var(--cartao-raio);
+  /* Raio da opção (--raio-sm) + o respiro da lista (--e-1): as curvas de fora e de dentro ficam
+     concêntricas. O --cartao-raio, de 16px, destoava do realce da opção selecionada. */
+  border-radius: var(--raio-md);
   box-shadow: var(--sombra-2, var(--sombra-1));
+  /* Não há reset global de lista: sem isto, os marcadores do <li> vazam para fora do card. */
+  list-style: none;
 }
 .seletor__opcao {
   display: block;
