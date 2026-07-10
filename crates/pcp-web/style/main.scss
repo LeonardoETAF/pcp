@@ -2036,16 +2036,69 @@ input {
 /* Vem DEPOIS e com a mesma especificidade (0,2,0) que a regra acima, senão o ano anterior herdaria
    o ink escuro. Fica cinza claro. */
 .grafico--anual .graf__barra--anterior { fill: var(--superficie-2); }
-/* Rótulos de mês em HTML, alinhados às 12 fatias iguais do gráfico. */
-.graf__meses {
+/* Área do gráfico com as colunas de hover POR CIMA do SVG: cada mês é uma zona clicável/hover
+   que mostra os dois valores; embaixo dela, o rótulo do mês. */
+.grafico-anual__area {
+  position: relative;
+}
+.graf__cols {
+  position: absolute;
+  inset: 0;
   display: flex;
 }
-.graf__mes {
+.graf__col {
+  position: relative;
   flex: 1;
-  text-align: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.graf__col--hover { background: rgba(27, 24, 20, 0.04); }
+/* Rótulo do mês, na base da coluna (fora da área do SVG, logo abaixo). */
+.graf__mes {
+  position: absolute;
+  bottom: -18px;
   font-size: 11px;
   color: var(--texto-suave);
 }
+.grafico-anual { padding-bottom: 18px; }
+/* Tooltip com os dois valores do mês. */
+.graf__tip {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--e-2) var(--e-3);
+  white-space: nowrap;
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--raio-md);
+  box-shadow: var(--sombra-2, var(--sombra-1));
+  font-size: var(--fs-sm);
+  pointer-events: none;
+}
+.graf__tip-mes {
+  font-weight: var(--peso-medio);
+  margin-bottom: 2px;
+}
+.graf__tip-linha {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.graf__tip-cor {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.graf__tip-cor--ant { background: var(--superficie-2); }
+.graf__tip-cor--atu { background: #1b1814; }
 .graf__legenda {
   display: flex;
   gap: var(--e-3);

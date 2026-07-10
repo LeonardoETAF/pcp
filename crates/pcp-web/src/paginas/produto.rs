@@ -309,9 +309,9 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
         .flat_map(|m| {
             let centro = (m as f64 + 0.5) * slot;
             let alt = |q: i64| (q as f64 / max) * H;
-            // Anterior: larga, ao fundo. Atual: estreita, à frente. Ambas centradas em `centro`.
-            let l_ant = slot * 0.62;
-            let l_atu = slot * 0.34;
+            // Anterior: larga, ao fundo. Atual: mais estreita, à frente. Ocupam bem a fatia.
+            let l_ant = slot * 0.82;
+            let l_atu = slot * 0.5;
             let ha = alt(va[m]);
             let hp = alt(vp[m]);
             [
@@ -321,6 +321,7 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
                         y=format!("{:.2}", H - hp)
                         width=format!("{l_ant:.2}")
                         height=format!("{hp:.2}")
+                        rx="4"
                         class="graf__barra graf__barra--anterior"
                     />
                 },
@@ -330,16 +331,44 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
                         y=format!("{:.2}", H - ha)
                         width=format!("{l_atu:.2}")
                         height=format!("{ha:.2}")
+                        rx="4"
                         class="graf__barra"
                     />
                 },
             ]
         })
         .collect_view();
-    // Rótulos de mês em HTML (não no SVG): o SVG estica com `preserveAspectRatio=none` para
-    // preencher a largura do card, o que distorceria um `<text>` interno.
-    let rotulos = (1..=12_i32)
-        .map(|m| view! { <span class="graf__mes">{mes_abrev(m)}</span> })
+    // Zona de hover por mês (HTML sobre o SVG): mostra os dois valores daquele mês. Serve também
+    // como célula do rótulo, garantindo o alinhamento com as fatias.
+    let hover = RwSignal::new(None::<usize>);
+    let colunas = (0..12)
+        .map(|m| {
+            let atu = va[m];
+            let ant = vp[m];
+            view! {
+                <div
+                    class="graf__col"
+                    class:graf__col--hover=move || hover.get() == Some(m)
+                    on:mouseenter=move |_| hover.set(Some(m))
+                    on:mouseleave=move |_| hover.set(None)
+                >
+                    <Show when=move || hover.get() == Some(m) fallback=|| ()>
+                        <div class="graf__tip">
+                            <span class="graf__tip-mes">{mes_abrev(i32::try_from(m + 1).unwrap_or(1))}</span>
+                            <span class="graf__tip-linha">
+                                <span class="graf__tip-cor graf__tip-cor--ant"></span>
+                                {format!("{anterior}: {} un", fmt_milhar(ant))}
+                            </span>
+                            <span class="graf__tip-linha">
+                                <span class="graf__tip-cor graf__tip-cor--atu"></span>
+                                {format!("{atual}: {} un", fmt_milhar(atu))}
+                            </span>
+                        </div>
+                    </Show>
+                    <span class="graf__mes">{mes_abrev(i32::try_from(m + 1).unwrap_or(1))}</span>
+                </div>
+            }
+        })
         .collect_view();
     view! {
         <section class="cartao">
@@ -351,14 +380,16 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
                 </div>
             </header>
             <div class="grafico-anual">
-                <svg
-                    class="grafico grafico--anual"
-                    viewBox=format!("0 0 {W} {H}")
-                    preserveAspectRatio="none"
-                >
-                    {barras}
-                </svg>
-                <div class="graf__meses">{rotulos}</div>
+                <div class="grafico-anual__area">
+                    <svg
+                        class="grafico grafico--anual"
+                        viewBox=format!("0 0 {W} {H}")
+                        preserveAspectRatio="none"
+                    >
+                        {barras}
+                    </svg>
+                    <div class="graf__cols">{colunas}</div>
+                </div>
             </div>
         </section>
     }
