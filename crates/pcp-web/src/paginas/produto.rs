@@ -227,7 +227,7 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
                 </header>
                 <span class="card-resumo__valor">{cobertura_valor(m.cobertura_dias)}</span>
                 <span class="card-resumo__sub">
-                    {format!("Recomendada: {} un", fmt_milhar(m.estoque_total_recomendado))}
+                    {format!("Recomendado: {} un", fmt_milhar(m.estoque_total_recomendado))}
                 </span>
             </article>
         </div>
@@ -494,8 +494,11 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                 .collect_view();
             view! {
                 <div class="mov-dia">
-                    <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <div class="mov-fases">{itens}</div>
+                    <span class="mov-dia__ponto"></span>
+                    <div class="mov-dia__card">
+                        <span class="mov-dia__data">{fmt_data(&data)}</span>
+                        <div class="mov-fases">{itens}</div>
+                    </div>
                 </div>
             }
         })
@@ -544,8 +547,11 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
                 .collect_view();
             view! {
                 <div class="mov-dia">
-                    <span class="mov-dia__data">{fmt_data(&data)}</span>
-                    <div class="mov-fases">{itens}</div>
+                    <span class="mov-dia__ponto"></span>
+                    <div class="mov-dia__card">
+                        <span class="mov-dia__data">{fmt_data(&data)}</span>
+                        <div class="mov-fases">{itens}</div>
+                    </div>
                 </div>
             }
         })

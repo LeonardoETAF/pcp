@@ -1828,12 +1828,44 @@ input {
   flex-direction: column;
   gap: var(--e-4);
 }
-/* Cada data é uma LINHA HORIZONTAL: a data à esquerda, e os cards das fases lado a lado à
-   direita, que quebram para a linha de baixo quando não cabem. */
+/* Trilha vertical: uma linha de ligação passa por trás dos pontos, ligando os cards de cada data. */
+.mov-timeline {
+  position: relative;
+  padding-left: 26px;
+}
+.mov-timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--borda);
+}
 .mov-dia {
+  position: relative;
+}
+/* Ponto na trilha, alinhado ao topo do card (o anel na cor da superfície "corta" a linha). */
+.mov-dia__ponto {
+  position: absolute;
+  left: -23px;
+  top: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+  box-shadow: 0 0 0 3px var(--superficie);
+}
+/* A data vira um CARD (superfície do design system, como as linhas da lista de produtos). */
+.mov-dia__card {
   display: flex;
   align-items: baseline;
   gap: var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+  box-shadow: var(--cartao-sombra);
 }
 .mov-dia__data {
   flex-shrink: 0;
@@ -1848,14 +1880,13 @@ input {
   flex: 1;
   min-width: 0;
 }
-/* Card compacto da fase (um movimento/ordem). */
+/* Fase (um movimento/ordem) como chip leve dentro do card da data. */
 .mov-fase {
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
-  padding: var(--e-2) var(--e-3);
-  background: var(--superficie);
-  border: var(--cartao-borda);
+  padding: var(--e-1) var(--e-3);
+  background: var(--superficie-2);
   border-radius: var(--raio-md);
   font-size: var(--fs-sm);
 }
