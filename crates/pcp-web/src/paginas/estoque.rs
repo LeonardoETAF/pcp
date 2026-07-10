@@ -376,8 +376,8 @@ fn Filtros(
                 rotulo="Status"
                 opcoes=vec![
                     ("", "Todos"),
-                    ("critico", "Crítico"),
                     ("sem_estoque", "Sem estoque"),
+                    ("critico", "Crítico"),
                     ("estoque_baixo", "Estoque baixo"),
                     ("adequado", "Adequado"),
                     ("alto", "Alto"),
