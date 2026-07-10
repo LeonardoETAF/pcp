@@ -19,9 +19,14 @@ use crate::bronze::{acl_estoque, acl_venda, BronzeEstoque, BronzeVenda};
 use crate::erro::ErroEtl;
 use crate::fonte::FonteDados;
 
-/// Estoque cru, **uma linha por linha de estoque** (F03005 × F03001), só produto acabado. Sem
-/// `GROUP BY`: agregar por item somaria as cores e apagaria a configuração. `EST_QTDD` é o
-/// disponível canônico; a reserva é derivada na ACL.
+/// Estoque cru, **uma linha por linha de estoque** (F03005 × F03001), só produto acabado e **não
+/// personalizado**. Sem `GROUP BY`: agregar por item somaria as cores e apagaria a configuração.
+/// `EST_QTDD` é o disponível canônico; a reserva é derivada na ACL.
+///
+/// `ITM_PRODA = false` (produto liso) é o universo do planejamento. O personalizado é feito sob
+/// encomenda: não guarda estoque (95% das suas linhas têm disponível zero, e o saldo agregado é
+/// negativo) e, ao ser pedido, **reserva o liso** correspondente (confirmado pelo suporte do One).
+/// Quem se planeja é o liso. Os três produtos de referência do PRD §11 são todos lisos.
 const SQL_ESTOQUE: &str = "\
 SELECT e.est_id AS est_id, e.est_itm AS est_itm, e.est_cnf AS est_cnf, e.est_dconf AS est_dconf, \
        p.itm_sku AS itm_sku, p.itm_desc AS itm_desc, \
@@ -31,11 +36,14 @@ SELECT e.est_id AS est_id, e.est_itm AS est_itm, e.est_cnf AS est_cnf, e.est_dco
        COALESCE(e.est_flin, false) AS est_flin, \
        COALESCE(p.itm_proda, false) AS itm_proda \
 FROM prd.f03005 e JOIN prd.f03001 p ON p.itm_id = e.est_itm \
-WHERE p.itm_gpprd = 'PRODUTO_ACABADO'";
+WHERE p.itm_gpprd = 'PRODUTO_ACABADO' AND NOT COALESCE(p.itm_proda, false)";
 
 /// Vendas cruas do **kardex** (F03007): é a única fonte que amarra a saída à linha de estoque
 /// (`CDX_ESTQ → EST_ID`). Os itens de pedido (F05001) não servem: `ITMP_CNF` é a configuração
 /// comercial e `ITMP_ESTM` aponta para a linha do produto LISO reservado — outro item.
+///
+/// Mesmo universo do estoque (liso, não personalizado): cada linha tem os seus próprios
+/// movimentos de VENDA, então excluir o personalizado **não** subtrai demanda do liso.
 ///
 /// Sinal: `VENDA` sai do estoque (`CDX_QTD` negativo) e `DEVOLUCAO_VENDA` entra (positivo); logo
 /// o líquido vendido é `-SUM(CDX_QTD)`. O `HAVING` descarta o dia cujo líquido não é positivo
@@ -50,7 +58,8 @@ FROM prd.f03007 c \
 JOIN prd.f03005 e ON e.est_id = c.cdx_estq \
 JOIN prd.f03001 p ON p.itm_id = e.est_itm \
 WHERE c.cdx_tpmvm IN ('VENDA', 'DEVOLUCAO_VENDA') \
-  AND p.itm_gpprd = 'PRODUTO_ACABADO' AND c.cdx_datc >= $1 \
+  AND p.itm_gpprd = 'PRODUTO_ACABADO' AND NOT COALESCE(p.itm_proda, false) \
+  AND c.cdx_datc >= $1 \
 GROUP BY c.cdx_datc::date, c.cdx_estq, p.itm_sku, p.itm_desc, e.est_dconf \
 HAVING ROUND(-SUM(c.cdx_qtd))::int > 0";
 
