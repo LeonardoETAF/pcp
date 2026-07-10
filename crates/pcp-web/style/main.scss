@@ -554,28 +554,40 @@ input {
 .lembrar__caixa {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border: 1px solid var(--auth-borda);
-  border-radius: 5px;
+  border: 1.5px solid var(--auth-borda);
+  border-radius: 6px;
   background: #fff;
+  /* O visto é uma máscara pintada com `currentColor`: transparente aqui, branco quando marcado. */
   color: transparent;
   transition: background var(--transicao), border-color var(--transicao),
     color var(--transicao), box-shadow var(--transicao);
 }
+/* Fechado, o visto fica encolhido; ao marcar, ele cresce no lugar. */
 .lembrar__caixa .icone-mask {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+  transform: scale(0.5);
+  transition: transform var(--transicao);
 }
 .lembrar:hover .lembrar__caixa {
   border-color: var(--auth-texto);
+  background: #faf9f7;
 }
-/* Marcado: caixa cheia e o "visto" aparece (a máscara pinta com `currentColor`). */
+/* Marcado: caixa cheia, visto branco em tamanho pleno. */
 .lembrar__entrada:checked + .lembrar__caixa {
   background: var(--auth-escuro);
   border-color: var(--auth-escuro);
   color: #fff;
+}
+.lembrar__entrada:checked + .lembrar__caixa .icone-mask {
+  transform: scale(1);
+}
+.lembrar:hover .lembrar__entrada:checked + .lembrar__caixa {
+  background: #322c25;
+  border-color: #322c25;
 }
 /* Foco pelo teclado: o anel vai na CAIXA, já que o input está invisível. */
 .lembrar__entrada:focus-visible + .lembrar__caixa {
