@@ -1877,9 +1877,9 @@ input {
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
-  padding: var(--e-2) var(--e-3);
+  padding: var(--e-2) var(--e-4);
   border: var(--cartao-borda);
-  border-radius: 999px;
+  border-radius: var(--raio-md);
   background: var(--superficie);
   color: var(--texto);
   font: inherit;
