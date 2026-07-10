@@ -342,15 +342,10 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
             ]
         })
         .collect_view();
-    let rotulos = (0..12_i32)
-        .map(|m| {
-            let x = (f64::from(m) + 0.5) * slot;
-            view! {
-                <text x=format!("{x:.1}") y="196" class="graf__rotulo-mes">
-                    {mes_abrev(m + 1)}
-                </text>
-            }
-        })
+    // Rótulos de mês em HTML (não no SVG): o SVG estica com `preserveAspectRatio=none` para
+    // preencher a largura do card, o que distorceria um `<text>` interno.
+    let rotulos = (1..=12_i32)
+        .map(|m| view! { <span class="graf__mes">{mes_abrev(m)}</span> })
         .collect_view();
     view! {
         <section class="cartao">
@@ -361,10 +356,16 @@ fn GraficoVendasAnual(meses: Vec<VendaMesProduto>) -> impl IntoView {
                     <span class="graf__leg graf__leg--atual">{atual.to_string()}</span>
                 </div>
             </header>
-            <svg class="grafico grafico--anual" viewBox=format!("0 0 {W} {} ", H + 16.0)>
-                {barras}
-                {rotulos}
-            </svg>
+            <div class="grafico-anual">
+                <svg
+                    class="grafico grafico--anual"
+                    viewBox=format!("0 0 {W} {H}")
+                    preserveAspectRatio="none"
+                >
+                    {barras}
+                </svg>
+                <div class="graf__meses">{rotulos}</div>
+            </div>
         </section>
     }
     .into_any()

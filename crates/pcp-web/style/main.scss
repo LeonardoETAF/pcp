@@ -2016,13 +2016,25 @@ input {
   fill: #e08a6f;
 }
 /* Gráfico anual comparativo: barra do ano anterior larga ao fundo (clara), a do ano atual
-   estreita à frente (cor da marca), uma dentro da outra. */
-.grafico--anual { height: 216px; }
+   estreita à frente. A cor do ano atual é a do menu lateral (ink escuro) — escopada AQUI para não
+   mexer na barra terracota do Pareto (ABC), que usa a mesma classe. */
+.grafico-anual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+}
+.grafico--anual { height: 200px; }
+.grafico--anual .graf__barra { fill: #1b1814; }
 .graf__barra--anterior { fill: var(--superficie-2); }
-.graf__rotulo-mes {
-  fill: var(--texto-suave);
+/* Rótulos de mês em HTML, alinhados às 12 fatias iguais do gráfico. */
+.graf__meses {
+  display: flex;
+}
+.graf__mes {
+  flex: 1;
+  text-align: center;
   font-size: 11px;
-  text-anchor: middle;
+  color: var(--texto-suave);
 }
 .graf__legenda {
   display: flex;
@@ -2042,7 +2054,7 @@ input {
   border-radius: 3px;
 }
 .graf__leg--anterior::before { background: var(--superficie-2); }
-.graf__leg--atual::before { background: #e08a6f; }
+.graf__leg--atual::before { background: #1b1814; }
 .graf__linha {
   stroke: #1b1814;
   stroke-width: 2;
