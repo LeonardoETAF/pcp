@@ -356,8 +356,8 @@ fn Filtros(
                 rotulo="Ordenar"
                 opcoes=vec![
                     ("sugerida_desc", "Sugestão"),
-                    ("cobertura_asc", "Cobertura +"),
-                    ("cobertura_desc", "Cobertura -"),
+                    ("cobertura_asc", "Cobertura -"),
+                    ("cobertura_desc", "Cobertura +"),
                     ("disponivel_desc", "Disponível +"),
                     ("disponivel_asc", "Disponível -"),
                     ("recomendada_desc", "Recomendada"),
@@ -379,7 +379,6 @@ fn Filtros(
                     ("critico", "Crítico"),
                     ("sem_estoque", "Sem estoque"),
                     ("estoque_baixo", "Estoque baixo"),
-                    ("baixo", "Baixo"),
                     ("adequado", "Adequado"),
                     ("alto", "Alto"),
                     ("excessivo", "Excessivo"),
