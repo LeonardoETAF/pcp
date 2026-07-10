@@ -483,7 +483,7 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
         })
         .collect_view();
     view! {
-        <section class="prod-secao">
+        <section class="cartao prod-secao">
             <h2 class="prod-secao__titulo">"Histórico de produção"</h2>
             {if ordens.is_empty() {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
@@ -528,7 +528,7 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
         })
         .collect_view();
     view! {
-        <section class="prod-secao">
+        <section class="cartao prod-secao">
             <h2 class="prod-secao__titulo">"Histórico de movimentação"</h2>
             {if movs.is_empty() {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
