@@ -2555,27 +2555,20 @@ input {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  /* `overflow: visible` EXPLÍCITO (não apenas omitido): a regra genérica `.tabela-rolavel` define
-     `overflow-x: auto`, e sem sobrescrever aqui ela continuaria valendo — tornando este um scroll
-     container e fazendo o cabeçalho sticky grudar NELE, não na janela. O scroll horizontal do
-     mobile volta na media query lá embaixo. */
-  overflow: visible;
+  overflow-x: auto;
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
   border-spacing: 0 var(--e-3);
 }
-/* Cabeçalho como CARD e fixo ao rolar: gruda no topo da janela (a página rola por ela; não há
-   topbar). Cada <th> pinta o fundo e a borda; o raio fica na 1ª e na última célula, como nas
-   linhas do corpo. z-index sobe para o corpo passar por baixo. */
+/* Cabeçalho como CARD (rola junto com a lista, não fixo). Cada <th> pinta o fundo e a borda; o
+   raio fica na 1ª e na última célula, como nas linhas do corpo. Rótulo centrado na altura. */
 .tabela-cartao .tabela thead th {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   background: var(--superficie);
   border-top: var(--cartao-borda);
   border-bottom: var(--cartao-borda);
   padding: var(--e-3) var(--e-4);
+  vertical-align: middle;
 }
 .tabela-cartao .tabela thead th:first-child {
   border-left: var(--cartao-borda);
@@ -2752,8 +2745,6 @@ input {
 }
 
 @media (max-width: 720px) {
-  /* Em tela estreita a tabela larga rola na horizontal; o cabeçalho sticky perde efeito aqui. */
-  .tabela-cartao .tabela-rolavel { overflow-x: auto; }
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
   .filtros-estoque__selects { margin-left: 0; }
