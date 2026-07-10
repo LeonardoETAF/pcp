@@ -1828,38 +1828,15 @@ input {
   flex-direction: column;
   gap: var(--e-4);
 }
-/* Trilha vertical: uma linha de ligação passa por trás dos pontos, ligando os cards de cada data. */
+/* Cada data é um card-linha (superfície do design system, como as linhas da lista de produtos). */
 .mov-timeline {
-  position: relative;
-  padding-left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
 }
-.mov-timeline::before {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 12px;
-  bottom: 12px;
-  width: 2px;
-  background: var(--borda);
-}
-.mov-dia {
-  position: relative;
-}
-/* Ponto na trilha, alinhado ao topo do card (o anel na cor da superfície "corta" a linha). */
-.mov-dia__ponto {
-  position: absolute;
-  left: -23px;
-  top: 16px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--texto-suave);
-  box-shadow: 0 0 0 3px var(--superficie);
-}
-/* A data vira um CARD (superfície do design system, como as linhas da lista de produtos). */
 .mov-dia__card {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--e-4);
   padding: var(--e-3) var(--e-4);
   background: var(--superficie);
@@ -1873,22 +1850,53 @@ input {
   font-weight: var(--peso-medio);
   font-variant-numeric: tabular-nums;
 }
+/* As fases do dia em linha, ligadas por conectores (linha + ponto) entre um card e o seguinte. */
 .mov-fases {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--e-2);
+  align-items: center;
+  gap: 0;
   flex: 1;
   min-width: 0;
 }
-/* Fase (um movimento/ordem) como chip leve dentro do card da data. */
 .mov-fase {
   display: inline-flex;
   align-items: center;
   gap: var(--e-2);
-  padding: var(--e-1) var(--e-3);
-  background: var(--superficie-2);
+  padding: var(--e-2) var(--e-3);
+  background: var(--superficie);
+  border: var(--cartao-borda);
   border-radius: var(--raio-md);
   font-size: var(--fs-sm);
+}
+/* Conector ENTRE dois cards de fase do mesmo dia: uma linha com um ponto no meio. */
+.mov-liga {
+  position: relative;
+  flex-shrink: 0;
+  width: 28px;
+  height: 12px;
+}
+.mov-liga::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--borda);
+  transform: translateY(-50%);
+}
+.mov-liga::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px var(--superficie);
 }
 .mov-fase__qtd { font-weight: var(--peso-medio); font-variant-numeric: tabular-nums; }
 .mov-fase__meta { color: var(--texto-suave); font-variant-numeric: tabular-nums; }

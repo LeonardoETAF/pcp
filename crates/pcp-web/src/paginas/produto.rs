@@ -475,12 +475,15 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
     let dias = grupos
         .into_iter()
         .map(|(data, fases)| {
-            let itens = fases
-                .iter()
-                .map(|o| {
-                    let status = o.status.clone().unwrap_or_default();
-                    let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
-                    let lote = o.lote.map(|l| format!("Lote {l}"));
+            let mut itens: Vec<AnyView> = Vec::new();
+            for (idx, o) in fases.iter().enumerate() {
+                if idx > 0 {
+                    itens.push(view! { <span class="mov-liga"></span> }.into_any());
+                }
+                let status = o.status.clone().unwrap_or_default();
+                let classe_st = format!("badge badge--producao-{}", status.to_lowercase());
+                let lote = o.lote.map(|l| format!("Lote {l}"));
+                itens.push(
                     view! {
                         <div class="mov-fase">
                             <span class=classe_st>{rotulo_producao(&status)}</span>
@@ -490,15 +493,13 @@ fn historico_producao(ordens: &[OrdemProducao]) -> impl IntoView {
                             {lote.map(|l| view! { <span class="mov-fase__meta">{l}</span> })}
                         </div>
                     }
-                })
-                .collect_view();
+                    .into_any(),
+                );
+            }
             view! {
-                <div class="mov-dia">
-                    <span class="mov-dia__ponto"></span>
-                    <div class="mov-dia__card">
-                        <span class="mov-dia__data">{fmt_data(&data)}</span>
-                        <div class="mov-fases">{itens}</div>
-                    </div>
+                <div class="mov-dia__card">
+                    <span class="mov-dia__data">{fmt_data(&data)}</span>
+                    <div class="mov-fases">{itens}</div>
                 </div>
             }
         })
@@ -522,16 +523,19 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
     let dias = grupos
         .into_iter()
         .map(|(data, fases)| {
-            let itens = fases
-                .iter()
-                .map(|m| {
-                    let entrada = m.quantidade >= 0;
-                    let classe_qtd = if entrada {
-                        "mov-fase__qtd mov--entrada"
-                    } else {
-                        "mov-fase__qtd mov--saida"
-                    };
-                    let sinal = if entrada { "+" } else { "" };
+            let mut itens: Vec<AnyView> = Vec::new();
+            for (idx, m) in fases.iter().enumerate() {
+                if idx > 0 {
+                    itens.push(view! { <span class="mov-liga"></span> }.into_any());
+                }
+                let entrada = m.quantidade >= 0;
+                let classe_qtd = if entrada {
+                    "mov-fase__qtd mov--entrada"
+                } else {
+                    "mov-fase__qtd mov--saida"
+                };
+                let sinal = if entrada { "+" } else { "" };
+                itens.push(
                     view! {
                         <div class="mov-fase">
                             <span class="badge badge--mov">{rotulo_movimento(&m.tipo)}</span>
@@ -543,15 +547,13 @@ fn historico_movimentacao(movs: &[Movimento]) -> impl IntoView {
                             </span>
                         </div>
                     }
-                })
-                .collect_view();
+                    .into_any(),
+                );
+            }
             view! {
-                <div class="mov-dia">
-                    <span class="mov-dia__ponto"></span>
-                    <div class="mov-dia__card">
-                        <span class="mov-dia__data">{fmt_data(&data)}</span>
-                        <div class="mov-fases">{itens}</div>
-                    </div>
+                <div class="mov-dia__card">
+                    <span class="mov-dia__data">{fmt_data(&data)}</span>
+                    <div class="mov-fases">{itens}</div>
                 </div>
             }
         })
