@@ -736,7 +736,7 @@ fn HistoricoProducao(ordens: Vec<OrdemProducao>) -> impl IntoView {
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     let ref_data = dados.with_value(|v| v.first().and_then(|o| o.data.clone()).unwrap_or_default());
     view! {
-        <section class="prod-secao">
+        <section class="cartao prod-secao">
             <HistoricoCab titulo="Histórico de produção" inicio fim ref_data />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem ordens de produção registradas."</p> }
@@ -819,7 +819,7 @@ fn HistoricoMovimentacao(movimentos: Vec<Movimento>) -> impl IntoView {
     let vazio = dados.with_value(std::vec::Vec::is_empty);
     let ref_data = dados.with_value(|v| v.first().map(|m| m.data.clone()).unwrap_or_default());
     view! {
-        <section class="prod-secao">
+        <section class="cartao prod-secao">
             <HistoricoCab titulo="Histórico de movimentação" inicio fim ref_data />
             {if vazio {
                 view! { <p class="estado-vazio">"Sem movimentações registradas."</p> }.into_any()
