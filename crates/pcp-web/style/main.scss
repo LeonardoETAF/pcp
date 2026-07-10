@@ -2561,24 +2561,10 @@ input {
   border-collapse: separate;
   border-spacing: 0 var(--e-3);
 }
-/* Cabeçalho como CARD (rola junto com a lista, não fixo). Cada <th> pinta o fundo e a borda; o
-   raio fica na 1ª e na última célula, como nas linhas do corpo. Rótulo centrado na altura. */
+/* Cabeçalho sem cartão; só rótulos alinhados às colunas. */
 .tabela-cartao .tabela thead th {
-  background: var(--superficie);
-  border-top: var(--cartao-borda);
-  border-bottom: var(--cartao-borda);
-  padding: var(--e-3) var(--e-4);
-  vertical-align: middle;
-}
-.tabela-cartao .tabela thead th:first-child {
-  border-left: var(--cartao-borda);
-  border-top-left-radius: var(--cartao-raio);
-  border-bottom-left-radius: var(--cartao-raio);
-}
-.tabela-cartao .tabela thead th:last-child {
-  border-right: var(--cartao-borda);
-  border-top-right-radius: var(--cartao-raio);
-  border-bottom-right-radius: var(--cartao-raio);
+  border-bottom: 0;
+  padding: 0 var(--e-4) var(--e-1);
 }
 /* Cada linha de corpo é um card, com a mesma borda e o mesmo raio dos demais.
    O fundo e a borda vão nas CÉLULAS: a caixa do <tr> é retangular e ignora o border-radius (que
