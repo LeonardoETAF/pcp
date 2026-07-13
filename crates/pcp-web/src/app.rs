@@ -7,7 +7,7 @@ use leptos_router::components::{ParentRoute, Route, Router, Routes};
 use leptos_router::{ParamSegment, StaticSegment};
 
 use crate::componentes::EstadoVazio;
-use crate::contexto::{CarregandoSessao, Sessao, Tema};
+use crate::contexto::{CarregandoSessao, FiltroEstoque, Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::abc::ClassificacaoAbc;
 use crate::paginas::alertas::PaginaAlertas;
@@ -54,6 +54,9 @@ pub fn App() -> impl IntoView {
     provide_context(sessao);
     provide_context(tema);
     provide_context(carregando);
+    // A lista de estoque guarda busca/filtros/página aqui, para sobreviverem à ida ao detalhe
+    // de um produto e à volta (§16).
+    provide_context(FiltroEstoque::default());
 
     // Restaura a sessão após reload: se há refresh token salvo, renova o access token. Roda só no
     // cliente (no SSR `tem_refresh` é falso). Falha = refresh inválido/expirado → cai no login.

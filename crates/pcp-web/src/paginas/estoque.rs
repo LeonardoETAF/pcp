@@ -12,7 +12,7 @@ use crate::api::{
     LinhaEstoque, PainelResumo,
 };
 use crate::componentes::{EstadoVazio, Icone, PaginacaoBotoes, Seletor};
-use crate::contexto::Sessao;
+use crate::contexto::{FiltroEstoque, Sessao};
 use crate::download;
 use crate::erro::mensagem_usuario;
 use crate::formato::{
@@ -25,13 +25,17 @@ pub fn PaginaEstoque() -> impl IntoView {
     let sessao = expect_context::<Sessao>();
 
     // Filtros e paginação (estado do cliente; a consulta vai inteira para o servidor).
-    let classe = RwSignal::new(None::<String>);
-    let status = RwSignal::new(None::<String>);
-    let busca = RwSignal::new(String::new()); // termo aplicado
-    let busca_input = RwSignal::new(String::new()); // o que está sendo digitado
-    let ordem = RwSignal::new("sugerida_desc".to_owned());
-    let limite = RwSignal::new(50_i64);
-    let deslocamento = RwSignal::new(0_i64);
+    // Busca, filtros, ordenação e página vêm do CONTEXTO: entrar num produto e voltar não pode
+    // perder o que o usuário tinha pesquisado nem a página em que estava.
+    let FiltroEstoque {
+        classe,
+        status,
+        busca,
+        busca_input,
+        ordem,
+        limite,
+        deslocamento,
+    } = expect_context::<FiltroEstoque>();
     let tick = RwSignal::new(0_u32);
 
     // Tamanho de página inicial = preferência do usuário (doc 03 §8), aplicada ao carregar.
