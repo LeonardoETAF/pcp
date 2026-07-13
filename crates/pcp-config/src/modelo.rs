@@ -118,6 +118,14 @@ pub struct Sazonalidade {
     pub clamp_min: f64,
     pub clamp_max: f64,
     pub atualizar_apos_dias: u32,
+    /// Mínimo de meses com venda para o produto ter curva sazonal própria (default 6).
+    #[serde(default = "min_meses_padrao")]
+    pub min_meses_com_venda_produto: u32,
+}
+
+/// Default do mínimo de meses com venda para curva sazonal própria (doc 02 §4, por produto).
+fn min_meses_padrao() -> u32 {
+    6
 }
 
 /// Limiares dos alertas de produção (doc 02 §6).

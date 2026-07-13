@@ -22,6 +22,7 @@ fn params() -> ParametrosSazonalidade {
         clamp_min: 0.5,
         clamp_max: 2.0,
         atualizar_apos_dias: 30,
+        min_meses_com_venda_produto: 6,
     }
 }
 

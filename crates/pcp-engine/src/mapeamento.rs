@@ -103,5 +103,6 @@ pub fn parametros_sazonalidade(c: &Config) -> ParametrosSazonalidade {
         clamp_min: c.sazonalidade.clamp_min,
         clamp_max: c.sazonalidade.clamp_max,
         atualizar_apos_dias: i64::from(c.sazonalidade.atualizar_apos_dias),
+        min_meses_com_venda_produto: c.sazonalidade.min_meses_com_venda_produto as usize,
     }
 }

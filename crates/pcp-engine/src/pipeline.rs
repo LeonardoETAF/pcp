@@ -105,7 +105,17 @@ pub async fn processar_dia(
     sazonalidade::atualizar_fatores(pool, data_ref, mapeamento::parametros_sazonalidade(config))
         .await?;
     let fatores = carregar_fatores(pool).await?;
-    let fator_mes = fatores.obter_fator(data_ref.month());
+    let fator_global = fatores.obter_fator(data_ref.month());
+    // Cada produto usa a PRÓPRIA curva sazonal; quem não tem histórico que a sustente cai no
+    // fator global (doc 02 §4, por produto — decisão do dono, 2026-07-13).
+    let curvas = db_sazon::carregar_por_produto(pool).await?;
+    let mes = usize::try_from(data_ref.month()).unwrap_or(1).max(1) - 1;
+    let fator_de = |codigo: &str| -> f64 {
+        curvas
+            .get(codigo)
+            .and_then(|f| f.get(mes).copied())
+            .unwrap_or(fator_global)
+    };
 
     let base = agregacoes::base_produtos(
         pool,
@@ -139,7 +149,7 @@ pub async fn processar_dia(
         pool,
         data_ref,
         "parametros",
-        modulo_parametros(pool, &base, &classes, config, fator_mes, data_ref),
+        modulo_parametros(pool, &base, &classes, config, &fator_de, data_ref),
     )
     .await;
     execucoes.push(exec);
@@ -307,7 +317,7 @@ async fn modulo_parametros(
     base: &[BaseProduto],
     classes: &HashMap<String, ResultadoClassificacao>,
     config: &Config,
-    fator_mes: f64,
+    fator_de: &impl Fn(&str) -> f64,
     data_ref: NaiveDate,
 ) -> Result<(HashMap<String, ParametrosEstoque>, u64), ErroEngine> {
     let cfg = mapeamento::parametros_estoque(config);
@@ -328,7 +338,8 @@ async fn modulo_parametros(
         let vendas = por_codigo
             .get(&b.codigo_estoque)
             .map_or(&[][..], Vec::as_slice);
-        let p = calcular_parametros(vendas, meta, fator_mes, &cfg);
+        let fator_sazonal = fator_de(&b.codigo_estoque);
+        let p = calcular_parametros(vendas, meta, fator_sazonal, &cfg);
         linhas.push(LinhaParametro {
             codigo: b.codigo_estoque.clone(),
             media_diaria: p.media_diaria,
@@ -340,7 +351,7 @@ async fn modulo_parametros(
             estoque_seguranca: p.estoque_seguranca,
             estoque_total_recomendado: p.estoque_total_recomendado,
             sem_historico_confiavel: p.status == StatusParametros::SemHistoricoConfiavel,
-            fator_sazonal: fator_mes,
+            fator_sazonal,
         });
         params.insert(b.codigo_estoque.clone(), p);
     }

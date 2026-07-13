@@ -6,7 +6,12 @@
 
 use chrono::{Datelike, NaiveDate};
 
-use pcp_core::sazonalidade::{calcular_fator, deve_recalcular, ParametrosSazonalidade};
+use std::collections::HashMap;
+
+use pcp_core::sazonalidade::{
+    calcular_fator, calcular_fatores_produto, deve_recalcular, ParametrosSazonalidade,
+    VendasMesProduto,
+};
 use pcp_db::{sazonalidade as db, PgPool};
 
 use crate::erro::ErroEngine;
@@ -33,7 +38,10 @@ pub async fn atualizar_fatores(
     params: ParametrosSazonalidade,
 ) -> Result<ResultadoSazonalidade, ErroEngine> {
     let ultima = db::ultima_atualizacao(pool).await?;
-    if !deve_recalcular(ultima, hoje, params.atualizar_apos_dias) {
+    // Sem NENHUMA curva por produto, recalcula mesmo que o gatilho mensal não tenha disparado —
+    // é o primeiro cálculo depois de ligar a sazonalidade por produto (doc 02 §4.2).
+    let sem_curvas = !db::tem_curvas_por_produto(pool).await?;
+    if !sem_curvas && !deve_recalcular(ultima, hoje, params.atualizar_apos_dias) {
         tracing::debug!("sazonalidade: recálculo não necessário");
         return Ok(ResultadoSazonalidade::NaoNecessario);
     }
@@ -83,5 +91,54 @@ async fn recalcular(
     }
 
     db::substituir(pool, &fatores).await?;
+    recalcular_por_produto(pool, inicio, fim, params).await?;
+    Ok(())
+}
+
+/// Curva sazonal PRÓPRIA de cada produto (doc 02 §4, por produto — decisão do dono, 2026-07-13).
+/// Produto sem histórico suficiente fica FORA da tabela: o pipeline cai no fator global.
+async fn recalcular_por_produto(
+    pool: &PgPool,
+    inicio: NaiveDate,
+    fim: NaiveDate,
+    params: ParametrosSazonalidade,
+) -> Result<(), ErroEngine> {
+    let vendas = db::vendas_por_produto_mes(pool, inicio, fim).await?;
+
+    let mut por_produto: HashMap<String, Vec<VendasMesProduto>> = HashMap::new();
+    for v in vendas {
+        let mes = u32::try_from(v.mes).unwrap_or(0);
+        por_produto
+            .entry(v.codigo_estoque)
+            .or_default()
+            .push(VendasMesProduto {
+                mes,
+                total: v.total,
+                dias: v.dias,
+            });
+    }
+
+    let total_produtos = por_produto.len();
+    let fatores: Vec<(String, [f64; 12])> = por_produto
+        .into_iter()
+        .filter_map(|(codigo, meses)| {
+            calcular_fatores_produto(
+                &meses,
+                params.min_meses_com_venda_produto,
+                params.clamp_min,
+                params.clamp_max,
+            )
+            .map(|f| (codigo, f))
+        })
+        .collect();
+
+    let com_curva = fatores.len();
+    db::substituir_por_produto(pool, &fatores).await?;
+    tracing::info!(
+        com_curva,
+        sem_curva = total_produtos.saturating_sub(com_curva),
+        min_meses = params.min_meses_com_venda_produto,
+        "sazonalidade: curvas por produto recalculadas (o resto usa a curva global)"
+    );
     Ok(())
 }

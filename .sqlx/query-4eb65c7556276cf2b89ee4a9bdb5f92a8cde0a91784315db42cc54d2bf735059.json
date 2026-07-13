@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT codigo_estoque, mes, fator FROM pcp.fator_sazonal_produto ORDER BY codigo_estoque",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo_estoque",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_produto",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "mes",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_produto",
+            "name": "mes"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "fator",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "fator_sazonal_produto",
+            "name": "fator"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4eb65c7556276cf2b89ee4a9bdb5f92a8cde0a91784315db42cc54d2bf735059"
+}

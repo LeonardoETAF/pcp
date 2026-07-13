@@ -26,7 +26,13 @@ parametros_estoque:
   # inventa recomendação a partir de dado que não existe (decisão do dono, 2026-07-10).
   defaults_sem_historico: { media: 0.0, min: 0, seguranca: 0, recomendado_max: 0 }  # §3.4
 
-sazonalidade: { clamp_min: 0.5, clamp_max: 2.0, atualizar_apos_dias: 30 }   # §4
+sazonalidade:                     # §4
+  clamp_min: 0.5
+  clamp_max: 2.0
+  atualizar_apos_dias: 30
+  # Minimo de meses COM VENDA para o produto ter curva sazonal PROPRIA. Abaixo disso ele usa a
+  # curva global -- com poucos meses, um pedido grande num mes viraria um fator absurdo.
+  min_meses_com_venda_produto: 6
 
 alertas: { critico_pct: 0.20, alto_pct: 0.50, medio_pct: 0.80, elevar_classe_a: true }   # §6.2/§6.3
 

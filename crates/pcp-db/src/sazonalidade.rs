@@ -158,3 +158,119 @@ pub async fn vendas_por_mes(
         })
         .collect())
 }
+
+/// Vendas de um produto num mês (entrada do fator sazonal por produto — doc 02 §4).
+#[derive(Debug, Clone)]
+pub struct VendasProdutoMes {
+    pub codigo_estoque: String,
+    pub mes: i32,
+    pub total: f64,
+    pub dias: i64,
+}
+
+/// Vendas agregadas por (produto, mês) na janela — só dias COM venda (doc 02 §3.1).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn vendas_por_produto_mes(
+    pool: &PgPool,
+    inicio: NaiveDate,
+    fim: NaiveDate,
+) -> Result<Vec<VendasProdutoMes>, ErroDb> {
+    let linhas = sqlx::query!(
+        r#"SELECT codigo_estoque                  AS "codigo_estoque!",
+                  EXTRACT(MONTH FROM dt_ref)::int4 AS "mes!",
+                  SUM(qtd_vendida)::float8        AS "total!",
+                  COUNT(DISTINCT dt_ref)          AS "dias!"
+           FROM pcp.vendas_dia
+           WHERE dt_ref >= $1 AND dt_ref < $2 AND qtd_vendida > 0
+           GROUP BY 1, 2
+           ORDER BY 1, 2"#,
+        inicio,
+        fim,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|l| VendasProdutoMes {
+            codigo_estoque: l.codigo_estoque,
+            mes: l.mes,
+            total: l.total,
+            dias: l.dias,
+        })
+        .collect())
+}
+
+/// Substitui TODOS os fatores por produto (full refresh, numa transação).
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn substituir_por_produto(
+    pool: &PgPool,
+    fatores: &[(String, [f64; 12])],
+) -> Result<u64, ErroDb> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("TRUNCATE pcp.fator_sazonal_produto")
+        .execute(&mut *tx)
+        .await?;
+    let mut gravadas = 0_u64;
+    // Achata (produto, mês, fator) e grava em lotes (§15: nada de N+1).
+    let linhas: Vec<(&str, i16, f64)> = fatores
+        .iter()
+        .flat_map(|(codigo, meses)| {
+            meses
+                .iter()
+                .enumerate()
+                .map(move |(i, &f)| (codigo.as_str(), i16::try_from(i + 1).unwrap_or(1), f))
+        })
+        .collect();
+    for lote in linhas.chunks(5_000) {
+        let mut qb = sqlx::QueryBuilder::new(
+            "INSERT INTO pcp.fator_sazonal_produto (codigo_estoque, mes, fator) ",
+        );
+        qb.push_values(lote, |mut b, (codigo, mes, fator)| {
+            b.push_bind(*codigo).push_bind(*mes).push_bind(*fator);
+        });
+        gravadas += qb.build().execute(&mut *tx).await?.rows_affected();
+    }
+    tx.commit().await?;
+    Ok(gravadas)
+}
+
+/// Carrega os 12 fatores de cada produto que tem curva própria.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn carregar_por_produto(
+    pool: &PgPool,
+) -> Result<std::collections::HashMap<String, [f64; 12]>, ErroDb> {
+    let linhas = sqlx::query!(
+        "SELECT codigo_estoque, mes, fator FROM pcp.fator_sazonal_produto ORDER BY codigo_estoque"
+    )
+    .fetch_all(pool)
+    .await?;
+    let mut mapa: std::collections::HashMap<String, [f64; 12]> = std::collections::HashMap::new();
+    for l in linhas {
+        let entrada = mapa.entry(l.codigo_estoque).or_insert([1.0; 12]);
+        if let Ok(i) = usize::try_from(l.mes - 1) {
+            if i < 12 {
+                entrada[i] = l.fator;
+            }
+        }
+    }
+    Ok(mapa)
+}
+
+/// Existe alguma curva sazonal por produto? (`false` força o primeiro cálculo — doc 02 §4.2.)
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn tem_curvas_por_produto(pool: &PgPool) -> Result<bool, ErroDb> {
+    let existe = sqlx::query_scalar!(
+        r#"SELECT EXISTS(SELECT 1 FROM pcp.fator_sazonal_produto) AS "existe!""#
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(existe)
+}
