@@ -213,9 +213,23 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
         })
         .map(|c| c.quantidade)
         .sum();
-    let cobertura = p
-        .cobertura_media
-        .map_or_else(|| SEM_VALOR.to_owned(), |c| format!("{c:.0}"));
+    // Produtos em estado crítico (status canônico do motor — doc 02 §5.2). Substitui a "cobertura
+    // média", que era uma média aritmética dominada por produtos mortos com estoque encalhado
+    // (alguns com centenas de anos de cobertura) e não descrevia nenhum produto real.
+    let criticos: i64 = p
+        .por_status
+        .iter()
+        .filter(|c| c.rotulo == "critico")
+        .map(|c| c.quantidade)
+        .sum();
+    // Fora de linha pela CLASSE (F), não pelo status: é o mesmo universo da aba de filtro. O
+    // status `fora_de_linha` é mais restrito e mostraria um número que não bate com a aba.
+    let fora_de_linha: i64 = p
+        .por_classe
+        .iter()
+        .filter(|c| c.rotulo == "F")
+        .map(|c| c.quantidade)
+        .sum();
     view! {
         <div class="kpis">
             <KpiEstoque
@@ -229,15 +243,14 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
                 rotulo="Abaixo do recomendado"
             />
             <KpiEstoque
-                icone="relogio.svg"
-                valor=cobertura
-                rotulo="Cobertura média"
-                unidade="dias"
+                icone="nao-conformidade.svg"
+                valor=fmt_milhar(criticos)
+                rotulo="Produtos críticos"
             />
             <KpiEstoque
-                icone="orders.svg"
-                valor=fmt_milhar(p.total_sugerido)
-                rotulo="Recomendação"
+                icone="parada.svg"
+                valor=fmt_milhar(fora_de_linha)
+                rotulo="Produtos fora de linha"
             />
         </div>
     }
