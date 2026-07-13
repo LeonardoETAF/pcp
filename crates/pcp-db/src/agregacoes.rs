@@ -145,9 +145,9 @@ pub async fn vendas_diarias(
     pool: &PgPool,
     data_ref: NaiveDate,
     inicio_365: NaiveDate,
-) -> Result<Vec<(String, i64)>, ErroDb> {
+) -> Result<Vec<(String, NaiveDate, i64)>, ErroDb> {
     let linhas = sqlx::query!(
-        r#"SELECT codigo_estoque AS "codigo!", SUM(qtd_vendida)::bigint AS "qtd!"
+        r#"SELECT codigo_estoque AS "codigo!", dt_ref AS "dia!", SUM(qtd_vendida)::bigint AS "qtd!"
            FROM pcp.vendas_dia
            WHERE dt_ref > $2 AND dt_ref <= $1 AND qtd_vendida > 0
            GROUP BY codigo_estoque, dt_ref
@@ -157,5 +157,47 @@ pub async fn vendas_diarias(
     )
     .fetch_all(pool)
     .await?;
-    Ok(linhas.into_iter().map(|l| (l.codigo, l.qtd)).collect())
+    Ok(linhas
+        .into_iter()
+        .map(|l| (l.codigo, l.dia, l.qtd))
+        .collect())
+}
+
+/// Média diária (DIAS CORRIDOS) de cada produto no mês `[inicio, fim)` — tipicamente o mês
+/// seguinte, no ano passado (doc 02 §3, variável nova — decisão do dono, 2026-07-13).
+///
+/// Só devolve produtos que JÁ EXISTIAM naquele mês (primeira venda anterior a `inicio`). Produto
+/// que ainda não existia fica FORA do resultado: ausência de produto não é ausência de demanda, e
+/// tratá-la como zero mataria a recomendação de um lançamento pelo motivo errado.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn media_diaria_no_mes(
+    pool: &PgPool,
+    inicio: NaiveDate,
+    fim: NaiveDate,
+) -> Result<Vec<(String, f64)>, ErroDb> {
+    let dias = f64::from(i32::try_from((fim - inicio).num_days()).unwrap_or(30)).max(1.0);
+    let linhas = sqlx::query!(
+        r#"WITH primeira AS (
+               SELECT codigo_estoque, MIN(dt_ref) AS primeira_venda
+               FROM pcp.vendas_dia WHERE qtd_vendida > 0 GROUP BY 1
+           )
+           SELECT p.codigo_estoque AS "codigo!",
+                  COALESCE(SUM(v.qtd_vendida), 0)::float8 AS "total!"
+           FROM primeira p
+           LEFT JOIN pcp.vendas_dia v
+             ON v.codigo_estoque = p.codigo_estoque
+            AND v.dt_ref >= $1 AND v.dt_ref < $2 AND v.qtd_vendida > 0
+           WHERE p.primeira_venda < $1
+           GROUP BY 1"#,
+        inicio,
+        fim,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(linhas
+        .into_iter()
+        .map(|l| (l.codigo, l.total / dias))
+        .collect())
 }

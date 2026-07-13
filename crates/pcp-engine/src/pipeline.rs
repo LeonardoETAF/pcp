@@ -9,6 +9,7 @@ use chrono::{Datelike, Duration, NaiveDate, Utc};
 
 use pcp_config::Config;
 use pcp_core::ciclo_vida::analisar;
+use pcp_core::parametros::VendaDiaria;
 use pcp_core::sazonalidade::FatoresSazonais;
 use pcp_core::{
     calcular_parametros, classificar, cobertura_dias, gerar_alertas, qtd_sugerida, status_estoque,
@@ -104,18 +105,8 @@ pub async fn processar_dia(
     // Sazonalidade (failsafe — doc 02 §4.2) e fator do mês corrente.
     sazonalidade::atualizar_fatores(pool, data_ref, mapeamento::parametros_sazonalidade(config))
         .await?;
-    let fatores = carregar_fatores(pool).await?;
-    let fator_global = fatores.obter_fator(data_ref.month());
-    // Cada produto usa a PRÓPRIA curva sazonal; quem não tem histórico que a sustente cai no
-    // fator global (doc 02 §4, por produto — decisão do dono, 2026-07-13).
-    let curvas = db_sazon::carregar_por_produto(pool).await?;
-    let mes = usize::try_from(data_ref.month()).unwrap_or(1).max(1) - 1;
-    let fator_de = |codigo: &str| -> f64 {
-        curvas
-            .get(codigo)
-            .and_then(|f| f.get(mes).copied())
-            .unwrap_or(fator_global)
-    };
+    let mes_seguinte = proximo_mes(data_ref.month());
+    let (fator_de, demanda_seguinte) = antecipacao(pool, data_ref, mes_seguinte).await?;
 
     let base = agregacoes::base_produtos(
         pool,
@@ -149,7 +140,15 @@ pub async fn processar_dia(
         pool,
         data_ref,
         "parametros",
-        modulo_parametros(pool, &base, &classes, config, &fator_de, data_ref),
+        modulo_parametros(
+            pool,
+            &base,
+            &classes,
+            config,
+            &fator_de,
+            &demanda_seguinte,
+            data_ref,
+        ),
     )
     .await;
     execucoes.push(exec);
@@ -318,14 +317,18 @@ async fn modulo_parametros(
     classes: &HashMap<String, ResultadoClassificacao>,
     config: &Config,
     fator_de: &impl Fn(&str) -> f64,
+    demanda_seguinte: &HashMap<String, f64>,
     data_ref: NaiveDate,
 ) -> Result<(HashMap<String, ParametrosEstoque>, u64), ErroEngine> {
     let cfg = mapeamento::parametros_estoque(config);
     let diarias =
         agregacoes::vendas_diarias(pool, data_ref, data_ref - Duration::days(365)).await?;
-    let mut por_codigo: HashMap<String, Vec<i64>> = HashMap::new();
-    for (codigo, qtd) in diarias {
-        por_codigo.entry(codigo).or_default().push(qtd);
+    let mut por_codigo: HashMap<String, Vec<VendaDiaria>> = HashMap::new();
+    for (codigo, data, qtd) in diarias {
+        por_codigo
+            .entry(codigo)
+            .or_default()
+            .push(VendaDiaria { data, qtd });
     }
 
     let mut params = HashMap::with_capacity(base.len());
@@ -339,7 +342,8 @@ async fn modulo_parametros(
             .get(&b.codigo_estoque)
             .map_or(&[][..], Vec::as_slice);
         let fator_sazonal = fator_de(&b.codigo_estoque);
-        let p = calcular_parametros(vendas, meta, fator_sazonal, &cfg);
+        let dem_seguinte = demanda_seguinte.get(&b.codigo_estoque).copied();
+        let p = calcular_parametros(vendas, data_ref, meta, fator_sazonal, dem_seguinte, &cfg);
         linhas.push(LinhaParametro {
             codigo: b.codigo_estoque.clone(),
             media_diaria: p.media_diaria,
@@ -352,6 +356,7 @@ async fn modulo_parametros(
             estoque_total_recomendado: p.estoque_total_recomendado,
             sem_historico_confiavel: p.status == StatusParametros::SemHistoricoConfiavel,
             fator_sazonal,
+            demanda_mes_seguinte: p.demanda_mes_seguinte,
         });
         params.insert(b.codigo_estoque.clone(), p);
     }
@@ -500,6 +505,69 @@ async fn modulo_consolidacao(
         .collect();
     let n = derivadas::salvar_produtos_ativos(pool, data_ref, &linhas).await?;
     Ok(((), n))
+}
+
+/// Mês seguinte a `mes` (dezembro → janeiro).
+const fn proximo_mes(mes: u32) -> u32 {
+    if mes == 12 {
+        1
+    } else {
+        mes + 1
+    }
+}
+
+/// Antecipação do MÊS SEGUINTE (decisão do dono, 2026-07-13). Devolve:
+///
+/// 1. o resolvedor do fator sazonal por produto — o fator do MÊS SEGUINTE, não o do mês corrente,
+///    porque o que se produz hoje serve o mês que vem. Como as curvas vêm do ano passado, isto É a
+///    "análise do mês seguinte do ano passado", por produto. Sem curva própria, cai no global;
+/// 2. o que cada produto vendia naquele mês, um ano atrás (média por dia corrido). Produto que
+///    ainda NÃO EXISTIA lá fica fora do mapa (vira `None`, não zero — ausência de produto não é
+///    ausência de demanda).
+async fn antecipacao(
+    pool: &PgPool,
+    data_ref: NaiveDate,
+    mes_seguinte: u32,
+) -> Result<(impl Fn(&str) -> f64, HashMap<String, f64>), ErroEngine> {
+    let fatores = carregar_fatores(pool).await?;
+    let fator_global = fatores.obter_fator(mes_seguinte);
+    let curvas = db_sazon::carregar_por_produto(pool).await?;
+    let idx = usize::try_from(mes_seguinte).unwrap_or(1).max(1) - 1;
+    let fator_de = move |codigo: &str| -> f64 {
+        curvas
+            .get(codigo)
+            .and_then(|f| f.get(idx).copied())
+            .unwrap_or(fator_global)
+    };
+
+    let (inicio, fim) = janela_mes_ano_passado(data_ref, mes_seguinte)?;
+    let demanda: HashMap<String, f64> = agregacoes::media_diaria_no_mes(pool, inicio, fim)
+        .await?
+        .into_iter()
+        .collect();
+    Ok((fator_de, demanda))
+}
+
+/// Janela `[início, fim)` do MÊS SEGUINTE no ANO PASSADO, relativa a `data_ref`.
+fn janela_mes_ano_passado(
+    data_ref: NaiveDate,
+    mes_seguinte: u32,
+) -> Result<(NaiveDate, NaiveDate), ErroEngine> {
+    // Se o mês seguinte é janeiro, ele já pertence ao ano que vem — o "ano passado" dele é o ano
+    // corrente. Nos demais casos, é o ano anterior.
+    let ano = if mes_seguinte == 1 {
+        data_ref.year()
+    } else {
+        data_ref.year() - 1
+    };
+    let inicio = NaiveDate::from_ymd_opt(ano, mes_seguinte, 1).ok_or(ErroEngine::DataInvalida)?;
+    let (ano_fim, mes_fim) = if mes_seguinte == 12 {
+        (ano + 1, 1)
+    } else {
+        (ano, mes_seguinte + 1)
+    };
+    let fim = NaiveDate::from_ymd_opt(ano_fim, mes_fim, 1).ok_or(ErroEngine::DataInvalida)?;
+    Ok((inicio, fim))
 }
 
 async fn carregar_fatores(pool: &PgPool) -> Result<FatoresSazonais, ErroEngine> {

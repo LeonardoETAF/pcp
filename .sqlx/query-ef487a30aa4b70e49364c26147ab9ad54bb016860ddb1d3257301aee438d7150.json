@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH primeira AS (\n               SELECT codigo_estoque, MIN(dt_ref) AS primeira_venda\n               FROM pcp.vendas_dia WHERE qtd_vendida > 0 GROUP BY 1\n           )\n           SELECT p.codigo_estoque AS \"codigo!\",\n                  COALESCE(SUM(v.qtd_vendida), 0)::float8 AS \"total!\"\n           FROM primeira p\n           LEFT JOIN pcp.vendas_dia v\n             ON v.codigo_estoque = p.codigo_estoque\n            AND v.dt_ref >= $1 AND v.dt_ref < $2 AND v.qtd_vendida > 0\n           WHERE p.primeira_venda < $1\n           GROUP BY 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "codigo!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "vendas_dia",
+            "name": "codigo_estoque"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "total!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "ef487a30aa4b70e49364c26147ab9ad54bb016860ddb1d3257301aee438d7150"
+}

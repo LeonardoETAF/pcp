@@ -28,7 +28,7 @@ pub use classificacao::{
 pub use consolidacao::{consolidar, VendaBruta, VendaConsolidada};
 pub use parametros::{
     calcular_parametros, DefaultsSemHistorico, ParametrosEstoque, ParametrosEstoqueConfig,
-    StatusParametros,
+    StatusParametros, VendaDiaria,
 };
 pub use recomendacao::{
     aprovacao_automatica, qtd_sugerida, recomendar_producao, EntradaRecomendacao,

@@ -1,7 +1,9 @@
 //! Cálculo dos parâmetros de estoque de um produto (doc 02 §3): aplica a estatística e a
 //! fórmula unificada, ou usa os defaults quando o histórico é insuficiente (§3.4).
 
-use super::estatistica;
+use chrono::NaiveDate;
+
+use super::estatistica::{self, VendaDiaria};
 use super::formula;
 
 /// Qualidade do histórico do produto (doc 02 §3.4).
@@ -35,6 +37,11 @@ pub struct ParametrosEstoqueConfig {
     pub teto_cobertura_dias: i64,
     /// Fração do alvo-meta que define o estoque mínimo (doc 02 §3.6: 0.70).
     pub fracao_minimo: f64,
+    /// Dias corridos da janela de vendas (12 meses = 365). A média divide por ISTO, não pelos
+    /// dias com venda (correção da §3.1 — decisão do dono, 2026-07-13).
+    pub janela_dias: i64,
+    /// Meia-vida do decaimento por recência, em dias. 0 desliga (todos os dias pesam igual).
+    pub meia_vida_dias: f64,
     /// Defaults para histórico insuficiente (doc 02 §3.4).
     pub defaults_sem_historico: DefaultsSemHistorico,
 }
@@ -51,6 +58,10 @@ pub struct ParametrosEstoque {
     pub estoque_minimo: i64,
     pub estoque_seguranca: i64,
     pub estoque_total_recomendado: i64,
+    /// Média diária (dias corridos) do MÊS SEGUINTE no ano passado — o que este produto vendia
+    /// nesta mesma época, um ano atrás. `None` quando o produto ainda não existia lá (não é
+    /// ausência de demanda; é ausência de produto). Decisão do dono, 2026-07-13.
+    pub demanda_mes_seguinte: Option<f64>,
 }
 
 /// Calcula os parâmetros de estoque de um produto (doc 02 §3).
@@ -61,13 +72,15 @@ pub struct ParametrosEstoque {
 /// - `fator_sazonal`: fator do mês da `data_ref` (doc 02 §4).
 #[must_use]
 pub fn calcular_parametros(
-    vendas_diarias: &[i64],
+    vendas: &[VendaDiaria],
+    data_ref: NaiveDate,
     meta_dias_classe: i64,
     fator_sazonal: f64,
+    demanda_mes_seguinte: Option<f64>,
     config: &ParametrosEstoqueConfig,
 ) -> ParametrosEstoque {
     let dias_com_vendas =
-        i64::try_from(vendas_diarias.iter().filter(|&&qtd| qtd > 0).count()).unwrap_or(i64::MAX);
+        i64::try_from(vendas.iter().filter(|v| v.qtd > 0).count()).unwrap_or(i64::MAX);
 
     if dias_com_vendas < config.min_dias_com_vendas {
         let padrao = config.defaults_sem_historico;
@@ -81,10 +94,17 @@ pub fn calcular_parametros(
             estoque_minimo: padrao.minimo,
             estoque_seguranca: padrao.seguranca,
             estoque_total_recomendado: padrao.recomendado,
+            demanda_mes_seguinte,
         };
     }
 
-    let resumo = estatistica::resumo(vendas_diarias, config.outlier_iqr_mult);
+    let resumo = estatistica::resumo(
+        vendas,
+        data_ref,
+        config.janela_dias,
+        config.outlier_iqr_mult,
+        config.meia_vida_dias,
+    );
     let recomendacao = formula::recomendar(
         resumo.media,
         resumo.desvio,
@@ -102,6 +122,7 @@ pub fn calcular_parametros(
         estoque_minimo: recomendacao.minimo,
         estoque_seguranca: recomendacao.seguranca,
         estoque_total_recomendado: recomendacao.total_recomendado,
+        demanda_mes_seguinte,
     }
 }
 
@@ -109,7 +130,25 @@ pub fn calcular_parametros(
 mod testes {
     use super::{
         calcular_parametros, DefaultsSemHistorico, ParametrosEstoqueConfig, StatusParametros,
+        VendaDiaria,
     };
+    use chrono::NaiveDate;
+
+    const HOJE: (i32, u32, u32) = (2026, 7, 13);
+
+    fn data_ref() -> NaiveDate {
+        NaiveDate::from_ymd_opt(HOJE.0, HOJE.1, HOJE.2).unwrap()
+    }
+
+    /// Série com `n` dias de venda, um por dia, terminando em `data_ref`.
+    fn dias_seguidos(n: i64, qtd: i64) -> Vec<VendaDiaria> {
+        (0..n)
+            .map(|i| VendaDiaria {
+                data: data_ref() - chrono::Duration::days(i),
+                qtd,
+            })
+            .collect()
+    }
 
     fn config() -> ParametrosEstoqueConfig {
         ParametrosEstoqueConfig {
@@ -118,6 +157,8 @@ mod testes {
             z_score_seguranca: 1.28,
             teto_cobertura_dias: 60,
             fracao_minimo: 0.70,
+            janela_dias: 365,
+            meia_vida_dias: 0.0, // sem decaimento, para isolar o efeito nos testes
             defaults_sem_historico: DefaultsSemHistorico {
                 media: 50.0,
                 minimo: 750,
@@ -129,37 +170,84 @@ mod testes {
 
     #[test]
     fn sem_historico_confiavel_usa_defaults() {
-        // 5 dias com venda (< 10) -> defaults (doc 02 §3.4).
-        let p = calcular_parametros(&[10, 10, 10, 10, 10], 45, 1.0, &config());
+        let p = calcular_parametros(&dias_seguidos(5, 10), data_ref(), 45, 1.0, None, &config());
         assert_eq!(p.status, StatusParametros::SemHistoricoConfiavel);
-        assert!((p.media_diaria - 50.0).abs() < 1e-9);
         assert_eq!(p.dias_com_vendas, 5);
-        assert_eq!(p.estoque_minimo, 750);
-        assert_eq!(p.estoque_seguranca, 250);
         assert_eq!(p.estoque_total_recomendado, 1000);
     }
 
+    /// A CORREÇÃO central: a média é por dia CORRIDO, não por dia com venda.
+    /// 30 dias vendendo 100 numa janela de 365 → 3000/365 ≈ 8,2/dia (não 100/dia).
     #[test]
-    fn calculado_com_historico_suficiente() {
-        // 12 dias, todos 10 (desvio 0); classe A (45d), sazonal 1.0.
-        let dias = [10_i64; 12];
-        let p = calcular_parametros(&dias, 45, 1.0, &config());
+    fn media_e_por_dia_corrido_nao_por_dia_com_venda() {
+        let p = calcular_parametros(
+            &dias_seguidos(30, 100),
+            data_ref(),
+            45,
+            1.0,
+            None,
+            &config(),
+        );
         assert_eq!(p.status, StatusParametros::Calculado);
-        assert!((p.media_diaria - 10.0).abs() < 1e-9);
-        assert_eq!(p.dias_com_vendas, 12);
-        assert_eq!(p.estoque_seguranca, 0); // desvio 0
-        assert_eq!(p.estoque_total_recomendado, 450); // round(10*45) + 0, abaixo do teto 600
-        assert_eq!(p.estoque_minimo, 315); // round(450 * 0.70)
+        assert_eq!(p.dias_com_vendas, 30);
+        let esperado = 3000.0 / 365.0;
+        assert!(
+            (p.media_diaria - esperado).abs() < 0.1,
+            "média deve ser {esperado:.2}/dia (dias corridos), veio {:.2}",
+            p.media_diaria
+        );
+    }
+
+    /// Produto que MORREU: vendia forte há 10 meses, nada nos últimos 3. Com decaimento, a média
+    /// desaba — sem ele, o auge do passado seguiria mandando produzir.
+    #[test]
+    fn decaimento_faz_produto_morto_perder_a_media() {
+        // 30 dias de venda alta, há ~300 dias; nada desde então.
+        let vendas: Vec<VendaDiaria> = (300..330)
+            .map(|i| VendaDiaria {
+                data: data_ref() - chrono::Duration::days(i),
+                qtd: 1000,
+            })
+            .collect();
+
+        let sem_decaimento = calcular_parametros(&vendas, data_ref(), 45, 1.0, None, &config());
+        let mut cfg = config();
+        cfg.meia_vida_dias = 90.0;
+        let com_decaimento = calcular_parametros(&vendas, data_ref(), 45, 1.0, None, &cfg);
+
+        // Sem decaimento: 30 x 1000 / 365 = 82,2/dia — o auge de 10 meses atrás ainda manda.
+        // Com meia-vida de 90d: aquelas vendas pesam ~0,09, e a média cai para ~21,8/dia.
+        assert!(
+            com_decaimento.media_diaria < sem_decaimento.media_diaria / 3.0,
+            "o decaimento deve derrubar a média do produto morto: {:.2} vs {:.2}",
+            com_decaimento.media_diaria,
+            sem_decaimento.media_diaria
+        );
     }
 
     #[test]
     fn outlier_nao_infla_a_media() {
-        // 11 dias em 10 + um pico de 1000: o pico é removido (IQR), média continua 10.
-        let mut dias = vec![10_i64; 11];
-        dias.push(1000);
-        let p = calcular_parametros(&dias, 45, 1.0, &config());
-        assert_eq!(p.status, StatusParametros::Calculado);
-        assert!((p.media_diaria - 10.0).abs() < 1e-9);
+        let mut vendas = dias_seguidos(11, 10);
+        vendas.push(VendaDiaria {
+            data: data_ref() - chrono::Duration::days(20),
+            qtd: 1000,
+        });
+        let p = calcular_parametros(&vendas, data_ref(), 45, 1.0, None, &config());
         assert_eq!(p.outliers_detectados, 1);
+        // 11 dias x 10 = 110, sobre ~364 dias corridos (o dia outlier sai da série).
+        assert!(p.media_diaria < 1.0, "média baixa: {:.3}", p.media_diaria);
+    }
+
+    #[test]
+    fn demanda_do_mes_seguinte_atravessa_o_calculo() {
+        let p = calcular_parametros(
+            &dias_seguidos(30, 100),
+            data_ref(),
+            45,
+            1.0,
+            Some(42.0),
+            &config(),
+        );
+        assert_eq!(p.demanda_mes_seguinte, Some(42.0));
     }
 }

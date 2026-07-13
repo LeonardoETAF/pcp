@@ -47,6 +47,8 @@ mod testes {
             z_score_seguranca: 1.28,
             teto_cobertura_dias: 60,
             fracao_minimo: 0.70,
+            janela_dias: 365,
+            meia_vida_dias: 0.0,
             defaults_sem_historico: DefaultsSemHistorico {
                 media: 50.0,
                 minimo: 750,

@@ -39,6 +39,8 @@ pub fn parametros_estoque(c: &Config) -> ParametrosEstoqueConfig {
         z_score_seguranca: c.parametros_estoque.z_score_seguranca,
         teto_cobertura_dias: i64::from(c.parametros_estoque.teto_cobertura_dias),
         fracao_minimo: c.parametros_estoque.fracao_minimo,
+        janela_dias: i64::from(c.parametros_estoque.janela_vendas_meses) * 365 / 12,
+        meia_vida_dias: c.parametros_estoque.meia_vida_dias,
         defaults_sem_historico: DefaultsSemHistorico {
             media: d.media,
             minimo: i64::from(d.min),

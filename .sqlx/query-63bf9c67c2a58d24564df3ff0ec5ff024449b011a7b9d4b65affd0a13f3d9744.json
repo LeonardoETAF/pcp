@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pcp.estoque_param (codigo_estoque, media_diaria, desvio, coef_variacao, dias_com_vendas, outliers_detectados, estoque_minimo, estoque_seguranca, estoque_total_recomendado, sem_historico_confiavel, fator_sazonal, demanda_mes_seguinte, dt_calc, atualizado_em) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now()) ON CONFLICT (codigo_estoque) DO UPDATE SET media_diaria = EXCLUDED.media_diaria, desvio = EXCLUDED.desvio, coef_variacao = EXCLUDED.coef_variacao, dias_com_vendas = EXCLUDED.dias_com_vendas, outliers_detectados = EXCLUDED.outliers_detectados, estoque_minimo = EXCLUDED.estoque_minimo, estoque_seguranca = EXCLUDED.estoque_seguranca, estoque_total_recomendado = EXCLUDED.estoque_total_recomendado, sem_historico_confiavel = EXCLUDED.sem_historico_confiavel, fator_sazonal = EXCLUDED.fator_sazonal, demanda_mes_seguinte = EXCLUDED.demanda_mes_seguinte, dt_calc = EXCLUDED.dt_calc, atualizado_em = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Bool",
+        "Float8",
+        "Float8",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "63bf9c67c2a58d24564df3ff0ec5ff024449b011a7b9d4b65affd0a13f3d9744"
+}

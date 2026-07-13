@@ -98,7 +98,15 @@ pub struct ParametrosEstoque {
     pub teto_cobertura_dias: u32,
     /// Estoque mínimo = `fracao_minimo` × alvo-meta (doc 02 §3.6: 0.70).
     pub fracao_minimo: f64,
+    /// Meia-vida do decaimento por recência, em dias. 0 desliga (decisão do dono, 2026-07-13).
+    #[serde(default = "meia_vida_padrao")]
+    pub meia_vida_dias: f64,
     pub defaults_sem_historico: DefaultsSemHistorico,
+}
+
+/// Default da meia-vida do decaimento por recência (dias).
+fn meia_vida_padrao() -> f64 {
+    90.0
 }
 
 /// Valores default para produtos sem histórico confiável (doc 02 §3.4).

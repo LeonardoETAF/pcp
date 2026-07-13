@@ -22,6 +22,12 @@ parametros_estoque:
   dias_base_minimo: 15          # base de 15 dias (§3.5)
   teto_cobertura_dias: 60       # teto do recomendado (§3.5)
   fracao_minimo: 0.70           # estoque minimo = 70% do alvo-meta (§3.6)
+  # A media e por DIA CORRIDO (volume / 365), nao por "dia com venda" -- correcao da regra §3.1
+  # (decisao do dono, 2026-07-13): a fabrica vende em LOTES, e dividir so pelos dias com pedido
+  # inflava a media ~4x em 91% dos produtos.
+  # Meia-vida do decaimento por recencia, em dias: uma venda de N dias atras pesa 0.5^(N/meia_vida).
+  # 0 desliga o decaimento (todos os dias pesam igual, como antes).
+  meia_vida_dias: 90
   # Zerado: produto com histórico insuficiente NÃO recebe piso nem alvo — o motor não
   # inventa recomendação a partir de dado que não existe (decisão do dono, 2026-07-10).
   defaults_sem_historico: { media: 0.0, min: 0, seguranca: 0, recomendado_max: 0 }  # §3.4

@@ -30,6 +30,8 @@ pub struct LinhaParametro {
     pub estoque_total_recomendado: i64,
     pub sem_historico_confiavel: bool,
     pub fator_sazonal: f64,
+    /// Média diária do mês seguinte no ano passado; `None` = o produto não existia lá.
+    pub demanda_mes_seguinte: Option<f64>,
 }
 
 /// Linha a persistir em `pcp.alerta` (doc 04 §3.3).
@@ -142,8 +144,8 @@ pub async fn salvar_parametros(
             "INSERT INTO pcp.estoque_param \
              (codigo_estoque, media_diaria, desvio, coef_variacao, dias_com_vendas, \
               outliers_detectados, estoque_minimo, estoque_seguranca, estoque_total_recomendado, \
-              sem_historico_confiavel, fator_sazonal, dt_calc, atualizado_em) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now()) \
+              sem_historico_confiavel, fator_sazonal, demanda_mes_seguinte, dt_calc, atualizado_em) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, now()) \
              ON CONFLICT (codigo_estoque) DO UPDATE SET \
               media_diaria = EXCLUDED.media_diaria, desvio = EXCLUDED.desvio, \
               coef_variacao = EXCLUDED.coef_variacao, dias_com_vendas = EXCLUDED.dias_com_vendas, \
@@ -151,7 +153,9 @@ pub async fn salvar_parametros(
               estoque_minimo = EXCLUDED.estoque_minimo, estoque_seguranca = EXCLUDED.estoque_seguranca, \
               estoque_total_recomendado = EXCLUDED.estoque_total_recomendado, \
               sem_historico_confiavel = EXCLUDED.sem_historico_confiavel, \
-              fator_sazonal = EXCLUDED.fator_sazonal, dt_calc = EXCLUDED.dt_calc, atualizado_em = now()",
+              fator_sazonal = EXCLUDED.fator_sazonal, \
+              demanda_mes_seguinte = EXCLUDED.demanda_mes_seguinte, \
+              dt_calc = EXCLUDED.dt_calc, atualizado_em = now()",
             l.codigo,
             l.media_diaria,
             l.desvio,
@@ -163,6 +167,7 @@ pub async fn salvar_parametros(
             l.estoque_total_recomendado,
             l.sem_historico_confiavel,
             l.fator_sazonal,
+            l.demanda_mes_seguinte,
             dt_calc,
         )
         .execute(&mut *tx)
