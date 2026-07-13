@@ -3066,7 +3066,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 /* Os três filtros de produção, encostados à direita do card. */
 .filtros-prod {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: var(--e-2);
   margin-left: auto;
   flex-shrink: 0;
@@ -3077,8 +3077,11 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   align-items: center;
   justify-content: center;
   gap: var(--e-2);
-  min-height: var(--altura-controle);
+  height: var(--altura-controle);
   padding: var(--e-1) var(--e-3);
+  /* `line-height: 1` cola a caixa de linha nas letras. Herdando a do body, ela fica mais alta que
+     o texto e o conteúdo desce do centro óptico — mesmo com align-items: center. */
+  line-height: 1;
   border: 1.5px solid var(--borda);
   border-radius: var(--raio-md);
   background: var(--superficie);
