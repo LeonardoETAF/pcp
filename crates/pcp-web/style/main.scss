@@ -1837,10 +1837,10 @@ input {
 /* O checkbox fica à esquerda, mas com um vão a mais: a linha tem duas linhas de texto, então o vão
    vertical até a parede do card é maior que o padding lateral. Este acréscimo iguala os dois. */
 .tabela__sel {
-  width: 52px;
+  width: 60px;
   text-align: left;
   vertical-align: middle;
-  padding-left: calc(var(--e-4) + var(--e-2));
+  padding-left: calc(var(--e-4) + var(--e-4));
 }
 /* Caixa desenhada à mão (appearance: none): a nativa não aceita raio, cor nem o tique do tema. */
 .check-prod {
