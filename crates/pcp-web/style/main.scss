@@ -2099,10 +2099,18 @@ input {
   background: var(--cor-prod);
 }
 
-/* Linha da lista colorida pelo estado de produção do item. */
-.linha-prod--em_producao td { border-color: var(--semaforo-info); }
-.linha-prod--aguardando td { border-color: var(--semaforo-alto); }
-.linha-prod--recem_produzido td { border-color: var(--semaforo-ok); }
+/* Linha da lista colorida pelo estado de produção do item.
+   O seletor precisa ser MAIS específico que `.tabela-cartao .tabela tbody td` (0,2,2), que define
+   a borda pelo shorthand (cor incluída) — senão a cor nunca aparece. Daqui sai (0,3,2). */
+.tabela-cartao .tabela tbody tr.linha-prod--em_producao td {
+  border-color: var(--semaforo-info);
+}
+.tabela-cartao .tabela tbody tr.linha-prod--aguardando td {
+  border-color: var(--semaforo-alto);
+}
+.tabela-cartao .tabela tbody tr.linha-prod--recem_produzido td {
+  border-color: var(--semaforo-ok);
+}
 
 .prod-status__btn--ativo:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .prod-status__btn:disabled { cursor: default; color: var(--texto-suave); }
