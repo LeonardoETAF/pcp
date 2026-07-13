@@ -45,6 +45,44 @@ pub struct ResultadoPipeline {
     pub execucoes: Vec<ExecucaoModulo>,
 }
 
+/// Pré-validação bloqueante (doc 05 §3): exige snapshot do dia e venda recente. `true` = pode
+/// processar.
+///
+/// "Venda de ontem" seria falso toda segunda-feira (e depois de feriado): sábado e domingo não têm
+/// venda, então a checagem literal travaria o pipeline uma vez por semana. A janela de tolerância
+/// (`pipeline.tolerancia_vendas_dias`) exige venda em ALGUM dos últimos N dias. Tolerância 1
+/// restaura a exigência literal do dia anterior.
+///
+/// # Errors
+/// [`ErroEngine`] em falha de infraestrutura ao contar vendas/snapshot.
+async fn pre_validar(
+    pool: &PgPool,
+    config: &Config,
+    data_ref: NaiveDate,
+) -> Result<bool, ErroEngine> {
+    let tolerancia = i64::from(config.pipeline.tolerancia_vendas_dias.max(1));
+    let ontem = data_ref - Duration::days(1);
+    let vendas_janela =
+        agregacoes::contar_vendas_janela(pool, data_ref - Duration::days(tolerancia), ontem)
+            .await?;
+    let snapshot_atual = agregacoes::contar_snapshot(pool, data_ref).await?;
+    if vendas_janela == 0 || snapshot_atual == 0 {
+        tracing::warn!(
+            %data_ref, vendas_janela, snapshot_atual, tolerancia,
+            "pré-validação falhou; pipeline bloqueado"
+        );
+        return Ok(false);
+    }
+    // Passou pela tolerância, mas ontem não teve venda: a equipe precisa saber (doc 05 §3).
+    if agregacoes::contar_vendas(pool, ontem).await? == 0 {
+        tracing::warn!(
+            %data_ref, %ontem, tolerancia,
+            "sem venda no dia anterior; seguindo pela tolerância da pré-validação"
+        );
+    }
+    Ok(true)
+}
+
 /// Processa (ou reprocessa) uma `data_ref` de forma idempotente (doc 05 §1.2).
 ///
 /// # Errors
@@ -55,11 +93,7 @@ pub async fn processar_dia(
     config: &Config,
     data_ref: NaiveDate,
 ) -> Result<ResultadoPipeline, ErroEngine> {
-    // Pré-validação bloqueante (doc 05 §3): vendas do dia anterior e snapshot do dia.
-    let vendas_anterior = agregacoes::contar_vendas(pool, data_ref - Duration::days(1)).await?;
-    let snapshot_atual = agregacoes::contar_snapshot(pool, data_ref).await?;
-    if vendas_anterior == 0 || snapshot_atual == 0 {
-        tracing::warn!(%data_ref, vendas_anterior, snapshot_atual, "pré-validação falhou; pipeline bloqueado");
+    if !pre_validar(pool, config, data_ref).await? {
         return Ok(ResultadoPipeline {
             data_ref,
             status: StatusPipeline::Bloqueado,

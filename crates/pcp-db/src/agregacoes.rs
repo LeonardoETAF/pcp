@@ -40,6 +40,26 @@ pub async fn contar_vendas(pool: &PgPool, dt_ref: NaiveDate) -> Result<i64, Erro
     Ok(total.unwrap_or(0))
 }
 
+/// Conta as linhas de venda numa JANELA fechada [`de`, `ate`] (pré-validação — doc 05 §3).
+/// Usada para tolerar dias sem venda (fim de semana, feriado) sem travar o pipeline.
+///
+/// # Errors
+/// [`ErroDb::Sqlx`] em falha de banco.
+pub async fn contar_vendas_janela(
+    pool: &PgPool,
+    de: NaiveDate,
+    ate: NaiveDate,
+) -> Result<i64, ErroDb> {
+    let total = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pcp.vendas_dia WHERE dt_ref BETWEEN $1 AND $2",
+        de,
+        ate
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(total.unwrap_or(0))
+}
+
 /// Conta as linhas do snapshot de uma data (pré-validação — doc 05 §3).
 ///
 /// # Errors

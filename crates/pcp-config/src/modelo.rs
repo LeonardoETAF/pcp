@@ -16,6 +16,27 @@ pub struct Config {
     pub reposicao: Reposicao,
     pub fora_de_linha: ForaDeLinha,
     pub metas_estoque_fisico_pct: MetasEstoqueFisico,
+    /// Operação do pipeline (doc 05 §3). `default` para não quebrar config antiga.
+    #[serde(default)]
+    pub pipeline: Pipeline,
+}
+
+/// Parâmetros de operação do pipeline diário (doc 05 §3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Pipeline {
+    /// Quantos dias antes de `data_ref` a pré-validação aceita procurar vendas. Existe porque
+    /// "vendas de ontem" é falso em segunda-feira e depois de feriado: sem tolerância, o pipeline
+    /// bloquearia toda semana. 1 = exige literalmente o dia anterior.
+    pub tolerancia_vendas_dias: u32,
+}
+
+impl Default for Pipeline {
+    fn default() -> Self {
+        Self {
+            tolerancia_vendas_dias: 3,
+        }
+    }
 }
 
 /// Parâmetros da classificação ABC+F+D+N (doc 02 §2).

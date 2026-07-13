@@ -39,3 +39,9 @@ reposicao:
 fora_de_linha: { limiar_sugerir_saida: 8, limiar_sugerir_volta: 4, alta_certeza: 15, media_certeza: 10 }   # §8
 
 metas_estoque_fisico_pct: { A: 50, B: 30, C: 20, D: 0 }   # §9.1
+
+# Operação do pipeline diário (doc 05 §3).
+pipeline:
+  # A pré-validação exige venda no dia anterior. Como sábado/domingo/feriado não têm venda, ela
+  # procura para trás até N dias — senão o pipeline bloquearia toda segunda-feira.
+  tolerancia_vendas_dias: 3
