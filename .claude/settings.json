@@ -3,9 +3,11 @@
     "deny": [
       "Edit(CLAUDE.md)",
       "Edit(./CLAUDE.md)",
+      "Edit(/home/leonardo/Documentos/PROJETOS/SuperFlow/CLAUDE.md)",
       "Edit(/home/leonardo/Documentos/PROJETOS/PCP/CLAUDE.md)",
       "Write(CLAUDE.md)",
       "Write(./CLAUDE.md)",
+      "Write(/home/leonardo/Documentos/PROJETOS/SuperFlow/CLAUDE.md)",
       "Write(/home/leonardo/Documentos/PROJETOS/PCP/CLAUDE.md)"
     ]
   }

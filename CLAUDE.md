@@ -1,10 +1,13 @@
-# Regras Fixas — Projeto PCP
+# Regras Fixas — SuperFlow
 
 > **Este arquivo é o contrato de desenvolvimento.** Toda decisão, código e PR devem
 > respeitá-lo. Está nomeado `CLAUDE.md` para ser carregado automaticamente a cada
-> sessão do Claude Code. As regras de **negócio** canônicas estão em
-> [docs/prd/02-regras-de-negocio.md](docs/prd/02-regras-de-negocio.md) — quando este
-> arquivo e o PRD divergirem em regra de negócio, **vale o PRD §02**.
+> sessão do Claude Code.
+>
+> O sistema chama-se **SuperFlow** — um ERP modular. O **PCP** é um dos seus **módulos**
+> (o primeiro), não o sistema. As regras de **negócio** canônicas do módulo PCP estão em
+> [modulos/pcp/docs/prd/02-regras-de-negocio.md](modulos/pcp/docs/prd/02-regras-de-negocio.md)
+> — quando este arquivo e o PRD divergirem em regra de negócio, **vale o PRD §02**.
 
 ---
 
@@ -38,25 +41,26 @@ Detalhamento operacional destes princípios em **§5**, **§15** e **§16**.
 
 ## 0. O que é o projeto
 
+- **SuperFlow** é o sistema: um **ERP modular**. Ele nasce com o módulo **PCP** e cresce por
+  módulos novos, cada um independente.
 - **PCP** (Planejamento e Controle de Produção) de uma fábrica de copos/plásticos
   personalizáveis (~90% produção própria). Reconstrução do legado documentado em
-  [docs/prd/](docs/prd/), **preservando as regras de negócio validadas** e corrigindo
-  os débitos arquiteturais do doc 08.
-- **Visão de longo prazo:** virar um **gestor empresarial (ERP) completo**. Pense o
-  sistema **por módulos**: **o PCP é um módulo do futuro ERP** — não "o sistema". Cada
-  capacidade futura (financeiro, vendas, compras, estoque comercial, RH...) entrará como
-  **novo módulo/crate independente**, plugando-se a um núcleo comum (auth, config,
-  usuários, infra de dados) **sem reescrever nem acoplar** o que já existe.
+  [modulos/pcp/docs/prd/](modulos/pcp/docs/prd/), **preservando as regras de negócio
+  validadas** e corrigindo os débitos arquiteturais do doc 08.
+- **Visão de longo prazo:** ERP completo. Pense o sistema **por módulos**: **o PCP é um
+  módulo do SuperFlow** — não "o sistema". Cada capacidade futura (catálogo, financeiro,
+  vendas, compras, RH...) entra como **módulo independente** sob `modulos/`, plugando-se ao
+  **núcleo comum** (`nucleo/`: auth, config, usuários, infra de dados) **sem reescrever nem
+  acoplar** o que já existe.
 - **Contrato entre módulos:** cada módulo expõe uma API/serviço bem definido e consome os
   outros **apenas por esse contrato**. Nada de um módulo alcançar tabelas ou tipos
-  internos de outro. O PCP deve ser construído já respeitando essa fronteira (ex.: nome
-  de domínio/prefixo `pcp` nas tabelas, rotas sob `/pcp/...`).
-- **Agora o escopo é só PCP.** Não construir módulos do futuro ERP antes da hora — mas não
-  tomar decisão que os inviabilize.
+  internos de outro. Fronteira já respeitada: schema próprio por módulo (`pcp.*`,
+  `catalogo.*`), rotas sob `/pcp/...`, `/catalogo/...`.
+- **Não construir módulo antes da hora** — mas não tomar decisão que o inviabilize.
 - **Single-tenant** (apenas SuperCopo) por enquanto, mas **sem premissas que impeçam
   multi-tenant depois** (ex.: não espalhar identificadores globais que dificultem um
   futuro `tenant_id`).
-- Todo o projeto vive **dentro da pasta `PCP/`**.
+- Todo o projeto vive **dentro da pasta `SuperFlow/`**.
 
 ## 1. Stack — FIXA, não renegociar sem decisão explícita do dono
 
@@ -92,27 +96,46 @@ Detalhamento operacional destes princípios em **§5**, **§15** e **§16**.
 
 ## 2. Estrutura do workspace (Cargo)
 
+**Três camadas, fisicamente separadas.** O **núcleo** é compartilhado por todos os módulos. A
+pasta de um **módulo** contém **apenas** os arquivos daquele módulo — nada compartilhado mora
+dentro dela. Os **apps** compõem núcleo + módulos em executáveis.
+
 ```
-PCP/
+SuperFlow/
 ├── Cargo.toml              # workspace
 ├── rust-toolchain.toml
 ├── CLAUDE.md               # este arquivo
-├── docs/prd/               # PRD canônico (contrato de negócio e funcional)
-├── config/
+├── config/                 # um YAML por módulo (compartilhado — fora da pasta do módulo)
 │   └── pcp.config.yaml     # constantes de negócio EDITÁVEIS (doc 02 §11)
-├── migrations/             # TODAS as migrations versionadas (nunca só no banco)
 ├── docker-compose.yml      # Postgres + app
-├── crates/
-│   ├── pcp-core/   # DOMÍNIO PURO: todas as regras do doc 02. Sem I/O. 100% testável.
-│   ├── pcp-config/ # carrega/valida pcp.config.yaml + auditoria de mudanças
-│   ├── pcp-db/     # repositórios SQLx, modelos de persistência, migrations helper
-│   ├── pcp-engine/ # motor diário: orquestra os 4 módulos sobre pcp-core + pcp-db
-│   ├── pcp-etl/    # ingestão (arquivo/CSV agora; conector ERP "One" depois)
-│   ├── pcp-ai/     # chat IA, análise por produto, insights estatísticos (Claude)
-│   ├── pcp-api/    # servidor Axum: auth, autorização, endpoints de leitura/escrita
-│   └── pcp-web/    # frontend Leptos
-└── tests/          # testes de paridade e invariantes (regressão de regra)
+│
+├── nucleo/                 # NÚCLEO COMUM — nenhum módulo aqui dentro
+│   ├── migrations/  # schema `nucleo`
+│   ├── sf-db/       # pool, ErroDb, migrations do núcleo, IDENTIDADE (usuário/refresh token)
+│   ├── sf-http/     # ApiError → status HTTP
+│   └── sf-auth/     # argon2, JWT, papéis, middleware deny-by-default (genérico no estado)
+│
+├── modulos/
+│   └── pcp/                # MÓDULO PCP — só o que é do PCP
+│       ├── migrations/  # schema `pcp` (o módulo é dono das SUAS migrations)
+│       ├── docs/prd/    # PRD canônico do PCP (contrato de negócio e funcional)
+│       ├── pcp-core/    # DOMÍNIO PURO: todas as regras do doc 02. Sem I/O. 100% testável.
+│       ├── pcp-config/  # carrega/valida pcp.config.yaml + auditoria de mudanças
+│       ├── pcp-db/      # repositórios SQLx e modelos de persistência do schema `pcp`
+│       ├── pcp-engine/  # motor diário: orquestra os 4 módulos sobre pcp-core + pcp-db
+│       ├── pcp-etl/     # ingestão (arquivo/CSV; conector ERP "One")
+│       ├── pcp-ai/      # chat IA, análise por produto, insights estatísticos (Claude)
+│       ├── pcp-api/     # servidor Axum: endpoints /pcp/... (auth vem do núcleo)
+│       ├── pcp-web/     # frontend Leptos
+│       └── tests/       # testes de paridade e invariantes (regressão de regra)
+│
+└── apps/                   # composição (núcleo + módulos) em executáveis
 ```
+
+**Fronteira entre módulos (inegociável — §0):** um módulo depende do **núcleo**; um módulo
+**NUNCA** depende de outro módulo — o `Cargo.toml` garante isso. Quando um módulo precisar de
+algo de outro, passa por **contrato** (trait no núcleo ou chamada de API): nunca
+`use outro_modulo::...`, nunca join entre schemas do banco.
 
 **Regra de dependência (one-way, núcleo no centro):**
 `pcp-core` não depende de nada do projeto. `pcp-engine`, `pcp-ai`, `pcp-api` dependem de
@@ -139,7 +162,7 @@ consome valores prontos da API.
 
 ## 4. Regras de negócio — o PRD §02 é o contrato
 
-- **Fonte da verdade:** [docs/prd/02-regras-de-negocio.md](docs/prd/02-regras-de-negocio.md).
+- **Fonte da verdade:** [modulos/pcp/docs/prd/02-regras-de-negocio.md](modulos/pcp/docs/prd/02-regras-de-negocio.md).
   Implementar exatamente: classificação A/B/C/D/F/N (precedência F→D→N→Pareto, janela ABC
   18m), parâmetros estatísticos (12m, IQR 1.5×, z=1.28, teto 60d), **estoque recomendado
   unificado na fórmula meta-ABC** {A45/B30/C15/D10/F5/N20} × sazonal + segurança
@@ -297,14 +320,16 @@ secrets fora do código; documentado o §do PRD que a tarefa implementa.
   ≤ ~50 linhas/função (referência). `lib.rs`/`mod.rs` só declaram e reexportam — **não**
   concentram lógica.
 - Dentro de cada crate, separar por responsabilidade, não por "tudo num arquivo". Ex.:
-  `pcp-core/src/classificacao/{mod.rs, pareto.rs, precedencia.rs}`,
-  `pcp-api/src/rotas/{estoque.rs, alertas.rs, ...}`. Um endpoint/handler por arquivo
-  quando crescer. No `pcp-web`, **um componente Leptos por arquivo**, agrupados por
-  feature/página (`web/src/paginas/`, `web/src/componentes/`).
-- **Fronteira de módulo de negócio:** o PCP é um módulo do ERP (§0). Mantenha tudo do PCP
-  coeso (tabelas com prefixo/domínio `pcp`, rotas `/pcp/...`, tipos no namespace do PCP)
-  para que um próximo módulo (ex.: `financeiro`) nasça ao lado sem tocar no PCP. Núcleo
-  comum (auth, usuários, config, infra de db) fica em crates compartilháveis.
+  `modulos/pcp/pcp-core/src/classificacao/{mod.rs, pareto.rs, precedencia.rs}`,
+  `modulos/pcp/pcp-api/src/rotas/{estoque.rs, alertas.rs, ...}`. Um endpoint/handler por
+  arquivo quando crescer. No `pcp-web`, **um componente Leptos por arquivo**, agrupados por
+  feature/página (`src/paginas/`, `src/componentes/`).
+- **Fronteira de módulo de negócio (§0, §2):** cada módulo mora em `modulos/<nome>/` e essa
+  pasta contém **apenas** os arquivos daquele módulo — nada compartilhado dentro dela. Tudo do
+  PCP fica coeso (schema `pcp`, rotas `/pcp/...`, tipos no namespace do PCP) para que o próximo
+  módulo (catálogo, financeiro...) nasça **ao lado**, sem tocar no PCP. O que é comum a todos
+  (auth, usuários, config, infra de db, design system) vive **fora dos módulos**, em `nucleo/`.
+  Um módulo **nunca** aparece no `Cargo.toml` de outro.
 
 **Desempenho (medir, não chutar):**
 - Agregações pesadas **no banco** (SQL/materialized view), nunca montadas no cliente.
