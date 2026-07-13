@@ -3149,10 +3149,13 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 }
 /* A regra genérica `.tabela tbody tr:last-child td { border-bottom: none }` (0,2,3) existe para a
    tabela COMUM, onde o último filete separador é redundante. Aqui cada linha é um CARD, e ela
-   apagava a borda de baixo do último — que parecia "cortado". Devolve a borda, com especificidade
-   maior (0,3,3). */
+   apagava a borda de baixo do último. Devolve a borda com especificidade maior (0,3,3).
+   Só LARGURA e ESTILO — nunca a cor: o shorthand `border-bottom` também define a cor, e como esta
+   regra empata em especificidade (0,3,3) com a que pinta o estado de produção e vem depois, ela
+   sobrescrevia a cor do estado e a borda de baixo do último card voltava a cinza. */
 .tabela-cartao .tabela tbody tr:last-child td {
-  border-bottom: var(--cartao-borda);
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
 }
 .tabela-cartao .tabela tbody td:first-child {
   border-left: var(--cartao-borda);
