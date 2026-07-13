@@ -1,17 +1,19 @@
-# Workspace do projeto PCP (CLAUDE.md §2).
+# Workspace do SuperFlow (CLAUDE.md §2). ERP modular: `nucleo/` é compartilhado por todos os
+# módulos; cada módulo vive isolado sob `modulos/<nome>/` (só os seus arquivos); `apps/` monta.
 # Manifesto virtual: a lógica vive nos crates membros, não aqui.
 [workspace]
 resolver = "2"
 members = [
-    "crates/pcp-core",
-    "crates/pcp-config",
-    "crates/pcp-db",
-    "crates/pcp-etl",
-    "crates/pcp-engine",
-    "crates/pcp-ai",
-    "crates/pcp-api",
-    "crates/pcp-web",
-    "tests",
+    # Módulo PCP — Planejamento e Controle de Produção.
+    "modulos/pcp/pcp-core",
+    "modulos/pcp/pcp-config",
+    "modulos/pcp/pcp-db",
+    "modulos/pcp/pcp-etl",
+    "modulos/pcp/pcp-engine",
+    "modulos/pcp/pcp-ai",
+    "modulos/pcp/pcp-api",
+    "modulos/pcp/pcp-web",
+    "modulos/pcp/tests",
 ]
 
 # Metadados compartilhados por todos os crates (herdados via `*.workspace = true`).

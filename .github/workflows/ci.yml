@@ -75,7 +75,7 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features postgres,rustls --locked
 
       - name: Aplicar migrations
-        run: cargo sqlx migrate run --source migrations
+        run: cargo sqlx migrate run --source modulos/pcp/migrations
 
       - name: Verificar cache .sqlx contra o schema (sem drift)
         run: cargo sqlx prepare --workspace --check

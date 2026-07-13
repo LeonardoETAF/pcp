@@ -6,9 +6,10 @@ use std::path::PathBuf;
 
 use pcp_config::{carregar_de_arquivo, carregar_de_str, validar, Config, Prioridade};
 
-/// Caminho do `config/pcp.config.yaml` de referência, relativo a este crate.
+/// Caminho do `config/pcp.config.yaml` de referência, relativo a este crate
+/// (`modulos/pcp/pcp-config/` → raiz do workspace).
 fn caminho_config() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../config/pcp.config.yaml")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../config/pcp.config.yaml")
 }
 
 /// A config de referência sempre carrega e valida — base dos casos negativos.

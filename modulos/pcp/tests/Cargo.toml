@@ -11,10 +11,10 @@ publish.workspace = true
 
 # Os testes de integração (ETL → motor) e de paridade exercem o sistema inteiro.
 [dev-dependencies]
-pcp-config = { path = "../crates/pcp-config" }
-pcp-db = { path = "../crates/pcp-db" }
-pcp-etl = { path = "../crates/pcp-etl" }
-pcp-engine = { path = "../crates/pcp-engine" }
+pcp-config = { path = "../pcp-config" }
+pcp-db = { path = "../pcp-db" }
+pcp-etl = { path = "../pcp-etl" }
+pcp-engine = { path = "../pcp-engine" }
 chrono = { version = "0.4", default-features = false }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 sqlx = { version = "0.9", default-features = false, features = [
