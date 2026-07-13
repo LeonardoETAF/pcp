@@ -28,6 +28,8 @@ pub struct FiltroEstoque {
     /// O que está sendo digitado no campo (aplicado no Enter).
     pub busca_input: RwSignal<String>,
     pub ordem: RwSignal<String>,
+    /// Estado de produção: `em_producao` | `aguardando` | `recem_produzido`.
+    pub producao: RwSignal<Option<String>>,
     pub limite: RwSignal<i64>,
     pub deslocamento: RwSignal<i64>,
 }
@@ -40,6 +42,7 @@ impl Default for FiltroEstoque {
             busca: RwSignal::new(String::new()),
             busca_input: RwSignal::new(String::new()),
             ordem: RwSignal::new("sugerida_desc".to_owned()),
+            producao: RwSignal::new(None),
             limite: RwSignal::new(50),
             deslocamento: RwSignal::new(0),
         }

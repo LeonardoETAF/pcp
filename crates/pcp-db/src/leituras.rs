@@ -218,6 +218,8 @@ pub struct FiltroEstoque<'a> {
     pub cobertura_max: Option<f64>,
     pub apenas_sugestao: bool,
     pub apenas_fora_linha: bool,
+    /// `em_producao` | `aguardando` | `recem_produzido`.
+    pub estado_producao: Option<&'a str>,
 }
 
 /// Quantidade de produtos por classe **sob o filtro corrente**, ignorando de propósito o filtro
@@ -289,18 +291,40 @@ pub async fn produtos_paginado(
         cobertura_max,
         apenas_sugestao,
         apenas_fora_linha,
+        estado_producao,
     } = filtro;
     let total = sqlx::query_scalar!(
-        r#"SELECT COUNT(*) AS "total!" FROM pcp.produto_ativo
-           WHERE ($1::text IS NULL OR classe = $1)
-             AND ($2::text IS NULL OR status = $2)
-             AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
-                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%'
-                  OR configuracao ILIKE '%' || $3 || '%')
-             AND ($4::float8 IS NULL OR cobertura_dias >= $4)
-             AND ($5::float8 IS NULL OR cobertura_dias <= $5)
-             AND (NOT $6 OR qtd_sugerida > 0)
-             AND (NOT $7 OR fora_de_linha)"#,
+        r#"WITH prod_item AS (
+               SELECT iprd_prd,
+                      bool_or(iprd_stat = 'PRODUCAO')   AS em_producao,
+                      bool_or(iprd_stat = 'AGUARDANDO') AS aguardando,
+                      bool_or(iprd_stat = 'FINALIZADO'
+                              AND aud_date >= (SELECT MAX(data_ref) FROM bronze.one_estoque)
+                                              - $9::int) AS recem
+               FROM bronze.one_producao GROUP BY iprd_prd
+           ),
+           estado AS (
+               SELECT e.est_id::text AS codigo,
+                      CASE WHEN pi.em_producao THEN 'em_producao'
+                           WHEN pi.aguardando  THEN 'aguardando'
+                           WHEN pi.recem       THEN 'recem_produzido' END AS estado_producao
+               FROM bronze.one_estoque e
+               JOIN prod_item pi ON pi.iprd_prd = e.est_itm
+               WHERE e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
+           )
+           SELECT COUNT(*) AS "total!"
+           FROM pcp.produto_ativo p
+           LEFT JOIN estado ep ON ep.codigo = p.codigo_estoque
+           WHERE ($1::text IS NULL OR p.classe = $1)
+             AND ($2::text IS NULL OR p.status = $2)
+             AND ($3::text IS NULL OR p.codigo_estoque ILIKE '%' || $3 || '%'
+                  OR p.produto ILIKE '%' || $3 || '%' OR p.sku ILIKE '%' || $3 || '%'
+                  OR p.configuracao ILIKE '%' || $3 || '%')
+             AND ($4::float8 IS NULL OR p.cobertura_dias >= $4)
+             AND ($5::float8 IS NULL OR p.cobertura_dias <= $5)
+             AND (NOT $6 OR p.qtd_sugerida > 0)
+             AND (NOT $7 OR p.fora_de_linha)
+             AND ($8::text IS NULL OR ep.estado_producao = $8)"#,
         classe,
         status,
         busca,
@@ -308,6 +332,8 @@ pub async fn produtos_paginado(
         cobertura_max,
         apenas_sugestao,
         apenas_fora_linha,
+        estado_producao,
+        recem_produzido_dias,
     )
     .fetch_one(pool)
     .await?;
@@ -352,6 +378,7 @@ pub async fn produtos_paginado(
              AND ($6::float8 IS NULL OR p.cobertura_dias <= $6)
              AND (NOT $7 OR p.qtd_sugerida > 0)
              AND (NOT $8 OR p.fora_de_linha)
+             AND ($12::text IS NULL OR ep.estado_producao = $12)
            ORDER BY
              -- codigo_estoque é texto, mas no One é sempre um inteiro (EST_ID). Ordenar como texto
              -- daria 1, 10, 10001, 2. O CASE ~ '^[0-9]+$' protege um código não-numérico futuro.
@@ -392,6 +419,7 @@ pub async fn produtos_paginado(
         limite,
         deslocamento,
         recem_produzido_dias,
+        estado_producao,
     )
     .fetch_all(pool)
     .await?

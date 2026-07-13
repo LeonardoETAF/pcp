@@ -33,6 +33,7 @@ pub fn PaginaEstoque() -> impl IntoView {
         busca,
         busca_input,
         ordem,
+        producao,
         limite,
         deslocamento,
     } = expect_context::<FiltroEstoque>();
@@ -69,6 +70,7 @@ pub fn PaginaEstoque() -> impl IntoView {
         cobertura_max: None,
         apenas_sugestao: false,
         apenas_fora_linha: false,
+        producao: producao.get(),
         limite: limite.get(),
         deslocamento: deslocamento.get(),
     };
@@ -130,7 +132,13 @@ pub fn PaginaEstoque() -> impl IntoView {
                     {move || {
                         dados.get().map(|res| match res {
                             Ok(pag) => {
-                                abas_classe(&pag.contagem_classes, classe, resetar).into_any()
+                                view! {
+                                    <div class="estoque-filtros__linha2">
+                                        {abas_classe(&pag.contagem_classes, classe, resetar)}
+                                        <FiltrosProducao producao resetar />
+                                    </div>
+                                }
+                                    .into_any()
                             }
                             Err(_) => ().into_any(),
                         })
@@ -285,6 +293,46 @@ fn KpiEstoque(
 
 /// Abas de filtro por classe ABC (§4). As contagens são as da consulta corrente (busca + status),
 /// não as do catálogo inteiro: cada botão diz quantos itens traria se fosse o escolhido.
+/// Três filtros por estado de produção, à direita das abas de classe. Clicar de novo no ativo
+/// limpa o filtro. Cores iguais às da linha da lista e do botão do detalhe.
+#[component]
+fn FiltrosProducao(
+    producao: RwSignal<Option<String>>,
+    resetar: impl Fn() + Copy + Send + Sync + 'static,
+) -> impl IntoView {
+    const ESTADOS: [(&str, &str); 3] = [
+        ("em_producao", "Em produção"),
+        ("aguardando", "Vai produzir"),
+        ("recem_produzido", "Recém produzido"),
+    ];
+    view! {
+        <div class="filtros-prod">
+            {ESTADOS
+                .into_iter()
+                .map(|(chave, rotulo)| {
+                    let ativo = move || producao.get().as_deref() == Some(chave);
+                    view! {
+                        <button
+                            type="button"
+                            class=format!("filtro-prod filtro-prod--{chave}")
+                            class:filtro-prod--ativo=ativo
+                            aria-pressed=move || if ativo() { "true" } else { "false" }
+                            on:click=move |_| {
+                                // Clicar no que já está ativo limpa o filtro.
+                                producao.set(if ativo() { None } else { Some(chave.to_owned()) });
+                                resetar();
+                            }
+                        >
+                            <span class="filtro-prod__ponto"></span>
+                            {rotulo}
+                        </button>
+                    }
+                })
+                .collect_view()}
+        </div>
+    }
+}
+
 fn abas_classe(
     contagens: &[ContagemClasse],
     classe: RwSignal<Option<String>>,

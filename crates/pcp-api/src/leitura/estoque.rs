@@ -28,6 +28,8 @@ pub struct ParamsEstoque {
     pub apenas_fora_linha: bool,
     pub limite: Option<i64>,
     pub deslocamento: Option<i64>,
+    /// Filtro por estado de produção: `em_producao` | `aguardando` | `recem_produzido`.
+    pub producao: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -113,6 +115,7 @@ pub async fn estoque(
         cobertura_max: params.cobertura_max,
         apenas_sugestao: params.apenas_sugestao,
         apenas_fora_linha: params.apenas_fora_linha,
+        estado_producao: params.producao.as_deref().filter(|s| !s.is_empty()),
     };
     let contagens = leituras::contagem_classes(&estado.pool, &filtro).await?;
     let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(2);

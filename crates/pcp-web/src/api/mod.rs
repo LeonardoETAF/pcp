@@ -634,6 +634,7 @@ fn parametros_consulta(c: &ConsultaEstoque) -> Vec<(&'static str, String)> {
         ("status", c.status.clone()),
         ("busca", c.busca.clone()),
         ("ordem", c.ordem.clone()),
+        ("producao", c.producao.clone()),
     ] {
         if let Some(v) = valor.filter(|s| !s.is_empty()) {
             params.push((chave, v));

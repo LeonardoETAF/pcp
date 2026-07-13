@@ -75,6 +75,8 @@ pub struct ConsultaEstoque {
     pub cobertura_max: Option<f64>,
     pub apenas_sugestao: bool,
     pub apenas_fora_linha: bool,
+    /// Estado de produção: `em_producao` | `aguardando` | `recem_produzido`.
+    pub producao: Option<String>,
     pub limite: i64,
     pub deslocamento: i64,
 }

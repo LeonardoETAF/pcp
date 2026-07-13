@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH prod_item AS (\n               SELECT iprd_prd,\n                      bool_or(iprd_stat = 'PRODUCAO')   AS em_producao,\n                      bool_or(iprd_stat = 'AGUARDANDO') AS aguardando,\n                      bool_or(iprd_stat = 'FINALIZADO'\n                              AND aud_date >= (SELECT MAX(data_ref) FROM bronze.one_estoque)\n                                              - $9::int) AS recem\n               FROM bronze.one_producao GROUP BY iprd_prd\n           ),\n           estado AS (\n               SELECT e.est_id::text AS codigo,\n                      CASE WHEN pi.em_producao THEN 'em_producao'\n                           WHEN pi.aguardando  THEN 'aguardando'\n                           WHEN pi.recem       THEN 'recem_produzido' END AS estado_producao\n               FROM bronze.one_estoque e\n               JOIN prod_item pi ON pi.iprd_prd = e.est_itm\n               WHERE e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)\n           )\n           SELECT COUNT(*) AS \"total!\"\n           FROM pcp.produto_ativo p\n           LEFT JOIN estado ep ON ep.codigo = p.codigo_estoque\n           WHERE ($1::text IS NULL OR p.classe = $1)\n             AND ($2::text IS NULL OR p.status = $2)\n             AND ($3::text IS NULL OR p.codigo_estoque ILIKE '%' || $3 || '%'\n                  OR p.produto ILIKE '%' || $3 || '%' OR p.sku ILIKE '%' || $3 || '%'\n                  OR p.configuracao ILIKE '%' || $3 || '%')\n             AND ($4::float8 IS NULL OR p.cobertura_dias >= $4)\n             AND ($5::float8 IS NULL OR p.cobertura_dias <= $5)\n             AND (NOT $6 OR p.qtd_sugerida > 0)\n             AND (NOT $7 OR p.fora_de_linha)\n             AND ($8::text IS NULL OR ep.estado_producao = $8)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Bool",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d0cbb470e5cfedee19d1c59be4ecb96f4ad5f273884adf27534d16f0949a5726"
+}

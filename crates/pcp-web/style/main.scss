@@ -2913,11 +2913,59 @@ input {
   flex-wrap: wrap;
   padding: var(--e-3);
 }
+/* Segunda linha do card: abas de classe à esquerda, filtros de produção à DIREITA. */
+.estoque-filtros__linha2 {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  padding: 0 var(--e-3) var(--e-3);
+}
 .estoque-filtros__classes {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e-3);
-  padding: 0 var(--e-3) var(--e-3);
+  flex: 1;
+  min-width: 0;
+}
+/* Os três filtros de produção, encostados à direita do card. */
+.filtros-prod {
+  display: flex;
+  gap: var(--e-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.filtro-prod {
+  --cor-prod: var(--borda);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-3);
+  border: 1.5px solid var(--borda);
+  border-radius: var(--raio-md);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--transicao), color var(--transicao);
+}
+.filtro-prod__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--cor-prod);
+}
+/* Mesma paleta da linha da lista e do botão do detalhe. */
+.filtro-prod--em_producao { --cor-prod: var(--semaforo-info); }
+.filtro-prod--aguardando { --cor-prod: var(--semaforo-alto); }
+.filtro-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
+.filtro-prod:hover { border-color: var(--cor-prod); color: var(--texto); }
+/* Ativo: a borda assume a cor do estado e o rótulo ganha peso. */
+.filtro-prod--ativo {
+  border-color: var(--cor-prod);
+  color: var(--texto);
+  font-weight: var(--peso-medio);
 }
 .estoque-filtros__busca {
   display: flex;

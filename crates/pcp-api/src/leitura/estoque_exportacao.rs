@@ -26,6 +26,8 @@ pub struct ParamsExport {
     #[serde(default)]
     pub apenas_fora_linha: bool,
     pub formato: Option<String>,
+    /// Filtro por estado de produção (o mesmo da lista) — a exportação leva o filtro completo.
+    pub producao: Option<String>,
 }
 
 /// Exporta os produtos do filtro atual (autenticado — qualquer papel lê).
@@ -45,6 +47,7 @@ pub async fn exportar(
         cobertura_max: params.cobertura_max,
         apenas_sugestao: params.apenas_sugestao,
         apenas_fora_linha: params.apenas_fora_linha,
+        estado_producao: params.producao.as_deref().filter(|s| !s.is_empty()),
     };
     // Sem paginação: o filtro inteiro. i64::MAX como LIMIT devolve todas as linhas.
     let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(2);
