@@ -300,9 +300,10 @@ fn FiltrosProducao(
     producao: RwSignal<Option<String>>,
     resetar: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
+    // Ordem cronológica do ciclo de produção: fila -> produzindo -> pronto.
     const ESTADOS: [(&str, &str); 3] = [
-        ("em_producao", "Em produção"),
         ("aguardando", "Vai produzir"),
+        ("em_producao", "Em produção"),
         ("recem_produzido", "Recém produzido"),
     ];
     view! {
