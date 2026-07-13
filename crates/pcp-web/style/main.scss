@@ -3011,7 +3011,7 @@ input {
 /* Card grande envolvendo a lista inteira: mesma borda/superfície dos demais cards. As linhas
    internas seguem sendo cards — o de fora é a moldura da lista. */
 .lista-cartao {
-  padding: var(--e-3) var(--e-4);
+  padding: var(--e-3) var(--e-4) var(--e-4);
 }
 
 .tabela-cartao {
@@ -3025,7 +3025,11 @@ input {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow-x: auto;
+  /* `overflow: visible` EXPLÍCITO (não basta omitir): a regra genérica `.tabela-rolavel` define
+     `overflow-x: auto`, e ela continuaria valendo. Com overflow, este vira um SCROLL CONTAINER e
+     corta a borda de baixo da ÚLTIMA linha-cartão. O scroll horizontal do mobile volta na media
+     query lá embaixo, onde a tabela larga precisa mesmo rolar. */
+  overflow: visible;
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
@@ -3201,6 +3205,9 @@ input {
 }
 
 @media (max-width: 720px) {
+  /* Em tela estreita a tabela larga precisa rolar de lado (e aí o corte da última borda é o preço
+     inevitável do scroll container). */
+  .tabela-cartao .tabela-rolavel { overflow-x: auto; }
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
   .filtros-estoque__selects { margin-left: 0; }
