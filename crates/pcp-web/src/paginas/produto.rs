@@ -409,11 +409,11 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
     // Só o status. A contagem de ordens vive no histórico de produção, logo abaixo — repeti-la aqui
     // só polui o botão.
     let (estado, rotulo) = if em_producao {
-        ("em_producao", "Em produção")
+        ("em_producao", "Em Produção")
     } else if s.aguardando > 0 {
         ("aguardando", "Vai produzir")
     } else if s.finalizadas_recentes > 0 {
-        ("recem_produzido", "Recém produzido")
+        ("recem_produzido", "Recém Produzido")
     } else {
         ("nenhum", "Sem produção em andamento")
     };

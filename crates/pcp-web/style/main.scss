@@ -3103,13 +3103,17 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   flex-direction: column;
   gap: var(--e-3);
 }
-/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA. */
+/* Dentro do cartão-de-tabela o rolável é só um contêiner: quem vira card é cada LINHA.
+   `overflow: visible` EXPLÍCITO (não basta omitir — a regra genérica `.tabela-rolavel` define
+   `overflow-x: auto` e continuaria valendo): com overflow, este vira um SCROLL CONTAINER e corta
+   a borda de baixo do ÚLTIMO card. Junto com a borda que a regra `tr:last-child` apagava, eram as
+   DUAS causas do card cortado. O scroll horizontal do mobile volta na media query. */
 .tabela-cartao .tabela-rolavel {
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow-x: auto;
+  overflow: visible;
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
@@ -3292,6 +3296,8 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 }
 
 @media (max-width: 720px) {
+  /* Em tela estreita a tabela larga precisa rolar de lado. */
+  .tabela-cartao .tabela-rolavel { overflow-x: auto; }
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
   .filtros-estoque__selects { margin-left: 0; }
