@@ -50,6 +50,10 @@
   --peso-forte: 700;
 
   /* Espaçamento (escala 4px) */
+  /* Altura única dos controles (seletor, abas de classe, filtros): sem ela, o botão de
+     duas linhas fica mais alto que o de uma e a barra de filtros desalinha. */
+  --altura-controle: 40px;
+
   --e-1: 0.25rem;
   --e-2: 0.5rem;
   --e-3: 0.75rem;
@@ -1830,10 +1834,13 @@ input {
 /* ---- Seleção de produtos para produzir ---- */
 /* Coluna do seletor: a caixa encosta à ESQUERDA, e o padding da célula (--e-4) faz o vão da
    esquerda ficar igual ao de cima e de baixo — o mesmo respiro nos três lados. */
+/* O checkbox fica à esquerda, mas com um vão a mais: a linha tem duas linhas de texto, então o vão
+   vertical até a parede do card é maior que o padding lateral. Este acréscimo iguala os dois. */
 .tabela__sel {
-  width: 44px;
+  width: 52px;
   text-align: left;
   vertical-align: middle;
+  padding-left: calc(var(--e-4) + var(--e-2));
 }
 /* Caixa desenhada à mão (appearance: none): a nativa não aceita raio, cor nem o tique do tema. */
 .check-prod {
@@ -2614,6 +2621,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   gap: var(--e-2);
   width: 100%;
   min-width: 170px;
+  min-height: var(--altura-controle);
   padding: var(--e-2) var(--e-3);
   border: var(--cartao-borda);
   border-radius: var(--raio-md);
@@ -2963,8 +2971,10 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  justify-content: center;
+  gap: 0;
   min-width: 72px;
+  min-height: var(--altura-controle);
   padding: var(--e-1) var(--e-3);
   border: var(--cartao-borda);
   border-radius: var(--raio-md);
@@ -2989,7 +2999,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 .aba-classe__rotulo {
   font-size: var(--fs-sm);
   font-weight: var(--peso-medio);
-  line-height: 1.2;
+  line-height: 1.15;
   /* "Fora de linha" não pode quebrar em duas linhas e desalinhar a contagem abaixo. */
   white-space: nowrap;
 }
@@ -2997,7 +3007,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   font-size: var(--fs-xs);
   color: var(--texto-suave);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 .aba-classe--ativa .aba-classe__contagem { color: var(--texto); }
 
@@ -3065,7 +3075,9 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   --cor-prod: var(--borda);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--e-2);
+  min-height: var(--altura-controle);
   padding: var(--e-1) var(--e-3);
   border: 1.5px solid var(--borda);
   border-radius: var(--raio-md);
