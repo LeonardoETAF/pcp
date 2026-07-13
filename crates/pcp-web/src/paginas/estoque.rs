@@ -15,7 +15,9 @@ use crate::componentes::{EstadoVazio, Icone, PaginacaoBotoes, Seletor};
 use crate::contexto::Sessao;
 use crate::download;
 use crate::erro::mensagem_usuario;
-use crate::formato::{cor_partes, fmt_cobertura, fmt_milhar, nome_classe, rotulo_status};
+use crate::formato::{
+    badge_classe, cor_partes, fmt_cobertura, fmt_milhar, nome_classe, rotulo_status,
+};
 
 #[component]
 #[allow(clippy::too_many_lines)] // a maior parte é markup declarativo (view!), não lógica
@@ -517,13 +519,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
         .unwrap_or_else(|| i.codigo_estoque.clone());
     let href = format!("/estoque/{}", i.codigo_estoque);
     // A, B e C cabem num círculo; D, F e N viram pílula, porque carregam o nome inteiro.
-    let rotulo_classe = nome_classe(&i.classe).to_owned();
-    let forma = if rotulo_classe.chars().count() == 1 {
-        "badge--circulo"
-    } else {
-        "badge--pilula"
-    };
-    let classe_abc = format!("badge {forma} badge--abc-{}", i.classe.to_lowercase());
+    let (classe_abc, rotulo_classe) = badge_classe(&i.classe);
     let cor_st = cor_status(&i.status);
     // Sem recomendação (histórico insuficiente), o motor não tem alvo: não há nível a medir nem
     // quantidade a produzir. Uma barra vazia contra alvo zero seria uma leitura inventada (§3).

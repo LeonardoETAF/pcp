@@ -124,6 +124,34 @@ pub fn nome_classe(classe: &str) -> &str {
     }
 }
 
+/// Classe como BADGE: (classe CSS, rótulo). A/B/C são letra num círculo; D/F/N são o nome do
+/// estado numa pílula — a letra sozinha não diz nada a quem lê a tela (doc 02 §2 / §12).
+#[must_use]
+pub fn badge_classe(classe: &str) -> (String, String) {
+    let rotulo = nome_classe(classe).to_owned();
+    let forma = if rotulo.chars().count() == 1 {
+        "badge--circulo"
+    } else {
+        "badge--pilula"
+    };
+    (
+        format!("badge {forma} badge--abc-{}", classe.to_lowercase()),
+        rotulo,
+    )
+}
+
+/// Classe em destaque (título de card): "Classe A" na curva de Pareto; o nome do estado
+/// (Inativo, Fora de linha, Novo) quando a letra sozinha não diz nada.
+#[must_use]
+pub fn titulo_classe(classe: &str) -> String {
+    let nome = nome_classe(classe);
+    if nome.chars().count() == 1 {
+        format!("Classe {nome}")
+    } else {
+        nome.to_owned()
+    }
+}
+
 /// Rótulo pt-BR do status canônico (doc 02 §5.2 / §12).
 #[must_use]
 pub fn rotulo_status(codigo: &str) -> &'static str {

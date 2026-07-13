@@ -11,6 +11,7 @@ use crate::api::{alertas, AlertaResumo};
 use crate::componentes::EstadoVazio;
 use crate::contexto::Sessao;
 use crate::erro::mensagem_usuario;
+use crate::formato::badge_classe;
 
 /// Nome de exibição "{produto} - {cor}" — cor = texto após ':' da configuração (doc 02 §10).
 fn nome_exibicao(a: &AlertaResumo) -> String {
@@ -197,7 +198,7 @@ fn LinhaAlerta(a: AlertaResumo) -> impl IntoView {
     let href = format!("/estoque/{}", a.codigo_estoque);
     let nome = nome_exibicao(&a);
     let ruptura = ruptura_iminente(&a);
-    let classe_abc = format!("badge badge--abc-{}", a.classe.to_lowercase());
+    let (classe_abc, rotulo_classe) = badge_classe(&a.classe);
     let classe_prio = format!("badge badge--prio-{}", a.prioridade);
     view! {
         <article class="linha-alerta">
@@ -211,7 +212,7 @@ fn LinhaAlerta(a: AlertaResumo) -> impl IntoView {
                     .then(|| view! { <span class="pill-ruptura">"Ruptura iminente"</span> })}
             </div>
             <div class="linha-alerta__metricas">
-                <span class=classe_abc>{a.classe.clone()}</span>
+                <span class=classe_abc>{rotulo_classe.clone()}</span>
                 <Metrica rotulo="Cobertura" valor=format!("{:.1}", a.cobertura_dias) />
                 <Metrica rotulo="Sugerido" valor=a.qtd_sugerida.to_string() />
                 <A href=href attr:class="btn btn--secundario linha-alerta__link">

@@ -13,7 +13,7 @@ use crate::api::{
 use crate::componentes::{Icone, PaginacaoBotoes};
 use crate::contexto::Sessao;
 use crate::erro::mensagem_usuario;
-use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao};
+use crate::formato::{fmt_cobertura, fmt_milhar, nome_exibicao, titulo_classe};
 
 #[component]
 pub fn DetalheProdutoPagina() -> impl IntoView {
@@ -206,7 +206,7 @@ fn cards_resumo(m: &MetricasProduto, classe: &str, insights: Option<&Insights>) 
                     <span class="card-resumo__titulo">"Performance"</span>
                     <span class="card-resumo__chip">{format!("{}/dia", fmt_media(m.media_diaria))}</span>
                 </header>
-                <span class="card-resumo__valor">{format!("Classe {classe}")}</span>
+                <span class="card-resumo__valor">{titulo_classe(classe)}</span>
                 <span class="card-resumo__sub">
                     {format!("Volume Anual: {}", fmt_milhar(m.volume_janela))}
                 </span>

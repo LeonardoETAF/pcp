@@ -12,7 +12,8 @@ use crate::api::{
 use crate::contexto::Sessao;
 use crate::erro::mensagem_usuario;
 use crate::formato::{
-    cor_status, fmt_cobertura, fmt_compacto, fmt_dec1, fmt_milhar, nome_exibicao, rotulo_status,
+    badge_classe, cor_status, fmt_cobertura, fmt_compacto, fmt_dec1, fmt_milhar, nome_classe,
+    nome_exibicao, rotulo_status,
 };
 
 /// Cor de criticidade do KPI (doc 02 §9.2): vermelho/amarelo conforme o threshold.
@@ -305,9 +306,7 @@ fn MetaFisica(c: ClasseResumo) -> impl IntoView {
     };
     view! {
         <div class="meta-fisica">
-            <span class=format!("badge badge--abc-{}", c.classe.to_lowercase())>
-                {c.classe.clone()}
-            </span>
+            <span class=badge_classe(&c.classe).0>{badge_classe(&c.classe).1}</span>
             <div class="meta-fisica__trilho">
                 <span class="meta-fisica__preenche" style=format!("width:{largura}%")></span>
                 {(!sem_meta)
@@ -510,7 +509,7 @@ fn Ring(classe: String, frac: f64, cor: String, valor: String) -> impl IntoView 
                 />
                 <text x="32" y="37" class="ring__num">{valor}</text>
             </svg>
-            <span class="ring__classe">{classe}</span>
+            <span class="ring__classe">{nome_classe(&classe).to_owned()}</span>
         </div>
     }
 }
@@ -686,9 +685,7 @@ fn LinhaProduzir(i: LinhaEstoque) -> impl IntoView {
             </td>
             <td>{nome}</td>
             <td>
-                <span class=format!("badge badge--abc-{}", i.classe.to_lowercase())>
-                    {i.classe.clone()}
-                </span>
+                <span class=badge_classe(&i.classe).0>{badge_classe(&i.classe).1}</span>
             </td>
             <td class="tabela__num">{fmt_milhar(i.qtd_disponivel)}</td>
             <td class="tabela__num">{fmt_milhar(i.estoque_total_recomendado)}</td>

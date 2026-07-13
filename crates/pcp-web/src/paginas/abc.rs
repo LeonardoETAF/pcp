@@ -16,7 +16,7 @@ use crate::componentes::Seletor;
 use crate::contexto::Sessao;
 use crate::download;
 use crate::erro::mensagem_usuario;
-use crate::formato::{fmt_milhar, rotulo_status};
+use crate::formato::{badge_classe, fmt_milhar, rotulo_status};
 
 #[component]
 pub fn ClassificacaoAbc() -> impl IntoView {
@@ -389,16 +389,13 @@ fn LinhaTabela(l: LinhaAbc) -> impl IntoView {
         .percentual_acumulado
         .map_or_else(|| "—".to_owned(), |p| format!("{p:.1}%").replace('.', ","));
     let cor_st = cor_status_abc(&l.status);
-    let badge_cl = format!(
-        "badge badge--circulo badge--abc-{}",
-        l.classe.to_lowercase()
-    );
+    let (badge_cl, rotulo_cl) = badge_classe(&l.classe);
     view! {
         <tr>
             <td class="tabela__cod">{l.codigo_estoque.clone()}</td>
             <td>{nome}</td>
             <td>
-                <span class=badge_cl>{l.classe.clone()}</span>
+                <span class=badge_cl>{rotulo_cl.clone()}</span>
             </td>
             <td class="tabela__num tabela__produzir">{fmt_milhar(l.volume_janela)}</td>
             <td class="tabela__num texto-suave">{pct}</td>
