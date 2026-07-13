@@ -2091,6 +2091,7 @@ input {
 .prod-status__btn--aguardando,
 .prod-status__btn--recem_produzido {
   border-color: var(--cor-prod);
+  background: color-mix(in srgb, var(--cor-prod) 12%, var(--superficie));
   color: var(--texto);
 }
 .prod-status__btn--em_producao .prod-status__ponto,
@@ -2099,17 +2100,16 @@ input {
   background: var(--cor-prod);
 }
 
-/* Linha da lista colorida pelo estado de produção do item.
+/* Linha da lista colorida pelo estado de produção do item: borda na cor do estado e fundo com a
+   MESMA cor, translúcida (color-mix sobre a superfície — o tom sai do token, sem hex duplicado).
    O seletor precisa ser MAIS específico que `.tabela-cartao .tabela tbody td` (0,2,2), que define
-   a borda pelo shorthand (cor incluída) — senão a cor nunca aparece. Daqui sai (0,3,2). */
-.tabela-cartao .tabela tbody tr.linha-prod--em_producao td {
-  border-color: var(--semaforo-info);
-}
-.tabela-cartao .tabela tbody tr.linha-prod--aguardando td {
-  border-color: var(--semaforo-alto);
-}
-.tabela-cartao .tabela tbody tr.linha-prod--recem_produzido td {
-  border-color: var(--semaforo-ok);
+   borda e fundo pelo shorthand — senão nada disso aparece. Daqui sai (0,3,3). */
+tr.linha-prod--em_producao { --cor-prod: var(--semaforo-info); }
+tr.linha-prod--aguardando { --cor-prod: var(--semaforo-alto); }
+tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
+.tabela-cartao .tabela tbody tr.linha-prod td {
+  border-color: var(--cor-prod);
+  background: color-mix(in srgb, var(--cor-prod) 8%, var(--superficie));
 }
 
 .prod-status__btn--ativo:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
@@ -2861,6 +2861,7 @@ input {
    realce vem só da cor da borda e do peso do rótulo — a espessura fica igual à das inativas. */
 .aba-classe--ativa {
   border-color: var(--texto);
+  background: color-mix(in srgb, var(--texto) 7%, var(--superficie));
   color: var(--texto);
 }
 .aba-classe--ativa .aba-classe__rotulo { font-weight: var(--peso-forte); }
@@ -2963,9 +2964,10 @@ input {
 .filtro-prod--aguardando { --cor-prod: var(--semaforo-alto); }
 .filtro-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 .filtro-prod:hover { border-color: var(--cor-prod); color: var(--texto); }
-/* Ativo: a borda assume a cor do estado e o rótulo ganha peso. */
+/* Ativo: borda na cor do estado e fundo com a mesma cor, translúcido. */
 .filtro-prod--ativo {
   border-color: var(--cor-prod);
+  background: color-mix(in srgb, var(--cor-prod) 14%, var(--superficie));
   color: var(--texto);
   font-weight: var(--peso-medio);
 }
