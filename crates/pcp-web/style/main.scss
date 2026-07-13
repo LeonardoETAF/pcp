@@ -3091,11 +3091,13 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   cursor: pointer;
   transition: border-color var(--transicao), color var(--transicao);
 }
-/* Quadrado de pontas arredondadas (não círculo): o mesmo desenho do resto do sistema. */
+/* Quadrado de pontas arredondadas (não círculo). Em `em`, não em px: 1em é exatamente a altura da
+   caixa do texto (o botão tem line-height: 1), então o quadrado tem a MESMA altura das letras — e
+   acompanha sozinho se a fonte do botão mudar. */
 .filtro-prod__ponto {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
+  width: 1em;
+  height: 1em;
+  border-radius: 0.25em;
   flex-shrink: 0;
   background: var(--cor-prod);
 }
