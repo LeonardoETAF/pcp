@@ -218,8 +218,10 @@ input {
   border-radius: var(--raio-md);
   transition: border-color var(--transicao), box-shadow var(--transicao);
 }
-/* Foco padrão de TODO controle do sistema: só a borda se destaca. Um bloco só, para não haver
-   duas linguagens de foco convivendo. O login tem paleta própria e mantém o seu. */
+/* Foco padrão de TODO controle do sistema: só a BORDA se destaca — sem anel. O anel (box-shadow)
+   somava 1px à borda e o controle focado ficava visivelmente mais grosso que os vizinhos (a barra
+   de busca contra os botões de classe). Todos estes controles TÊM borda (o .btn a tem
+   transparente), então escurecê-la mantém o foco bem visível, com a espessura intacta. */
 .input:focus-visible,
 .seletor__botao:focus-visible,
 .btn:focus-visible,
@@ -227,7 +229,6 @@ input {
 .aba-classe:focus-visible {
   outline: none;
   border-color: var(--texto);
-  box-shadow: var(--foco-anel);
 }
 
 .badge {
