@@ -6,13 +6,13 @@ use axum::{Extension, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use pcp_db::usuarios;
+use sf_db::usuarios;
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
-use crate::papel::Papel;
-use crate::senha;
+use sf_auth::hashear;
+use sf_auth::Claims;
+use sf_auth::Papel;
+use sf_http::ApiError;
 
 /// `GET /pcp/me` — dados do usuário autenticado (qualquer papel).
 #[allow(clippy::unused_async)] // handler assíncrono exigido pelo Axum
@@ -76,7 +76,7 @@ pub async fn criar_usuario(
     {
         return Err(ApiError::Conflito("e-mail já cadastrado".into()));
     }
-    let hash = senha::hashear(&req.senha)?;
+    let hash = hashear(&req.senha)?;
     let usuario = usuarios::criar(
         &estado.pool,
         &email,

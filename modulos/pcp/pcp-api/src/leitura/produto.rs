@@ -11,9 +11,9 @@ use pcp_config::Config;
 use pcp_core::{aprovacao_automatica, recomendar_producao, EntradaRecomendacao};
 use pcp_db::detalhe::{self, DetalheProduto, PontoSerie};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
 use crate::recomendacao;
+use sf_http::ApiError;
 
 #[derive(Serialize)]
 pub struct RegraClasseDto {

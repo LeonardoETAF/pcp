@@ -4,8 +4,8 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-use crate::erro::ApiError;
 use crate::papel::Papel;
+use sf_http::ApiError;
 
 /// Claims do token de acesso. `sub` = id do usuário; `iat`/`exp` em segundos Unix.
 #[derive(Debug, Clone, Serialize, Deserialize)]

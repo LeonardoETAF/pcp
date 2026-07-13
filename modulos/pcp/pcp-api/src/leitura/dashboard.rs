@@ -7,8 +7,8 @@ use serde::Serialize;
 
 use pcp_db::leituras::{self, Contagem};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 #[derive(Serialize)]
 pub struct ContagemDto {

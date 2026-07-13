@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(*) FROM pcp.usuario",
+  "query": "SELECT COUNT(*) FROM nucleo.usuario",
   "describe": {
     "columns": [
       {
@@ -17,5 +17,5 @@
       null
     ]
   },
-  "hash": "c485366dc817a6ef8df8042868cfa173513627cc6cf93c434001dac7d76908c3"
+  "hash": "a32e2428512f2e94c498d4e074605ddf3c852cb04251fbd614067eed0d8bc8d2"
 }

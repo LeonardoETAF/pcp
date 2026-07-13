@@ -10,8 +10,8 @@ use serde::Deserialize;
 use pcp_db::leituras::{self, FiltroEstoque, LinhaEstoque};
 
 use super::estoque::LinhaEstoqueDto;
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 #[derive(Deserialize)]
 pub struct ParamsExport {

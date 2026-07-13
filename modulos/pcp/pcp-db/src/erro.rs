@@ -1,15 +1,6 @@
-//! Erros tipados do acesso a dados (CLAUDE.md §5).
+//! Erro de banco do módulo PCP.
+//!
+//! É o **mesmo** erro do núcleo — reexportado, nunca redefinido: duas versões do mesmo
+//! conceito convivendo é exatamente o que o CLAUDE.md §13 proíbe.
 
-use thiserror::Error;
-
-/// Falhas das operações de banco do PCP.
-#[derive(Debug, Error)]
-pub enum ErroDb {
-    /// Erro vindo do driver/consulta `SQLx`.
-    #[error("erro de banco: {0}")]
-    Sqlx(#[from] sqlx::Error),
-
-    /// Erro ao aplicar migrations versionadas.
-    #[error("erro ao aplicar migrations: {0}")]
-    Migracao(#[from] sqlx::migrate::MigrateError),
-}
+pub use sf_db::ErroDb;

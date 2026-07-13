@@ -13,10 +13,10 @@ use uuid::Uuid;
 
 use pcp_db::config_persist::{self, MudancaConfig};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
-use crate::papel::Papel;
+use sf_auth::Claims;
+use sf_auth::Papel;
+use sf_http::ApiError;
 
 /// `GET /pcp/config` — configuração de negócio vigente (autenticado).
 #[allow(clippy::unused_async)] // handler assíncrono exigido pelo Axum

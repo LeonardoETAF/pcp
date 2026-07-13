@@ -8,8 +8,8 @@ use serde::Serialize;
 
 use pcp_db::atividade_produto as ativ;
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 /// Quantas linhas de cada histórico devolver (a tela mostra as mais recentes).
 const LIMITE_MOVIMENTOS: i64 = 60;

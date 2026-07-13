@@ -4,13 +4,13 @@
 use axum::routing::{delete, get, post};
 use axum::Router;
 
-use crate::autenticacao::exigir_autenticacao;
 use crate::estado::AppState;
 use crate::leitura;
 use crate::{
     ciclo_vida, config, filtros_salvos, handlers_auth, handlers_pcp, preferencias, sazonalidade,
     solicitacoes, usuarios,
 };
+use sf_auth::exigir_autenticacao;
 
 /// Constrói o roteador completo da API.
 pub fn rotas(estado: AppState) -> Router {
@@ -88,9 +88,11 @@ pub fn rotas(estado: AppState) -> Router {
             post(leitura::operacao::reprocessar),
         )
         .route("/pcp/eventos", get(leitura::eventos::eventos))
+        // Deny-by-default (§7.1): o middleware do núcleo protege TODO o subgrupo `/pcp`.
+        // O `AppState` do módulo é quem entrega o segredo (via `FromRef` — ver estado.rs).
         .route_layer(axum::middleware::from_fn_with_state(
             estado.clone(),
-            exigir_autenticacao,
+            exigir_autenticacao::<AppState>,
         ));
 
     let publicas = Router::new()

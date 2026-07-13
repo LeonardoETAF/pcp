@@ -10,10 +10,10 @@ use uuid::Uuid;
 use pcp_core::ciclo_vida::{transicionar, EstadoCicloVida};
 use pcp_db::ciclo_vida::{self, SugestaoCicloVida};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
-use crate::papel::Papel;
+use sf_auth::Claims;
+use sf_auth::Papel;
+use sf_http::ApiError;
 
 #[derive(Serialize)]
 pub struct SugestaoDto {

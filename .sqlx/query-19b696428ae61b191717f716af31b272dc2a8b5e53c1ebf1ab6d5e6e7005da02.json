@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email, senha_hash, papel, nome, ativo, criado_em FROM pcp.usuario WHERE email = $1",
+  "query": "INSERT INTO nucleo.usuario (email, senha_hash, papel, nome) VALUES ($1, $2, $3, $4) RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "email"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "senha_hash"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "papel"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "nome"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "ativo"
           }
         }
@@ -75,7 +75,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "criado_em"
           }
         }
@@ -83,6 +83,9 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
+        "Text",
         "Text"
       ]
     },
@@ -96,5 +99,5 @@
       false
     ]
   },
-  "hash": "fb1db9bacf8cfe2933325a9ab8b2b94e5558de7f4327d151abdc8906f27f1f88"
+  "hash": "19b696428ae61b191717f716af31b272dc2a8b5e53c1ebf1ab6d5e6e7005da02"
 }

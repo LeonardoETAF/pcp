@@ -1,0 +1,19 @@
+[package]
+name = "sf-auth"
+description = "Núcleo do SuperFlow: autenticação (argon2 + JWT + refresh) e autorização por papel."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+sf-http = { path = "../sf-http" }
+axum = "0.8"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+serde = { version = "1", features = ["derive"] }
+jsonwebtoken = "9"
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+sha2 = "0.10"
+hex = "0.4"

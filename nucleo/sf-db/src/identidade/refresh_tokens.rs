@@ -1,4 +1,4 @@
-//! Repositório de refresh tokens revogáveis (`pcp.refresh_token`). Guarda apenas o hash.
+//! Repositório de refresh tokens revogáveis (`nucleo.refresh_token`). Guarda apenas o hash.
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
@@ -28,7 +28,7 @@ pub async fn criar(
     expira_em: DateTime<Utc>,
 ) -> Result<(), ErroDb> {
     sqlx::query!(
-        "INSERT INTO pcp.refresh_token (usuario_id, token_hash, expira_em) VALUES ($1, $2, $3)",
+        "INSERT INTO nucleo.refresh_token (usuario_id, token_hash, expira_em) VALUES ($1, $2, $3)",
         usuario_id,
         token_hash,
         expira_em,
@@ -49,7 +49,7 @@ pub async fn buscar_valido(
     let token = sqlx::query_as!(
         RefreshToken,
         "SELECT id, usuario_id, token_hash, expira_em, revogado, criado_em \
-         FROM pcp.refresh_token \
+         FROM nucleo.refresh_token \
          WHERE token_hash = $1 AND revogado = false AND expira_em > now()",
         token_hash,
     )
@@ -64,7 +64,7 @@ pub async fn buscar_valido(
 /// [`ErroDb::Sqlx`] em falha de banco.
 pub async fn revogar(pool: &PgPool, token_hash: &str) -> Result<(), ErroDb> {
     sqlx::query!(
-        "UPDATE pcp.refresh_token SET revogado = true WHERE token_hash = $1",
+        "UPDATE nucleo.refresh_token SET revogado = true WHERE token_hash = $1",
         token_hash,
     )
     .execute(pool)

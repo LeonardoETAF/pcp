@@ -21,7 +21,7 @@ async fn preparar() -> (PgPool, Config) {
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
 
-    let caminho = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../config/pcp.config.yaml");
+    let caminho = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../config/pcp.config.yaml");
     let config = pcp_config::carregar_de_arquivo(caminho).expect("config de referência");
 
     limpar(&pool).await;

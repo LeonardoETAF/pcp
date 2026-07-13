@@ -64,7 +64,7 @@ async fn paridade_com_dump_do_legado() {
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
     let config = pcp_config::carregar_de_arquivo(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../config/pcp.config.yaml"),
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../config/pcp.config.yaml"),
     )
     .expect("config");
 

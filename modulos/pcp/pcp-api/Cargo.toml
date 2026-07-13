@@ -8,6 +8,10 @@ authors.workspace = true
 publish.workspace = true
 
 [dependencies]
+# Núcleo comum do SuperFlow (CLAUDE.md §0): auth, erro HTTP e infra de dados.
+sf-db = { path = "../../../nucleo/sf-db" }
+sf-auth = { path = "../../../nucleo/sf-auth" }
+sf-http = { path = "../../../nucleo/sf-http" }
 pcp-core = { path = "../pcp-core" }
 pcp-db = { path = "../pcp-db" }
 pcp-config = { path = "../pcp-config" }
@@ -25,11 +29,6 @@ thiserror = "1"
 anyhow = "1"
 # `serde` necessário: a API serializa `NaiveDate` (ex.: DashboardDto.data_ref).
 chrono = { version = "0.4", features = ["serde"] }
-jsonwebtoken = "9"
-argon2 = "0.5"
-rand_core = { version = "0.6", features = ["getrandom"] }
-sha2 = "0.10"
-hex = "0.4"
 dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

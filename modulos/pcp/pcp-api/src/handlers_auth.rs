@@ -6,12 +6,12 @@ use axum::Json;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use pcp_db::{refresh_tokens, usuarios};
+use sf_db::{refresh_tokens, usuarios};
 
-use crate::autenticacao::{gerar_refresh, hash_refresh};
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::{jwt, senha};
+use sf_auth::{gerar_access, verificar};
+use sf_auth::{gerar_refresh, hash_refresh};
+use sf_http::ApiError;
 
 #[derive(Deserialize)]
 pub struct LoginReq {
@@ -49,10 +49,10 @@ pub async fn login(
         .await?
         .filter(|u| u.ativo)
         .ok_or(ApiError::CredenciaisInvalidas)?;
-    if !senha::verificar(&req.senha, &usuario.senha_hash) {
+    if !verificar(&req.senha, &usuario.senha_hash) {
         return Err(ApiError::CredenciaisInvalidas);
     }
-    let access = jwt::gerar_access(
+    let access = gerar_access(
         &usuario.id.to_string(),
         &usuario.papel,
         &estado.jwt_secret,
@@ -88,7 +88,7 @@ pub async fn refresh(
         .await?
         .filter(|u| u.ativo)
         .ok_or(ApiError::NaoAutenticado)?;
-    let access = jwt::gerar_access(
+    let access = gerar_access(
         &usuario.id.to_string(),
         &usuario.papel,
         &estado.jwt_secret,

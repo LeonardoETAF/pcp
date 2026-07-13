@@ -9,9 +9,9 @@ use uuid::Uuid;
 
 use pcp_db::filtros_salvos;
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
+use sf_auth::Claims;
+use sf_http::ApiError;
 
 #[derive(Serialize)]
 pub struct FiltroSalvoDto {

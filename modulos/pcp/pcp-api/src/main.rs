@@ -17,7 +17,13 @@ async fn main() -> anyhow::Result<()> {
     let cfg = ConfigApi::do_ambiente()?;
     let yaml = pcp_config::carregar_de_arquivo(&cfg.config_path)?;
     let pool = pcp_db::criar_pool(&cfg.database_url, 10).await?;
+    // ORDEM IMPORTA: o módulo primeiro, o núcleo depois.
+    // A migration 0004 do PCP ainda é quem CRIA `pcp.usuario` (histórico já aplicado em
+    // produção — não dá para reescrevê-la sem quebrar o checksum). A migration do núcleo
+    // então MOVE essa tabela para `nucleo.*`. Rodar o núcleo antes, num banco novo, não
+    // encontraria nada para mover. Ver nucleo/migrations/0001_identidade.sql.
     pcp_db::aplicar_migrations(&pool).await?;
+    sf_db::aplicar_migrations_nucleo(&pool).await?;
     // Config efetiva: a persistida no banco (se houver) tem prioridade sobre o YAML default.
     let config = std::sync::Arc::new(config_efetiva(&pool, yaml).await);
 

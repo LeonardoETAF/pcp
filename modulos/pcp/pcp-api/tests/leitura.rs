@@ -14,8 +14,9 @@ use serde_json::Value;
 use tower::ServiceExt; // .oneshot
 use uuid::Uuid;
 
-use pcp_api::{rotas, senha, AppState};
-use pcp_db::usuarios;
+use pcp_api::{rotas, AppState};
+use sf_auth::hashear;
+use sf_db::usuarios;
 
 const SEGREDO: &[u8] = b"segredo-de-teste-com-mais-de-32-bytes!!";
 
@@ -24,10 +25,14 @@ async fn estado_de_teste() -> AppState {
         .expect("defina TEST_DATABASE_URL (banco de teste dedicado — nunca o de desenvolvimento)");
     let pool = pcp_db::criar_pool(&url, 5).await.expect("pool");
     pcp_db::aplicar_migrations(&pool).await.expect("migrations");
+    // Núcleo depois do módulo — ver pcp-api/src/main.rs.
+    sf_db::aplicar_migrations_nucleo(&pool)
+        .await
+        .expect("migrations do núcleo");
     let config = std::sync::Arc::new(
         pcp_config::carregar_de_arquivo(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../config/pcp.config.yaml"
+            "/../../../config/pcp.config.yaml"
         ))
         .expect("config de negócio"),
     );
@@ -96,7 +101,7 @@ async fn semear(estado: &AppState) {
 
 async fn token_analista(estado: &AppState) -> String {
     let email = format!("leit-{}@teste.local", Uuid::new_v4());
-    let hash = senha::hashear("senha-de-teste-123").unwrap();
+    let hash = hashear("senha-de-teste-123").unwrap();
     usuarios::criar(&estado.pool, &email, &hash, "analista", Some("Teste"))
         .await
         .unwrap();
@@ -118,7 +123,7 @@ async fn token_analista(estado: &AppState) -> String {
     let token = v["access_token"].as_str().unwrap().to_owned();
     // Limpeza: o token é stateless (sobrevive), então removemos já o usuário de teste (CASCADE
     // limpa o refresh token) — nada de resíduo no banco, seguro entre testes paralelos.
-    sqlx::query("DELETE FROM pcp.usuario WHERE email = $1")
+    sqlx::query("DELETE FROM nucleo.usuario WHERE email = $1")
         .bind(&email)
         .execute(&estado.pool)
         .await

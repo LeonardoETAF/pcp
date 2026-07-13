@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE nucleo.refresh_token SET revogado = true WHERE token_hash = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "753c2f5802b7f87347d025d9c4daa673a0f0b37354b7fae34c7b03fea56f7f16"
+}

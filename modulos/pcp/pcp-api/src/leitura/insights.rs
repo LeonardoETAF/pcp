@@ -9,8 +9,8 @@ use chrono::Duration;
 use pcp_ai::{analisar, ContextoProduto, Insights, PontoVenda};
 use pcp_db::detalhe;
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 /// Janela de histórico para os insights (1 ano — sazonalidade e qualidade de dados, §3.3).
 const JANELA_DIAS: i64 = 364;

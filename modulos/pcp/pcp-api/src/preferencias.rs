@@ -7,9 +7,9 @@ use uuid::Uuid;
 
 use pcp_db::preferencias::{self, Preferencia};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
+use sf_auth::Claims;
+use sf_http::ApiError;
 
 /// Páginas iniciais permitidas (rotas existentes).
 const PAGINAS: [&str; 4] = ["dashboard", "estoque", "alertas", "abc"];

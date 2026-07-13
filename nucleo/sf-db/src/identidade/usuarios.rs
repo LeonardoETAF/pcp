@@ -1,5 +1,5 @@
-//! Repositório de usuários (`pcp.usuario`). Persistência pura — a regra de papéis/auth
-//! vive no `pcp-api` (CLAUDE.md §7). O `papel` é guardado como texto (CHECK no banco).
+//! Repositório de usuários (`nucleo.usuario`). Persistência pura — a regra de papéis/auth
+//! vive no `sf-auth` (CLAUDE.md §7). O `papel` é guardado como texto (CHECK no banco).
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
@@ -32,7 +32,7 @@ pub async fn criar(
 ) -> Result<Usuario, ErroDb> {
     let usuario = sqlx::query_as!(
         Usuario,
-        "INSERT INTO pcp.usuario (email, senha_hash, papel, nome) VALUES ($1, $2, $3, $4) \
+        "INSERT INTO nucleo.usuario (email, senha_hash, papel, nome) VALUES ($1, $2, $3, $4) \
          RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
         email,
         senha_hash,
@@ -52,7 +52,7 @@ pub async fn buscar_por_email(pool: &PgPool, email: &str) -> Result<Option<Usuar
     let usuario = sqlx::query_as!(
         Usuario,
         "SELECT id, email, senha_hash, papel, nome, ativo, criado_em \
-         FROM pcp.usuario WHERE email = $1",
+         FROM nucleo.usuario WHERE email = $1",
         email,
     )
     .fetch_optional(pool)
@@ -68,7 +68,7 @@ pub async fn buscar_por_id(pool: &PgPool, id: Uuid) -> Result<Option<Usuario>, E
     let usuario = sqlx::query_as!(
         Usuario,
         "SELECT id, email, senha_hash, papel, nome, ativo, criado_em \
-         FROM pcp.usuario WHERE id = $1",
+         FROM nucleo.usuario WHERE id = $1",
         id,
     )
     .fetch_optional(pool)
@@ -81,7 +81,7 @@ pub async fn buscar_por_id(pool: &PgPool, id: Uuid) -> Result<Option<Usuario>, E
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco.
 pub async fn contar(pool: &PgPool) -> Result<i64, ErroDb> {
-    let total = sqlx::query_scalar!("SELECT COUNT(*) FROM pcp.usuario")
+    let total = sqlx::query_scalar!("SELECT COUNT(*) FROM nucleo.usuario")
         .fetch_one(pool)
         .await?;
     Ok(total.unwrap_or(0))
@@ -95,7 +95,7 @@ pub async fn listar(pool: &PgPool) -> Result<Vec<Usuario>, ErroDb> {
     let linhas = sqlx::query_as!(
         Usuario,
         "SELECT id, email, senha_hash, papel, nome, ativo, criado_em \
-         FROM pcp.usuario ORDER BY email",
+         FROM nucleo.usuario ORDER BY email",
     )
     .fetch_all(pool)
     .await?;
@@ -114,7 +114,7 @@ pub async fn atualizar(
 ) -> Result<Option<Usuario>, ErroDb> {
     let u = sqlx::query_as!(
         Usuario,
-        "UPDATE pcp.usuario SET papel = $2, ativo = $3, atualizado_em = now() \
+        "UPDATE nucleo.usuario SET papel = $2, ativo = $3, atualizado_em = now() \
          WHERE id = $1 RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
         id,
         papel,

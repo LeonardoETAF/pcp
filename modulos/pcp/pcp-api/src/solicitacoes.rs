@@ -15,11 +15,11 @@ use pcp_core::solicitacao::estado::transicionar;
 use pcp_core::{aprovacao_automatica, EstadoSolicitacao, PrioridadeProducao};
 use pcp_db::solicitacoes::{self, NovaSolicitacao, Solicitacao};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
-use crate::papel::Papel;
 use crate::recomendacao;
+use sf_auth::Claims;
+use sf_auth::Papel;
+use sf_http::ApiError;
 
 #[derive(Serialize)]
 pub struct SolicitacaoDto {

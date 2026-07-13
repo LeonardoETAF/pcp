@@ -1,0 +1,15 @@
+[package]
+name = "sf-http"
+description = "Núcleo do SuperFlow: erro de API mapeado para HTTP, compartilhado por todos os módulos."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+sf-db = { path = "../sf-db" }
+axum = "0.8"
+serde_json = "1"
+thiserror = "1"
+tracing = "0.1"

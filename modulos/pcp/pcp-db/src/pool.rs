@@ -1,32 +1,24 @@
-//! Criação do pool de conexões Postgres.
+//! Pool de conexões do módulo PCP.
+//!
+//! A criação do pool é infra do núcleo ([`sf_db::criar_pool`]); aqui só se fixa o
+//! `search_path` do PCP: `public` primeiro (onde vive o `_sqlx_migrations` deste módulo),
+//! depois `nucleo` (identidade) e `pcp` (tabelas do módulo).
 
-use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::postgres::PgPool;
 
 use crate::erro::ErroDb;
 
-/// Cria um pool de conexões Postgres a partir da URL informada.
+/// `search_path` do módulo PCP. As tabelas são sempre referenciadas com schema explícito;
+/// a ordem aqui só decide onde nascem objetos não qualificados (ex.: `_sqlx_migrations`).
+const SEARCH_PATH: &str = "public, nucleo, pcp";
+
+/// Cria o pool de conexões do PCP a partir da URL informada.
 ///
 /// A URL deve vir de configuração/ambiente (ex.: `DATABASE_URL`), nunca hardcoded
 /// (CLAUDE.md §7.4).
 ///
-/// Fixa o `search_path` em `public, pcp` para que o controle de migrations
-/// (`_sqlx_migrations`, não qualificado) viva sempre em `public` — independente do nome do
-/// role. As tabelas do módulo são sempre referenciadas como `pcp.*` (CLAUDE.md §0).
-///
 /// # Errors
 /// [`ErroDb::Sqlx`] se a conexão inicial ao banco falhar.
 pub async fn criar_pool(database_url: &str, max_conexoes: u32) -> Result<PgPool, ErroDb> {
-    let pool = PgPoolOptions::new()
-        .max_connections(max_conexoes)
-        .after_connect(|conn, _meta| {
-            Box::pin(async move {
-                sqlx::query("SET search_path TO public, pcp")
-                    .execute(&mut *conn)
-                    .await?;
-                Ok(())
-            })
-        })
-        .connect(database_url)
-        .await?;
-    Ok(pool)
+    sf_db::criar_pool(database_url, max_conexoes, SEARCH_PATH).await
 }

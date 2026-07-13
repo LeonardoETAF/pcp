@@ -42,11 +42,11 @@ pub async fn expurgar(pool: &PgPool) -> Result<Vec<(String, u64)>, ErroDb> {
     }
 
     // Higiene de segurança (§7): refresh tokens vencidos (retenção por expiração, não por idade).
-    let tokens = sqlx::query("DELETE FROM pcp.refresh_token WHERE expira_em < now()")
+    let tokens = sqlx::query("DELETE FROM nucleo.refresh_token WHERE expira_em < now()")
         .execute(pool)
         .await?
         .rows_affected();
-    resultado.push(("pcp.refresh_token".to_owned(), tokens));
+    resultado.push(("nucleo.refresh_token".to_owned(), tokens));
 
     Ok(resultado)
 }

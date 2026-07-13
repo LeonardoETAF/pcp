@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE pcp.usuario SET papel = $2, ativo = $3, atualizado_em = now() WHERE id = $1 RETURNING id, email, senha_hash, papel, nome, ativo, criado_em",
+  "query": "SELECT id, email, senha_hash, papel, nome, ativo, criado_em FROM nucleo.usuario WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "email"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "senha_hash"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "papel"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "nome"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "ativo"
           }
         }
@@ -75,7 +75,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "usuario",
+            "table": "nucleo.usuario",
             "name": "criado_em"
           }
         }
@@ -83,9 +83,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text",
-        "Bool"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -98,5 +96,5 @@
       false
     ]
   },
-  "hash": "7e11ac7cc67db96353690e3fc969574c45635e09fb95201e4b1bd1467c6ea114"
+  "hash": "94d611bd7f57e12dcca1f2083ff42b44e3ad0f74ef6472ade2a1fdd34c1a8566"
 }

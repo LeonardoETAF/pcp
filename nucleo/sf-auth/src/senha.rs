@@ -4,7 +4,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use rand_core::OsRng;
 
-use crate::erro::ApiError;
+use sf_http::ApiError;
 
 /// Gera o hash argon2id de uma senha, com sal aleatório.
 ///

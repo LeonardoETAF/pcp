@@ -1,9 +1,10 @@
 //! Bootstrap do admin inicial a partir do ambiente (CLAUDE.md §7.3/§7.4).
 
-use pcp_db::{usuarios, PgPool};
+use pcp_db::PgPool;
+use sf_db::usuarios;
 
 use crate::estado::ErroBootstrap;
-use crate::senha;
+use sf_auth::hashear;
 
 /// Cria um admin inicial se ainda não houver nenhum usuário. A senha vem do ambiente.
 ///
@@ -17,7 +18,7 @@ pub async fn garantir_admin_inicial(
     if usuarios::contar(pool).await? > 0 {
         return Ok(());
     }
-    let hash = senha::hashear(senha_clara).map_err(|_| ErroBootstrap::Hashing)?;
+    let hash = hashear(senha_clara).map_err(|_| ErroBootstrap::Hashing)?;
     let email = email.trim().to_lowercase();
     usuarios::criar(pool, &email, &hash, "admin", Some("Admin inicial")).await?;
     tracing::info!(%email, "admin inicial criado");

@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use pcp_db::leituras::{self, FiltroEstoque, LinhaEstoque};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 /// Tamanho de página padrão e teto (doc 03 §3.4: até 1000 por página; paginação no servidor).
 const LIMITE_PADRAO: i64 = 50;

@@ -12,10 +12,10 @@ use serde_json::{json, Value};
 
 use pcp_db::operacao::{self, MetricasSaude, RegistroExecucao};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
-use crate::jwt::Claims;
-use crate::papel::Papel;
+use sf_auth::Claims;
+use sf_auth::Papel;
+use sf_http::ApiError;
 
 /// Limite de segurança do intervalo de reprocesso (evita varreduras gigantes acidentais).
 const MAX_DIAS_REPROCESSO: i64 = 92;

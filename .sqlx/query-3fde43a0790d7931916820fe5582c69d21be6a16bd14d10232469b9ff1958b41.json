@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO pcp.refresh_token (usuario_id, token_hash, expira_em) VALUES ($1, $2, $3)",
+  "query": "INSERT INTO nucleo.refresh_token (usuario_id, token_hash, expira_em) VALUES ($1, $2, $3)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "0e07fb58fe555055c9be477bc640d5f0e9c570413cd116d18d2fd2eb2510c2db"
+  "hash": "3fde43a0790d7931916820fe5582c69d21be6a16bd14d10232469b9ff1958b41"
 }

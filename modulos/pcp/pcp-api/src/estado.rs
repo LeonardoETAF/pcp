@@ -4,8 +4,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
+use axum::extract::FromRef;
 use chrono::Duration;
 use pcp_db::PgPool;
+use sf_auth::SegredoJwt;
 use tokio::sync::broadcast;
 
 /// Capacidade do canal de eventos em tempo real (SSE — §16); receptores lentos só perdem eventos.
@@ -51,6 +53,12 @@ impl AppState {
         self.config.load_full()
     }
 
+    /// Segredo do JWT, para o middleware genérico do núcleo.
+    #[must_use]
+    pub fn segredo_jwt(&self) -> SegredoJwt {
+        SegredoJwt(Arc::clone(&self.jwt_secret))
+    }
+
     /// Troca a configuração vigente (recarga a quente após edição persistida).
     pub fn trocar_config(&self, nova: Arc<pcp_config::Config>) {
         self.config.store(nova);
@@ -66,6 +74,15 @@ impl AppState {
     #[must_use]
     pub fn assinar(&self) -> broadcast::Receiver<String> {
         self.eventos.subscribe()
+    }
+}
+
+/// Entrega o segredo do JWT ao middleware genérico do núcleo (`sf_auth::exigir_autenticacao`).
+/// É este `impl` — e só ele — que liga o PCP à autenticação compartilhada, sem que o núcleo
+/// precise conhecer o `AppState` do módulo (CLAUDE.md §0).
+impl FromRef<AppState> for SegredoJwt {
+    fn from_ref(estado: &AppState) -> Self {
+        estado.segredo_jwt()
     }
 }
 

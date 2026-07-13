@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, usuario_id, token_hash, expira_em, revogado, criado_em FROM pcp.refresh_token WHERE token_hash = $1 AND revogado = false AND expira_em > now()",
+  "query": "SELECT id, usuario_id, token_hash, expira_em, revogado, criado_em FROM nucleo.refresh_token WHERE token_hash = $1 AND revogado = false AND expira_em > now()",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "usuario_id"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "token_hash"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "expira_em"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "revogado"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "refresh_token",
+            "table": "nucleo.refresh_token",
             "name": "criado_em"
           }
         }
@@ -84,5 +84,5 @@
       false
     ]
   },
-  "hash": "4d1800ed734bf997b84509c4847e91d8b81ce1e39c78083cd03f157baab473dd"
+  "hash": "c8a98ea1e673fabf0f1c0d02f294bc72d5737cba90dc59eed8ff7e9b733872c6"
 }

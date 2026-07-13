@@ -4,6 +4,12 @@
 [workspace]
 resolver = "2"
 members = [
+    # Núcleo comum — compartilhado por TODOS os módulos (auth, infra de dados, HTTP).
+    # Nenhum módulo pode depender de outro módulo; todos dependem daqui (CLAUDE.md §0).
+    "nucleo/sf-db",
+    "nucleo/sf-http",
+    "nucleo/sf-auth",
+
     # Módulo PCP — Planejamento e Controle de Produção.
     "modulos/pcp/pcp-core",
     "modulos/pcp/pcp-config",

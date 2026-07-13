@@ -1869,22 +1869,20 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arc-swap",
- "argon2",
  "axum",
  "chrono",
  "dotenvy",
- "hex",
  "http-body-util",
- "jsonwebtoken",
  "pcp-ai",
  "pcp-config",
  "pcp-core",
  "pcp-db",
  "pcp-engine",
- "rand_core 0.6.4",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sf-auth",
+ "sf-db",
+ "sf-http",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -1920,6 +1918,7 @@ dependencies = [
  "chrono",
  "pcp-core",
  "serde_json",
+ "sf-db",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -2697,6 +2696,42 @@ checksum = "63eb08f80db903d3c42f64e60ebb3875e0305be502bdc064ec0a0eab42207f00"
 dependencies = [
  "server_fn_macro",
  "syn",
+]
+
+[[package]]
+name = "sf-auth"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "axum",
+ "chrono",
+ "hex",
+ "jsonwebtoken",
+ "rand_core 0.6.4",
+ "serde",
+ "sf-http",
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "sf-db"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "sqlx",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "sf-http"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde_json",
+ "sf-db",
+ "thiserror 1.0.69",
+ "tracing",
 ]
 
 [[package]]

@@ -7,8 +7,8 @@ use serde::Serialize;
 
 use pcp_db::leituras::{self, ResumoClasse};
 
-use crate::erro::ApiError;
 use crate::estado::AppState;
+use sf_http::ApiError;
 
 /// Tolerância da meta física: |real − meta| ≤ 3 p.p. é "atingida" (doc 02 §9.1).
 const TOLERANCIA_META_PP: f64 = 3.0;
