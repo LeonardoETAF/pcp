@@ -1828,18 +1828,19 @@ input {
 /* Linha do tempo dos históricos (produção/movimentação): agrupada por DATA. À esquerda a data;
    à direita, uma linha vertical com as fases (movimentos/ordens) daquele dia. */
 /* ---- Seleção de produtos para produzir ---- */
-/* Coluna do seletor: a caixa fica centrada na célula, na horizontal e na altura. */
+/* Coluna do seletor: a caixa encosta à ESQUERDA, e o padding da célula (--e-4) faz o vão da
+   esquerda ficar igual ao de cima e de baixo — o mesmo respiro nos três lados. */
 .tabela__sel {
-  width: 48px;
-  text-align: center;
+  width: 44px;
+  text-align: left;
   vertical-align: middle;
 }
 /* Caixa desenhada à mão (appearance: none): a nativa não aceita raio, cor nem o tique do tema. */
 .check-prod {
   appearance: none;
   -webkit-appearance: none;
-  display: inline-grid;
-  place-items: center;
+  position: relative;
+  display: inline-block;
   width: 20px;
   height: 20px;
   margin: 0;
@@ -1855,14 +1856,18 @@ input {
   background: var(--texto);
   border-color: var(--texto);
 }
-/* O tique: um "V" desenhado com bordas, girado. Some quando não está marcado. */
+/* O tique: um "V" desenhado com bordas, girado 45°. Posicionado ABSOLUTO e centrado: girar move o
+   centro visual do glifo, então o -55% no eixo Y compensa e o "V" fica no meio da caixa. */
 .check-prod::after {
   content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 5px;
   height: 9px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg) translate(-1px, -1px);
+  transform: translate(-50%, -55%) rotate(45deg);
   opacity: 0;
   transition: opacity var(--transicao);
 }
@@ -2233,7 +2238,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 .prod-status__ponto {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: 3px;
   flex-shrink: 0;
   background: var(--borda);
 }
@@ -3032,10 +3037,12 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   flex-wrap: wrap;
   padding: var(--e-3);
 }
-/* Segunda linha do card: abas de classe à esquerda, filtros de produção à DIREITA. */
+/* Segunda linha do card: abas de classe à esquerda, filtros de produção à DIREITA.
+   `align-items: stretch` faz os filtros de produção subirem à ALTURA dos botões de classe (que são
+   mais altos por terem duas linhas: rótulo e contagem). */
 .estoque-filtros__linha2 {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--e-3);
   padding: 0 var(--e-3) var(--e-3);
 }
@@ -3049,6 +3056,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 /* Os três filtros de produção, encostados à direita do card. */
 .filtros-prod {
   display: flex;
+  align-items: stretch;
   gap: var(--e-2);
   margin-left: auto;
   flex-shrink: 0;
@@ -3068,10 +3076,11 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   cursor: pointer;
   transition: border-color var(--transicao), color var(--transicao);
 }
+/* Quadrado de pontas arredondadas (não círculo): o mesmo desenho do resto do sistema. */
 .filtro-prod__ponto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
   flex-shrink: 0;
   background: var(--cor-prod);
 }
