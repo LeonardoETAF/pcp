@@ -406,29 +406,16 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
     let falta = (s.planejado_em_producao - s.produzido_em_producao).max(0);
     // Mesma precedência da lista: o que acontece AGORA manda sobre o que está na fila, que manda
     // sobre o que já terminou.
+    // Só o status. A contagem de ordens vive no histórico de produção, logo abaixo — repeti-la aqui
+    // só polui o botão.
     let (estado, rotulo) = if em_producao {
-        (
-            "em_producao",
-            format!("Em produção — {} ordem(ns)", fmt_milhar(s.em_producao)),
-        )
+        ("em_producao", "Em produção")
     } else if s.aguardando > 0 {
-        (
-            "aguardando",
-            format!(
-                "Vai produzir — {} ordem(ns) na fila",
-                fmt_milhar(s.aguardando)
-            ),
-        )
+        ("aguardando", "Vai produzir")
     } else if s.finalizadas_recentes > 0 {
-        (
-            "recem_produzido",
-            format!(
-                "Recém produzido — {} ordem(ns)",
-                fmt_milhar(s.finalizadas_recentes)
-            ),
-        )
+        ("recem_produzido", "Recém produzido")
     } else {
-        ("nenhum", "Sem produção em andamento".to_owned())
+        ("nenhum", "Sem produção em andamento")
     };
     let classe_btn = format!("prod-status__btn prod-status__btn--{estado}");
     view! {

@@ -302,9 +302,9 @@ fn FiltrosProducao(
 ) -> impl IntoView {
     // Ordem cronológica do ciclo de produção: fila -> produzindo -> pronto.
     const ESTADOS: [(&str, &str); 3] = [
-        ("aguardando", "Vai produzir"),
-        ("em_producao", "Em produção"),
-        ("recem_produzido", "Recém produzido"),
+        ("aguardando", "Vai Produzir"),
+        ("em_producao", "Em Produção"),
+        ("recem_produzido", "Produzido"),
     ];
     view! {
         <div class="filtros-prod">
