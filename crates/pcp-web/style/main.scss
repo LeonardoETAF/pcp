@@ -45,6 +45,7 @@
   --fs-md: 1rem;
   --fs-lg: 1.25rem;
   --fs-xl: 1.75rem;
+  --peso-normal: 400;
   --peso-medio: 550;
   --peso-forte: 700;
 
@@ -836,7 +837,9 @@ input {
   font-size: var(--fs-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  /* O módulo é o título da seção: destaca-se dos itens (que são finos) por peso e brilho. */
+  font-weight: var(--peso-forte);
+  color: rgba(255, 255, 255, 0.85);
   padding: 0 var(--e-3);
   margin-bottom: var(--e-2);
 }
@@ -859,7 +862,7 @@ input {
   border-radius: var(--raio-md);
   color: rgba(255, 255, 255, 0.66);
   text-decoration: none;
-  font-weight: var(--peso-medio);
+  font-weight: var(--peso-normal);
   transition: background var(--transicao), color var(--transicao);
 }
 .menu__item:hover {
