@@ -176,9 +176,11 @@ pub fn PaginaEstoque() -> impl IntoView {
                             Ok(pag) => {
                                 let total = pag.total;
                                 view! {
-                                    <div class="tabela-cartao">
-                                        <Tabela itens=pag.itens ordem resetar />
-                                        <Paginacao limite deslocamento total />
+                                    <div class="cartao lista-cartao">
+                                        <div class="tabela-cartao">
+                                            <Tabela itens=pag.itens ordem resetar />
+                                            <Paginacao limite deslocamento total />
+                                        </div>
                                     </div>
                                 }
                                     .into_any()
@@ -213,7 +215,7 @@ fn kpis_estoque(p: &PainelResumo) -> impl IntoView {
     view! {
         <div class="kpis">
             <KpiEstoque
-                icone="inventory.svg"
+                icone="products.svg"
                 valor=fmt_milhar(p.total_produtos)
                 rotulo="Produtos cadastrados"
             />

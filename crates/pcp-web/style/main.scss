@@ -3008,6 +3008,12 @@ input {
 }
 
 /* Tabela do estoque em LINHAS-CARTÃO (mockup): sem moldura externa; cada linha é um cartão. */
+/* Card grande envolvendo a lista inteira: mesma borda/superfície dos demais cards. As linhas
+   internas seguem sendo cards — o de fora é a moldura da lista. */
+.lista-cartao {
+  padding: var(--e-3) var(--e-4);
+}
+
 .tabela-cartao {
   display: flex;
   flex-direction: column;
