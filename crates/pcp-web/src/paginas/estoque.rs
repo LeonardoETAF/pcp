@@ -210,21 +210,13 @@ pub fn PaginaEstoque() -> impl IntoView {
 #[component]
 fn BotaoOrdens() -> impl IntoView {
     let selecao = expect_context::<SelecaoProducao>();
-    let n = move || selecao.0.read().len();
     // Sem `>` no atributo: dentro de `view!` o sinal de maior fecharia a tag.
     let tem_selecao = move || !selecao.0.read().is_empty();
     view! {
         <Show when=tem_selecao fallback=|| ()>
             <A href="/producao" attr:class="fab-ordens">
                 <Icone arquivo="separacao.svg" />
-                <span>
-                    {move || {
-                        format!(
-                            "Produzir {} produto(s)",
-                            fmt_milhar(i64::try_from(n()).unwrap_or(0)),
-                        )
-                    }}
-                </span>
+                <span>"Produzir"</span>
             </A>
         </Show>
     }

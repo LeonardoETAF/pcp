@@ -1828,12 +1828,48 @@ input {
 /* Linha do tempo dos históricos (produção/movimentação): agrupada por DATA. À esquerda a data;
    à direita, uma linha vertical com as fases (movimentos/ordens) daquele dia. */
 /* ---- Seleção de produtos para produzir ---- */
-.tabela__sel { width: 44px; }
+/* Coluna do seletor: a caixa fica centrada na célula, na horizontal e na altura. */
+.tabela__sel {
+  width: 48px;
+  text-align: center;
+  vertical-align: middle;
+}
+/* Caixa desenhada à mão (appearance: none): a nativa não aceita raio, cor nem o tique do tema. */
 .check-prod {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--texto);
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  vertical-align: middle;
+  border: 1.5px solid var(--borda);
+  border-radius: 6px;
+  background: var(--superficie);
   cursor: pointer;
+  transition: background var(--transicao), border-color var(--transicao);
+}
+.check-prod:hover { border-color: var(--texto-suave); }
+.check-prod:checked {
+  background: var(--texto);
+  border-color: var(--texto);
+}
+/* O tique: um "V" desenhado com bordas, girado. Some quando não está marcado. */
+.check-prod::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0;
+  transition: opacity var(--transicao);
+}
+.check-prod:checked::after { opacity: 1; }
+.check-prod:focus-visible {
+  outline: none;
+  border-color: var(--texto);
 }
 
 /* Botão flutuante: aparece assim que o primeiro produto é marcado. Fica sobre o conteúdo, no canto
@@ -1847,7 +1883,7 @@ input {
   align-items: center;
   gap: var(--e-2);
   padding: var(--e-3) var(--e-5);
-  border-radius: 999px;
+  border-radius: var(--raio-md);
   background: #1b1814;
   color: #fff;
   font-weight: var(--peso-medio);
