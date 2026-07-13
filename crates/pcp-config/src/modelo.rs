@@ -19,6 +19,25 @@ pub struct Config {
     /// Operação do pipeline (doc 05 §3). `default` para não quebrar config antiga.
     #[serde(default)]
     pub pipeline: Pipeline,
+    /// Estado de produção exibido na UI (decisão do dono, 2026-07-13).
+    #[serde(default)]
+    pub producao: Producao,
+}
+
+/// Estado de produção exibido na lista e no detalhe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Producao {
+    /// Dias em que uma ordem FINALIZADA ainda conta como "recém produzido".
+    pub recem_produzido_dias: u32,
+}
+
+impl Default for Producao {
+    fn default() -> Self {
+        Self {
+            recem_produzido_dias: 7,
+        }
+    }
 }
 
 /// Parâmetros de operação do pipeline diário (doc 05 §3).

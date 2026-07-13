@@ -45,6 +45,8 @@ pub struct StatusProducao {
     /// Planejado e produzido SOMENTE das ordens em produção (para "quanto falta").
     pub planejado_em_producao: i64,
     pub produzido_em_producao: i64,
+    /// Ordens FINALIZADAS na janela recente — o produto acabou de sair da produção.
+    pub finalizadas_recentes: i64,
 }
 
 /// Últimos `limite` movimentos do kardex da linha de estoque (mais recentes primeiro).
@@ -126,7 +128,11 @@ pub async fn producao_historico(
 ///
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco (inclui código não-numérico).
-pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProducao, ErroDb> {
+pub async fn status_producao(
+    pool: &PgPool,
+    codigo: &str,
+    recem_produzido_dias: i32,
+) -> Result<StatusProducao, ErroDb> {
     let Ok(est_id) = codigo.parse::<i64>() else {
         return Ok(StatusProducao::default());
     };
@@ -138,13 +144,18 @@ pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProduc
              COUNT(*) FILTER (WHERE p.iprd_stat = 'PRODUCAO') AS "em_producao!",
              COUNT(*) FILTER (WHERE p.iprd_stat = 'AGUARDANDO') AS "aguardando!",
              COALESCE(SUM(p.iprd_qnt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS "plan_prod!",
-             COALESCE(SUM(p.iprd_qntt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS "prod_prod!"
+             COALESCE(SUM(p.iprd_qntt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS "prod_prod!",
+             COUNT(*) FILTER (
+               WHERE p.iprd_stat = 'FINALIZADO'
+                 AND p.aud_date >= (SELECT MAX(data_ref) FROM bronze.one_estoque) - $2::int
+             ) AS "recentes!"
            FROM bronze.one_producao p
            WHERE p.iprd_prd = (SELECT est_itm FROM bronze.one_estoque
                                WHERE est_id = $1
                                  AND data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
                                LIMIT 1)"#,
         est_id,
+        recem_produzido_dias,
     )
     .fetch_one(pool)
     .await?;
@@ -155,6 +166,7 @@ pub async fn status_producao(pool: &PgPool, codigo: &str) -> Result<StatusProduc
         aguardando: r.aguardando,
         planejado_em_producao: r.plan_prod,
         produzido_em_producao: r.prod_prod,
+        finalizadas_recentes: r.recentes,
     })
 }
 

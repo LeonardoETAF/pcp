@@ -57,3 +57,8 @@ pipeline:
   # A pré-validação exige venda no dia anterior. Como sábado/domingo/feriado não têm venda, ela
   # procura para trás até N dias — senão o pipeline bloquearia toda segunda-feira.
   tolerancia_vendas_dias: 3
+
+# Estado de producao exibido na lista e no detalhe (decisao do dono, 2026-07-13).
+producao:
+  # Quantos dias uma ordem FINALIZADA ainda conta como "recem produzido".
+  recem_produzido_dias: 7

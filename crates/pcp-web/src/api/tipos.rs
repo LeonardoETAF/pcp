@@ -41,6 +41,9 @@ pub struct LinhaEstoque {
     pub status: String,
     pub qtd_sugerida: i64,
     pub fora_de_linha: bool,
+    /// `em_producao` | `aguardando` | `recem_produzido` | ausente (§ produção do One).
+    #[serde(default)]
+    pub estado_producao: Option<String>,
 }
 
 /// Página de produtos (ignora `limite`/`deslocamento` do payload — só precisamos de itens/total).
@@ -343,6 +346,8 @@ pub struct StatusProducao {
     pub aguardando: i64,
     pub planejado_em_producao: i64,
     pub produzido_em_producao: i64,
+    #[serde(default)]
+    pub finalizadas_recentes: i64,
 }
 
 /// Uma ordem de produção da linha.

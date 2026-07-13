@@ -48,6 +48,8 @@ pub struct LinhaEstoqueDto {
     pub status: String,
     pub qtd_sugerida: i64,
     pub fora_de_linha: bool,
+    /// `em_producao` | `aguardando` | `recem_produzido` | ausente.
+    pub estado_producao: Option<String>,
 }
 
 impl From<LinhaEstoque> for LinhaEstoqueDto {
@@ -69,6 +71,7 @@ impl From<LinhaEstoque> for LinhaEstoqueDto {
             status: l.status,
             qtd_sugerida: l.qtd_sugerida,
             fora_de_linha: l.fora_de_linha,
+            estado_producao: l.estado_producao,
         }
     }
 }
@@ -112,7 +115,9 @@ pub async fn estoque(
         apenas_fora_linha: params.apenas_fora_linha,
     };
     let contagens = leituras::contagem_classes(&estado.pool, &filtro).await?;
-    let pagina = leituras::produtos_paginado(&estado.pool, filtro, limite, deslocamento).await?;
+    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(7);
+    let pagina =
+        leituras::produtos_paginado(&estado.pool, filtro, recem, limite, deslocamento).await?;
     Ok(Json(PaginaEstoqueDto {
         itens: pagina.itens.into_iter().map(Into::into).collect(),
         total: pagina.total,

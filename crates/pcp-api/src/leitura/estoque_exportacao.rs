@@ -47,7 +47,8 @@ pub async fn exportar(
         apenas_fora_linha: params.apenas_fora_linha,
     };
     // Sem paginação: o filtro inteiro. i64::MAX como LIMIT devolve todas as linhas.
-    let linhas = leituras::produtos_paginado(&estado.pool, filtro, i64::MAX, 0)
+    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(7);
+    let linhas = leituras::produtos_paginado(&estado.pool, filtro, recem, i64::MAX, 0)
         .await?
         .itens;
 

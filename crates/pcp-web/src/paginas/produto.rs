@@ -404,21 +404,38 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
     let em_producao = s.em_producao > 0;
     let aberto = RwSignal::new(false);
     let falta = (s.planejado_em_producao - s.produzido_em_producao).max(0);
-    let rotulo = if em_producao {
-        format!("Em produção — {} ordem(ns)", fmt_milhar(s.em_producao))
+    // Mesma precedência da lista: o que acontece AGORA manda sobre o que está na fila, que manda
+    // sobre o que já terminou.
+    let (estado, rotulo) = if em_producao {
+        (
+            "em_producao",
+            format!("Em produção — {} ordem(ns)", fmt_milhar(s.em_producao)),
+        )
     } else if s.aguardando > 0 {
-        format!(
-            "Aguardando produção — {} ordem(ns)",
-            fmt_milhar(s.aguardando)
+        (
+            "aguardando",
+            format!(
+                "Vai produzir — {} ordem(ns) na fila",
+                fmt_milhar(s.aguardando)
+            ),
+        )
+    } else if s.finalizadas_recentes > 0 {
+        (
+            "recem_produzido",
+            format!(
+                "Recém produzido — {} ordem(ns)",
+                fmt_milhar(s.finalizadas_recentes)
+            ),
         )
     } else {
-        "Sem produção em andamento".to_owned()
+        ("nenhum", "Sem produção em andamento".to_owned())
     };
+    let classe_btn = format!("prod-status__btn prod-status__btn--{estado}");
     view! {
         <div class="prod-status">
             <button
                 type="button"
-                class="prod-status__btn"
+                class=classe_btn
                 class:prod-status__btn--ativo=move || em_producao
                 disabled=(!em_producao).then_some("")
                 aria-expanded=move || if aberto.get() { "true" } else { "false" }
@@ -428,7 +445,7 @@ fn BotaoStatusProducao(s: StatusProducao) -> impl IntoView {
                     }
                 }
             >
-                <span class="prod-status__ponto" class:prod-status__ponto--on=move || em_producao></span>
+                <span class="prod-status__ponto"></span>
                 <span class="prod-status__rotulo">{rotulo}</span>
                 {em_producao
                     .then(|| view! { <span class="prod-status__seta" class:prod-status__seta--aberto=move || aberto.get()><Icone arquivo="seta-baixo.svg" /></span> })}

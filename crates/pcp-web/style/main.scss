@@ -2081,6 +2081,29 @@ input {
   cursor: pointer;
   transition: background var(--transicao), border-color var(--transicao);
 }
+/* Cor por ESTADO de produção (mesma paleta na lista e no detalhe):
+   em produção = azul (acontecendo agora) · vai produzir = amarelo (na fila) · recém produzido =
+   verde (acabou de sair). Só a borda e o ponto colorem — o fundo continua branco. */
+.prod-status__btn--em_producao { --cor-prod: var(--semaforo-info); }
+.prod-status__btn--aguardando { --cor-prod: var(--semaforo-alto); }
+.prod-status__btn--recem_produzido { --cor-prod: var(--semaforo-ok); }
+.prod-status__btn--em_producao,
+.prod-status__btn--aguardando,
+.prod-status__btn--recem_produzido {
+  border-color: var(--cor-prod);
+  color: var(--texto);
+}
+.prod-status__btn--em_producao .prod-status__ponto,
+.prod-status__btn--aguardando .prod-status__ponto,
+.prod-status__btn--recem_produzido .prod-status__ponto {
+  background: var(--cor-prod);
+}
+
+/* Linha da lista colorida pelo estado de produção do item. */
+.linha-prod--em_producao td { border-color: var(--semaforo-info); }
+.linha-prod--aguardando td { border-color: var(--semaforo-alto); }
+.linha-prod--recem_produzido td { border-color: var(--semaforo-ok); }
+
 .prod-status__btn--ativo:hover { background: var(--superficie-2); border-color: var(--texto-suave); }
 .prod-status__btn:disabled { cursor: default; color: var(--texto-suave); }
 .prod-status__ponto {

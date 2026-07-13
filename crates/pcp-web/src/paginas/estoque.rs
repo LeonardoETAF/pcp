@@ -530,6 +530,12 @@ fn cor_status(status: &str) -> &'static str {
 #[component]
 #[allow(clippy::cast_precision_loss)] // quantidades de estoque: conversão exata para f64 na razão
 fn Linha(i: LinhaEstoque) -> impl IntoView {
+    // Estado de produção do item (do One): colore a borda do card-linha. A ordem de produção não
+    // tem cor, então o estado vale para todas as cores do mesmo copo.
+    let classe_linha = i
+        .estado_producao
+        .as_deref()
+        .map_or_else(String::new, |e| format!("linha-prod linha-prod--{e}"));
     // A cor tem coluna própria: o nome fica só com o produto (não repete a variação).
     let nome = i
         .produto
@@ -550,7 +556,7 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
     let pct = ((i.qtd_disponivel as f64 / alvo as f64) * 100.0).clamp(0.0, 100.0);
     let estilo_barra = format!("width:{pct:.0}%;background:{cor_st}");
     view! {
-        <tr>
+        <tr class=classe_linha>
             <td class="tabela__cod">{i.codigo_estoque.clone()}</td>
             <td>
                 <A href=href attr:class="tabela__produto-link">

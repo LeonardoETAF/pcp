@@ -23,6 +23,7 @@ pub struct StatusProducaoDto {
     pub aguardando: i64,
     pub planejado_em_producao: i64,
     pub produzido_em_producao: i64,
+    pub finalizadas_recentes: i64,
 }
 
 #[derive(Serialize)]
@@ -65,7 +66,8 @@ pub async fn atividade(
     State(estado): State<AppState>,
     Path(codigo): Path<String>,
 ) -> Result<Json<AtividadeDto>, ApiError> {
-    let status = ativ::status_producao(&estado.pool, &codigo).await?;
+    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(7);
+    let status = ativ::status_producao(&estado.pool, &codigo, recem).await?;
     let producao = ativ::producao_historico(&estado.pool, &codigo, LIMITE_PRODUCAO).await?;
     let movimentos = ativ::movimentos(&estado.pool, &codigo, LIMITE_MOVIMENTOS).await?;
     let vendas_mensais = ativ::vendas_mensais(&estado.pool, &codigo).await?;
@@ -77,6 +79,7 @@ pub async fn atividade(
             aguardando: status.aguardando,
             planejado_em_producao: status.planejado_em_producao,
             produzido_em_producao: status.produzido_em_producao,
+            finalizadas_recentes: status.finalizadas_recentes,
         },
         producao: producao
             .into_iter()

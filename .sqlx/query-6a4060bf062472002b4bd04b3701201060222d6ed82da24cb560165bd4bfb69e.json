@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n             COUNT(*) FILTER (WHERE p.iprd_stat IN ('AGUARDANDO', 'PRODUCAO')) AS \"abertas!\",\n             COALESCE(SUM(p.iprd_qnt) FILTER (WHERE p.iprd_stat IN ('AGUARDANDO', 'PRODUCAO')), 0)\n               AS \"planejada!\",\n             COUNT(*) FILTER (WHERE p.iprd_stat = 'PRODUCAO') AS \"em_producao!\",\n             COUNT(*) FILTER (WHERE p.iprd_stat = 'AGUARDANDO') AS \"aguardando!\",\n             COALESCE(SUM(p.iprd_qnt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS \"plan_prod!\",\n             COALESCE(SUM(p.iprd_qntt) FILTER (WHERE p.iprd_stat = 'PRODUCAO'), 0) AS \"prod_prod!\",\n             COUNT(*) FILTER (\n               WHERE p.iprd_stat = 'FINALIZADO'\n                 AND p.aud_date >= (SELECT MAX(data_ref) FROM bronze.one_estoque) - $2::int\n             ) AS \"recentes!\"\n           FROM bronze.one_producao p\n           WHERE p.iprd_prd = (SELECT est_itm FROM bronze.one_estoque\n                               WHERE est_id = $1\n                                 AND data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)\n                               LIMIT 1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "abertas!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "planejada!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "em_producao!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "aguardando!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "plan_prod!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "prod_prod!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "recentes!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "6a4060bf062472002b4bd04b3701201060222d6ed82da24cb560165bd4bfb69e"
+}

@@ -48,6 +48,9 @@ pub struct LinhaEstoque {
     pub status: String,
     pub qtd_sugerida: i64,
     pub fora_de_linha: bool,
+    /// Estado de produção do ITEM: `em_producao` | `aguardando` | `recem_produzido` | `None`.
+    /// A ordem de produção do One não tem cor, então o estado vale para todas as cores do item.
+    pub estado_producao: Option<String>,
 }
 
 /// Página de produtos com o total que satisfaz o filtro (paginação no servidor — §15).
@@ -272,6 +275,8 @@ pub async fn contagem_classes(
 pub async fn produtos_paginado(
     pool: &PgPool,
     filtro: FiltroEstoque<'_>,
+    // Dias em que uma ordem finalizada ainda conta como "recém produzido" (vem da config).
+    recem_produzido_dias: i32,
     limite: i64,
     deslocamento: i64,
 ) -> Result<PaginaEstoque, ErroDb> {
@@ -308,48 +313,73 @@ pub async fn produtos_paginado(
     .await?;
 
     let itens = sqlx::query!(
-        r#"SELECT codigo_estoque, sku, produto, configuracao, classe,
-                  qtd_estoque, qtd_reserva, qtd_disponivel, media_diaria,
-                  cobertura_dias, estoque_minimo, estoque_total_recomendado,
-                  volume_janela, status, qtd_sugerida, fora_de_linha
-           FROM pcp.produto_ativo
-           WHERE ($1::text IS NULL OR classe = $1)
-             AND ($2::text IS NULL OR status = $2)
-             AND ($3::text IS NULL OR codigo_estoque ILIKE '%' || $3 || '%'
-                  OR produto ILIKE '%' || $3 || '%' OR sku ILIKE '%' || $3 || '%'
-                  OR configuracao ILIKE '%' || $3 || '%')
-             AND ($5::float8 IS NULL OR cobertura_dias >= $5)
-             AND ($6::float8 IS NULL OR cobertura_dias <= $6)
-             AND (NOT $7 OR qtd_sugerida > 0)
-             AND (NOT $8 OR fora_de_linha)
+        r#"WITH prod_item AS (
+               -- Estado de produção agregado POR ITEM (a ordem do One não tem cor). Agregar aqui
+               -- mantém o CTE pequeno: 341k ordens viram alguns milhares de itens.
+               SELECT iprd_prd,
+                      bool_or(iprd_stat = 'PRODUCAO')   AS em_producao,
+                      bool_or(iprd_stat = 'AGUARDANDO') AS aguardando,
+                      bool_or(iprd_stat = 'FINALIZADO'
+                              AND aud_date >= (SELECT MAX(data_ref) FROM bronze.one_estoque)
+                                              - $11::int) AS recem
+               FROM bronze.one_producao
+               GROUP BY iprd_prd
+           ),
+           estado AS (
+               -- Precedência: o que está acontecendo agora manda sobre o que está na fila, que
+               -- manda sobre o que já terminou.
+               SELECT e.est_id::text AS codigo,
+                      CASE WHEN pi.em_producao THEN 'em_producao'
+                           WHEN pi.aguardando  THEN 'aguardando'
+                           WHEN pi.recem       THEN 'recem_produzido' END AS estado_producao
+               FROM bronze.one_estoque e
+               JOIN prod_item pi ON pi.iprd_prd = e.est_itm
+               WHERE e.data_ref = (SELECT MAX(data_ref) FROM bronze.one_estoque)
+           )
+           SELECT p.codigo_estoque, p.sku, p.produto, p.configuracao, p.classe,
+                  p.qtd_estoque, p.qtd_reserva, p.qtd_disponivel, p.media_diaria,
+                  p.cobertura_dias, p.estoque_minimo, p.estoque_total_recomendado,
+                  p.volume_janela, p.status, p.qtd_sugerida, p.fora_de_linha,
+                  ep.estado_producao
+           FROM pcp.produto_ativo p
+           LEFT JOIN estado ep ON ep.codigo = p.codigo_estoque
+           WHERE ($1::text IS NULL OR p.classe = $1)
+             AND ($2::text IS NULL OR p.status = $2)
+             AND ($3::text IS NULL OR p.codigo_estoque ILIKE '%' || $3 || '%'
+                  OR p.produto ILIKE '%' || $3 || '%' OR p.sku ILIKE '%' || $3 || '%'
+                  OR p.configuracao ILIKE '%' || $3 || '%')
+             AND ($5::float8 IS NULL OR p.cobertura_dias >= $5)
+             AND ($6::float8 IS NULL OR p.cobertura_dias <= $6)
+             AND (NOT $7 OR p.qtd_sugerida > 0)
+             AND (NOT $8 OR p.fora_de_linha)
            ORDER BY
              -- codigo_estoque é texto, mas no One é sempre um inteiro (EST_ID). Ordenar como texto
              -- daria 1, 10, 10001, 2. O CASE ~ '^[0-9]+$' protege um código não-numérico futuro.
-             (CASE WHEN $4 = 'codigo_asc' AND codigo_estoque ~ '^[0-9]+$'
-                   THEN codigo_estoque::bigint END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'codigo_desc' AND codigo_estoque ~ '^[0-9]+$'
-                   THEN codigo_estoque::bigint END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'produto_asc' THEN produto END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'produto_desc' THEN produto END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'cor_asc' THEN configuracao END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'cor_desc' THEN configuracao END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'classe_asc' THEN classe END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'classe_desc' THEN classe END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'status_asc' THEN status END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'status_desc' THEN status END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'disponivel_asc' THEN qtd_disponivel END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'disponivel_desc' THEN qtd_disponivel END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'cobertura_asc' THEN cobertura_dias END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'cobertura_desc' THEN cobertura_dias END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'recomendada_asc' THEN estoque_total_recomendado END) ASC NULLS LAST,
-             (CASE WHEN $4 = 'recomendada_desc' THEN estoque_total_recomendado END) DESC NULLS LAST,
-             (CASE WHEN $4 = 'sugerida_asc' THEN qtd_sugerida END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'codigo_asc' AND p.codigo_estoque ~ '^[0-9]+$'
+                   THEN p.codigo_estoque::bigint END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'codigo_desc' AND p.codigo_estoque ~ '^[0-9]+$'
+                   THEN p.codigo_estoque::bigint END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'produto_asc' THEN p.produto END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'produto_desc' THEN p.produto END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'cor_asc' THEN p.configuracao END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'cor_desc' THEN p.configuracao END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'classe_asc' THEN p.classe END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'classe_desc' THEN p.classe END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'status_asc' THEN p.status END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'status_desc' THEN p.status END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'disponivel_asc' THEN p.qtd_disponivel END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'disponivel_desc' THEN p.qtd_disponivel END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'cobertura_asc' THEN p.cobertura_dias END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'cobertura_desc' THEN p.cobertura_dias END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'recomendada_asc' THEN p.estoque_total_recomendado END) ASC NULLS LAST,
+             (CASE WHEN $4 = 'recomendada_desc' THEN p.estoque_total_recomendado END) DESC NULLS LAST,
+             (CASE WHEN $4 = 'sugerida_asc' THEN p.qtd_sugerida END) ASC NULLS LAST,
              (CASE WHEN $4 NOT IN ('codigo_asc','codigo_desc','produto_asc','produto_desc',
                   'cor_asc','cor_desc','classe_asc','classe_desc','status_asc','status_desc',
                   'disponivel_asc','disponivel_desc','cobertura_asc','cobertura_desc',
                   'recomendada_asc','recomendada_desc','sugerida_asc')
-                THEN qtd_sugerida END) DESC NULLS LAST,
-             codigo_estoque
+                THEN p.qtd_sugerida END) DESC NULLS LAST,
+             p.codigo_estoque
            LIMIT $9 OFFSET $10"#,
         classe,
         status,
@@ -361,6 +391,7 @@ pub async fn produtos_paginado(
         apenas_fora_linha,
         limite,
         deslocamento,
+        recem_produzido_dias,
     )
     .fetch_all(pool)
     .await?
@@ -382,6 +413,7 @@ pub async fn produtos_paginado(
         status: r.status,
         qtd_sugerida: r.qtd_sugerida,
         fora_de_linha: r.fora_de_linha,
+        estado_producao: r.estado_producao,
     })
     .collect();
 
