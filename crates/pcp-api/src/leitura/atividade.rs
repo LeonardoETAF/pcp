@@ -66,7 +66,7 @@ pub async fn atividade(
     State(estado): State<AppState>,
     Path(codigo): Path<String>,
 ) -> Result<Json<AtividadeDto>, ApiError> {
-    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(7);
+    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(2);
     let status = ativ::status_producao(&estado.pool, &codigo, recem).await?;
     let producao = ativ::producao_historico(&estado.pool, &codigo, LIMITE_PRODUCAO).await?;
     let movimentos = ativ::movimentos(&estado.pool, &codigo, LIMITE_MOVIMENTOS).await?;

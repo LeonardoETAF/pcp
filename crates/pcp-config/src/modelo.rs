@@ -35,7 +35,7 @@ pub struct Producao {
 impl Default for Producao {
     fn default() -> Self {
         Self {
-            recem_produzido_dias: 7,
+            recem_produzido_dias: 2,
         }
     }
 }

@@ -115,7 +115,7 @@ pub async fn estoque(
         apenas_fora_linha: params.apenas_fora_linha,
     };
     let contagens = leituras::contagem_classes(&estado.pool, &filtro).await?;
-    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(7);
+    let recem = i32::try_from(estado.config().producao.recem_produzido_dias).unwrap_or(2);
     let pagina =
         leituras::produtos_paginado(&estado.pool, filtro, recem, limite, deslocamento).await?;
     Ok(Json(PaginaEstoqueDto {

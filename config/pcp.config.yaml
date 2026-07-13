@@ -61,4 +61,4 @@ pipeline:
 # Estado de producao exibido na lista e no detalhe (decisao do dono, 2026-07-13).
 producao:
   # Quantos dias uma ordem FINALIZADA ainda conta como "recem produzido".
-  recem_produzido_dias: 7
+  recem_produzido_dias: 2
