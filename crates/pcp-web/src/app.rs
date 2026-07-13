@@ -7,7 +7,7 @@ use leptos_router::components::{ParentRoute, Route, Router, Routes};
 use leptos_router::{ParamSegment, StaticSegment};
 
 use crate::componentes::EstadoVazio;
-use crate::contexto::{CarregandoSessao, FiltroEstoque, Sessao, Tema};
+use crate::contexto::{CarregandoSessao, FiltroEstoque, SelecaoProducao, Sessao, Tema};
 use crate::layout::LayoutAutenticado;
 use crate::paginas::abc::ClassificacaoAbc;
 use crate::paginas::alertas::PaginaAlertas;
@@ -17,6 +17,7 @@ use crate::paginas::estoque::PaginaEstoque;
 use crate::paginas::login::PaginaLogin;
 use crate::paginas::operacao::Operacao;
 use crate::paginas::placeholders::ChatIa;
+use crate::paginas::producao::NovaProducao;
 use crate::paginas::produto::DetalheProdutoPagina;
 
 /// Documento HTML servido no SSR (inclui scripts de hidratação e auto-reload em dev).
@@ -57,6 +58,8 @@ pub fn App() -> impl IntoView {
     // A lista de estoque guarda busca/filtros/página aqui, para sobreviverem à ida ao detalhe
     // de um produto e à volta (§16).
     provide_context(FiltroEstoque::default());
+    // Produtos marcados na lista para virar Solicitação de Produção (doc 02 §7.2).
+    provide_context(SelecaoProducao::default());
 
     // Restaura a sessão após reload: se há refresh token salvo, renova o access token. Roda só no
     // cliente (no SSR `tem_refresh` é falso). Falha = refresh inválido/expirado → cai no login.
@@ -105,6 +108,7 @@ pub fn App() -> impl IntoView {
                         <Route path=StaticSegment("ai-chat") view=ChatIa />
                         <Route path=StaticSegment("configuracoes") view=Configuracoes />
                         <Route path=StaticSegment("operacao") view=Operacao />
+                        <Route path=StaticSegment("producao") view=NovaProducao />
                     </ParentRoute>
                 </Routes>
             </Router>

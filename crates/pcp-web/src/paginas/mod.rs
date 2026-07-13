@@ -8,4 +8,5 @@ pub mod estoque;
 pub mod login;
 pub mod operacao;
 pub mod placeholders;
+pub mod producao;
 pub mod produto;

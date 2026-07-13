@@ -48,3 +48,41 @@ impl Default for FiltroEstoque {
         }
     }
 }
+
+/// Um produto marcado na lista para virar Solicitação de Produção (doc 02 §7.2).
+/// Guardamos o essencial (não o código só) para a tela de criação não precisar rebuscar a API.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProdutoSelecionado {
+    pub codigo: String,
+    pub nome: String,
+    pub qtd_sugerida: i64,
+}
+
+/// Produtos que o funcionário do PCP marcou na lista para produzir. Vive no contexto: a seleção
+/// atravessa páginas da lista, filtros e a ida ao detalhe de um produto.
+#[derive(Clone, Copy, Default)]
+pub struct SelecaoProducao(pub RwSignal<Vec<ProdutoSelecionado>>);
+
+impl SelecaoProducao {
+    /// Marca/desmarca um produto.
+    pub fn alternar(self, p: ProdutoSelecionado) {
+        self.0.update(|v| {
+            if let Some(i) = v.iter().position(|x| x.codigo == p.codigo) {
+                v.remove(i);
+            } else {
+                v.push(p);
+            }
+        });
+    }
+
+    /// O produto está marcado?
+    #[must_use]
+    pub fn tem(self, codigo: &str) -> bool {
+        self.0.read().iter().any(|x| x.codigo == codigo)
+    }
+
+    /// Limpa a seleção.
+    pub fn limpar(self) {
+        self.0.update(std::vec::Vec::clear);
+    }
+}

@@ -12,11 +12,11 @@ use crate::api::{
     LinhaEstoque, PainelResumo,
 };
 use crate::componentes::{EstadoVazio, Icone, PaginacaoBotoes, Seletor};
-use crate::contexto::{FiltroEstoque, Sessao};
+use crate::contexto::{FiltroEstoque, ProdutoSelecionado, SelecaoProducao, Sessao};
 use crate::download;
 use crate::erro::mensagem_usuario;
 use crate::formato::{
-    badge_classe, cor_partes, fmt_cobertura, fmt_milhar, nome_classe, rotulo_status,
+    badge_classe, cor_partes, fmt_cobertura, fmt_milhar, nome_classe, nome_exibicao, rotulo_status,
 };
 
 #[component]
@@ -200,7 +200,33 @@ pub fn PaginaEstoque() -> impl IntoView {
                         })
                 }}
             </Suspense>
+            <BotaoOrdens />
         </section>
+    }
+}
+
+/// Botão flutuante que aparece assim que o primeiro produto é marcado. Leva à criação das Ordens
+/// de Produção (que são Solicitações — doc 02 §7.2). Fica no canto da lista, sobre o conteúdo.
+#[component]
+fn BotaoOrdens() -> impl IntoView {
+    let selecao = expect_context::<SelecaoProducao>();
+    let n = move || selecao.0.read().len();
+    // Sem `>` no atributo: dentro de `view!` o sinal de maior fecharia a tag.
+    let tem_selecao = move || !selecao.0.read().is_empty();
+    view! {
+        <Show when=tem_selecao fallback=|| ()>
+            <A href="/producao" attr:class="fab-ordens">
+                <Icone arquivo="separacao.svg" />
+                <span>
+                    {move || {
+                        format!(
+                            "Produzir {} produto(s)",
+                            fmt_milhar(i64::try_from(n()).unwrap_or(0)),
+                        )
+                    }}
+                </span>
+            </A>
+        </Show>
     }
 }
 
@@ -525,6 +551,7 @@ fn Tabela(
             <table class="tabela tabela--centro">
                 <thead>
                     <tr>
+                        <th class="tabela__sel" aria-label="Selecionar"></th>
                         <Th rotulo="Código" chave="codigo" ordem resetar />
                         <Th rotulo="Produto" chave="produto" ordem resetar />
                         <Th rotulo="Cor" chave="cor" ordem resetar />
@@ -579,6 +606,18 @@ fn cor_status(status: &str) -> &'static str {
 #[component]
 #[allow(clippy::cast_precision_loss)] // quantidades de estoque: conversão exata para f64 na razão
 fn Linha(i: LinhaEstoque) -> impl IntoView {
+    let selecao = expect_context::<SelecaoProducao>();
+    let cod_sel = i.codigo_estoque.clone();
+    // O que a tela de ordens precisa saber deste produto — sem rebuscar a API depois.
+    let item = ProdutoSelecionado {
+        codigo: i.codigo_estoque.clone(),
+        nome: nome_exibicao(
+            i.produto.as_deref(),
+            i.configuracao.as_deref(),
+            &i.codigo_estoque,
+        ),
+        qtd_sugerida: i.qtd_sugerida,
+    };
     // Estado de produção do item (do One): colore a borda do card-linha. A ordem de produção não
     // tem cor, então o estado vale para todas as cores do mesmo copo.
     let classe_linha = i
@@ -606,6 +645,15 @@ fn Linha(i: LinhaEstoque) -> impl IntoView {
     let estilo_barra = format!("width:{pct:.0}%;background:{cor_st}");
     view! {
         <tr class=classe_linha>
+            <td class="tabela__sel">
+                <input
+                    class="check-prod"
+                    type="checkbox"
+                    aria-label=format!("Selecionar {}", i.codigo_estoque)
+                    prop:checked=move || selecao.tem(&cod_sel)
+                    on:change=move |_| selecao.alternar(item.clone())
+                />
+            </td>
             <td class="tabela__cod">{i.codigo_estoque.clone()}</td>
             <td>
                 <A href=href attr:class="tabela__produto-link">

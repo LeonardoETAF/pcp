@@ -1827,6 +1827,85 @@ input {
 
 /* Linha do tempo dos históricos (produção/movimentação): agrupada por DATA. À esquerda a data;
    à direita, uma linha vertical com as fases (movimentos/ordens) daquele dia. */
+/* ---- Seleção de produtos para produzir ---- */
+.tabela__sel { width: 44px; }
+.check-prod {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--texto);
+  cursor: pointer;
+}
+
+/* Botão flutuante: aparece assim que o primeiro produto é marcado. Fica sobre o conteúdo, no canto
+   inferior direito, e acompanha a rolagem (fixed) — a lista é longa e ele não pode sumir. */
+.fab-ordens {
+  position: fixed;
+  right: var(--e-6);
+  bottom: var(--e-6);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  padding: var(--e-3) var(--e-5);
+  border-radius: 999px;
+  background: #1b1814;
+  color: #fff;
+  font-weight: var(--peso-medio);
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+.fab-ordens:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+.fab-ordens .icone-mask { width: 18px; height: 18px; }
+
+/* ---- Tela de criação das ordens ---- */
+.ordens-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin-top: var(--e-4);
+}
+.ordem-item {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  background: var(--superficie);
+  border: var(--cartao-borda);
+  border-radius: var(--cartao-raio);
+}
+.ordem-item__id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ordem-item__nome { font-weight: var(--peso-medio); }
+.ordem-item__cod {
+  font-size: var(--fs-sm);
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+.ordem-item__qtd {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--fs-sm);
+  width: 130px;
+  flex-shrink: 0;
+}
+.ordens-rodape {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  margin-top: var(--e-5);
+}
+.ordens-rodape__just { flex: 1; min-width: 0; }
+
 .mov-timeline {
   display: flex;
   flex-direction: column;
