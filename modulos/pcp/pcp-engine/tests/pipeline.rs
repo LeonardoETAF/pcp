@@ -78,28 +78,42 @@ async fn conta(pool: &PgPool, sql: &'static str) -> i64 {
         .expect("contagem")
 }
 
-#[tokio::test]
-#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
-async fn pipeline_completo_idempotente_e_bloqueio() {
-    let (pool, config) = preparar().await;
-    let dia = data_ref();
-
-    // PIPE-A: maduro, vende em 12 dias + véspera (classe Pareto, com parâmetros).
+/// Semeia o cenário do dia: três produtos que exercitam caminhos distintos do motor.
+///
+/// **PIPE-A** — maduro, com demanda corrente e estoque baixo: tem de gerar alerta. O cenário
+/// precisa satisfazer duas coisas ao mesmo tempo:
+///  1. Primeira venda há mais de `janela_produto_novo_dias` (60) — senão o produto cai em N e
+///     não entra no Pareto. É o que as vendas de janeiro ancoram.
+///  2. Demanda diária alta o bastante para que 40 disponíveis sejam pouco. A média é por **dia
+///     corrido** (volume/365) e ponderada pela recência (doc 02 §3.1, revisto em 2026-07-13):
+///     13 dias esparsos de venda dariam ~0,2/dia, e 40 unidades seriam ~200 dias de cobertura
+///     — ou seja, alerta nenhum, e com razão. Daí o mês corrido de vendas até a véspera, que
+///     leva a média a ~20/dia e a cobertura a ~2 dias.
+///
+/// **PIPE-D** — ativo, sem venda nenhuma: vira classe D e rende sugestão de SAIR.
+/// **PIPE-F** — fora de linha: nunca alerta (invariante do §11).
+async fn semear_cenario(pool: &PgPool) {
     for d in 2..=13 {
-        let venda_dia = NaiveDate::from_ymd_opt(2099, 1, d).unwrap();
-        vendas::substituir_dia(&pool, venda_dia, &[venda(venda_dia, "PIPE-A", 10)])
+        let venda_dia = NaiveDate::from_ymd_opt(2099, 1, d).expect("data válida");
+        vendas::substituir_dia(pool, venda_dia, &[venda(venda_dia, "PIPE-A", 10)])
             .await
-            .unwrap();
+            .expect("vendas de janeiro");
     }
-    let vespera = NaiveDate::from_ymd_opt(2099, 6, 14).unwrap(); // pré-validação (dia anterior)
-    vendas::substituir_dia(&pool, vespera, &[venda(vespera, "PIPE-A", 10)])
-        .await
-        .unwrap();
 
-    // Snapshot do dia: PIPE-A (ativo, baixo), PIPE-D (ativo sem vendas → D/SAIR), PIPE-F (fora).
+    // Mês corrido de vendas terminando na véspera (16/05 a 14/06). O último dia também
+    // satisfaz a pré-validação do pipeline, que exige venda no dia anterior.
+    let vespera = NaiveDate::from_ymd_opt(2099, 6, 14).expect("data válida");
+    let mut venda_dia = NaiveDate::from_ymd_opt(2099, 5, 16).expect("data válida");
+    while venda_dia <= vespera {
+        vendas::substituir_dia(pool, venda_dia, &[venda(venda_dia, "PIPE-A", 100)])
+            .await
+            .expect("vendas correntes");
+        venda_dia = venda_dia.succ_opt().expect("data válida");
+    }
+
     snapshot::substituir_dia(
-        &pool,
-        dia,
+        pool,
+        data_ref(),
         &[
             snap("PIPE-A", 50, 10, false),
             snap("PIPE-D", 100, 0, false),
@@ -107,7 +121,16 @@ async fn pipeline_completo_idempotente_e_bloqueio() {
         ],
     )
     .await
-    .unwrap();
+    .expect("snapshot do dia");
+}
+
+#[tokio::test]
+#[ignore = "precisa de Postgres de teste (TEST_DATABASE_URL); rode com --ignored"]
+async fn pipeline_completo_idempotente_e_bloqueio() {
+    let (pool, config) = preparar().await;
+    let dia = data_ref();
+
+    semear_cenario(&pool).await;
 
     // 1ª execução.
     let res = processar_dia(&pool, &config, dia).await.unwrap();
@@ -132,14 +155,38 @@ async fn pipeline_completo_idempotente_e_bloqueio() {
         .await,
         3
     );
-    // PIPE-A gera alerta; PIPE-D (sem histórico) e PIPE-F (fora) não.
-    assert!(
+    // PIPE-A é maduro e com demanda corrente -> entra no Pareto (nunca N, nunca D).
+    assert_eq!(
         conta(
             &pool,
-            "SELECT COUNT(*) FROM pcp.alerta WHERE dt_alerta = DATE '2099-06-15'"
+            "SELECT COUNT(*) FROM pcp.classificacao WHERE dt_calculo = DATE '2099-06-15' \
+             AND codigo_estoque = 'PIPE-A' AND classe IN ('A', 'B', 'C')"
         )
-        .await
-            >= 1
+        .await,
+        1,
+        "PIPE-A deve ser classificado pelo Pareto"
+    );
+    // O alerta é do PIPE-A — e SÓ dele. PIPE-D (sem histórico) e PIPE-F (fora de linha) nunca
+    // alertam (invariante do §11: produto fora de linha não gera alerta).
+    assert_eq!(
+        conta(
+            &pool,
+            "SELECT COUNT(*) FROM pcp.alerta \
+             WHERE dt_alerta = DATE '2099-06-15' AND codigo_estoque = 'PIPE-A'"
+        )
+        .await,
+        1,
+        "PIPE-A tem ~2 dias de cobertura -> deve alertar"
+    );
+    assert_eq!(
+        conta(
+            &pool,
+            "SELECT COUNT(*) FROM pcp.alerta WHERE dt_alerta = DATE '2099-06-15' \
+             AND codigo_estoque IN ('PIPE-D', 'PIPE-F')"
+        )
+        .await,
+        0,
+        "sem histórico e fora de linha não geram alerta"
     );
     // PIPE-D ativo sem vendas -> sugestão SAIR (gerada).
     assert_eq!(conta(&pool, "SELECT COUNT(*) FROM pcp.sugestao_ciclo_vida WHERE codigo_estoque = 'PIPE-D' AND estado = 'gerada'").await, 1);

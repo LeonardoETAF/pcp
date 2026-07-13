@@ -107,17 +107,31 @@ pub async fn listar(pool: &PgPool) -> Result<Vec<(i16, f64)>, ErroDb> {
 
 /// Substitui (upsert) os 12 fatores numa transação. Índice 0 = mês 1.
 ///
+/// `calculado_em` é a **data de negócio** do recálculo (a `data_ref` do pipeline), não o relógio:
+/// é ela que o gatilho mensal do §4.2 lê de volta em [`ultima_atualizacao`]. Gravar `now()` aqui
+/// misturaria relógio real com data de negócio e quebraria a regra sempre que as duas divergissem
+/// (reprocesso de uma data passada, por exemplo) — CLAUDE.md §5: o tempo entra por parâmetro.
+///
 /// # Errors
 /// [`ErroDb::Sqlx`] em falha de banco; a transação é revertida.
-pub async fn substituir(pool: &PgPool, fatores: &[f64; 12]) -> Result<(), ErroDb> {
+pub async fn substituir(
+    pool: &PgPool,
+    fatores: &[f64; 12],
+    calculado_em: NaiveDate,
+) -> Result<(), ErroDb> {
     let mut tx = pool.begin().await?;
     for (indice, &fator) in fatores.iter().enumerate() {
         let mes = i16::try_from(indice + 1).unwrap_or(1);
         sqlx::query!(
-            "INSERT INTO pcp.fatores_sazonais (mes, fator, atualizado_em) VALUES ($1, $2, now()) \
-             ON CONFLICT (mes) DO UPDATE SET fator = EXCLUDED.fator, atualizado_em = now()",
+            "INSERT INTO pcp.fatores_sazonais (mes, fator, atualizado_em) VALUES ($1, $2, $3) \
+             ON CONFLICT (mes) DO UPDATE SET fator = EXCLUDED.fator, \
+             atualizado_em = EXCLUDED.atualizado_em",
             mes,
             fator,
+            calculado_em
+                .and_hms_opt(0, 0, 0)
+                .unwrap_or_default()
+                .and_utc(),
         )
         .execute(&mut *tx)
         .await?;

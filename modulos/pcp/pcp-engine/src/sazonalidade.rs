@@ -38,10 +38,20 @@ pub async fn atualizar_fatores(
     params: ParametrosSazonalidade,
 ) -> Result<ResultadoSazonalidade, ErroEngine> {
     let ultima = db::ultima_atualizacao(pool).await?;
+
     // Sem NENHUMA curva por produto, recalcula mesmo que o gatilho mensal não tenha disparado —
     // é o primeiro cálculo depois de ligar a sazonalidade por produto (doc 02 §4.2).
-    let sem_curvas = !db::tem_curvas_por_produto(pool).await?;
-    if !sem_curvas && !deve_recalcular(ultima, hoje, params.atualizar_apos_dias) {
+    //
+    // `ultima != Some(hoje)` NÃO é detalhe: "não há curvas" não é o mesmo que "nunca rodou".
+    // Se nenhum produto atingir `min_meses_com_venda_produto`, nenhuma curva própria nasce e
+    // `tem_curvas_por_produto` fica falso PARA SEMPRE — sem esta guarda o atalho dispararia em
+    // toda execução, e como o `sync_one` chama o pipeline a cada poucos minutos, a sazonalidade
+    // seria recalculada do zero o dia inteiro. Com ela, o atalho vale no máximo uma vez por dia
+    // e o gatilho mensal do §4.2 volta a valer.
+    let primeiro_calculo_por_produto =
+        !db::tem_curvas_por_produto(pool).await? && ultima != Some(hoje);
+
+    if !primeiro_calculo_por_produto && !deve_recalcular(ultima, hoje, params.atualizar_apos_dias) {
         tracing::debug!("sazonalidade: recálculo não necessário");
         return Ok(ResultadoSazonalidade::NaoNecessario);
     }
@@ -90,7 +100,7 @@ async fn recalcular(
         }
     }
 
-    db::substituir(pool, &fatores).await?;
+    db::substituir(pool, &fatores, hoje).await?;
     recalcular_por_produto(pool, inicio, fim, params).await?;
     Ok(())
 }
