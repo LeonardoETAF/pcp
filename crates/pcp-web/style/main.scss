@@ -2857,11 +2857,13 @@ input {
   border-color: var(--texto-suave);
   color: var(--texto);
 }
+/* Sem box-shadow: o anel de foco SOMA à borda e a ativa parecia mais grossa que as demais. O
+   realce vem só da cor da borda e do peso do rótulo — a espessura fica igual à das inativas. */
 .aba-classe--ativa {
   border-color: var(--texto);
-  box-shadow: var(--foco-anel);
   color: var(--texto);
 }
+.aba-classe--ativa .aba-classe__rotulo { font-weight: var(--peso-forte); }
 .aba-classe__rotulo {
   font-size: var(--fs-sm);
   font-weight: var(--peso-medio);
