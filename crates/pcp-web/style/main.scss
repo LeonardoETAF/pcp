@@ -3109,11 +3109,7 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  /* `overflow: visible` EXPLÍCITO (não basta omitir): a regra genérica `.tabela-rolavel` define
-     `overflow-x: auto`, e ela continuaria valendo. Com overflow, este vira um SCROLL CONTAINER e
-     corta a borda de baixo da ÚLTIMA linha-cartão. O scroll horizontal do mobile volta na media
-     query lá embaixo, onde a tabela larga precisa mesmo rolar. */
-  overflow: visible;
+  overflow-x: auto;
 }
 .tabela-cartao .tabela {
   border-collapse: separate;
@@ -3146,6 +3142,13 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
   border-top: var(--cartao-borda);
   border-bottom: var(--cartao-borda);
   padding: var(--e-4);
+}
+/* A regra genérica `.tabela tbody tr:last-child td { border-bottom: none }` (0,2,3) existe para a
+   tabela COMUM, onde o último filete separador é redundante. Aqui cada linha é um CARD, e ela
+   apagava a borda de baixo do último — que parecia "cortado". Devolve a borda, com especificidade
+   maior (0,3,3). */
+.tabela-cartao .tabela tbody tr:last-child td {
+  border-bottom: var(--cartao-borda);
 }
 .tabela-cartao .tabela tbody td:first-child {
   border-left: var(--cartao-borda);
@@ -3289,9 +3292,6 @@ tr.linha-prod--recem_produzido { --cor-prod: var(--semaforo-ok); }
 }
 
 @media (max-width: 720px) {
-  /* Em tela estreita a tabela larga precisa rolar de lado (e aí o corte da última borda é o preço
-     inevitável do scroll container). */
-  .tabela-cartao .tabela-rolavel { overflow-x: auto; }
   .cards-resumo { grid-template-columns: repeat(2, 1fr); }
   .linha-alerta { align-items: flex-start; }
   .filtros-estoque__selects { margin-left: 0; }
